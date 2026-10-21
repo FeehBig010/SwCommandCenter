@@ -125,3 +125,8 @@ Phase 4: Analytics & Artifacts
 ## Visual team cards
 
 Use **Exportar card (PNG)** on a completed team or Guild Hub composition to download `[TeamName]-SW-CommandCenter.png`. The image includes monster thumbnails, rune sets, slot 2/4/6 mains, minimum targets and speed-sync badges in a padded, high-resolution layout. Missing external thumbnails fall back to initials; the rest of the card still exports. Only included visible monsters appear, and no account IDs or rune inventory are shared in the PNG.
+
+
+## Piratas e Marés Sombrias
+
+The interface uses an ocean/oak/brass theme with locally hosted Google Fonts Cinzel and Oswald (licenses included). Each monster target supports typing or dragging the paired helm slider; both update the same optimizer goal. Slider limits are suggestions and expand to preserve larger typed/imported targets. Rune details use an interactive six-slot ship helm, and considered artifacts appear in treasure-chest slots. Motion respects reduced-motion preferences.

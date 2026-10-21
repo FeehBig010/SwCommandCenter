@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Download, Upload, Plus, Pencil, Trash2, Play, Square, Users } from 'lucide-react';
+import { Download, Upload, Plus, Pencil, Skull, Play, Square, Users } from 'lucide-react';
 import { MonsterEditor } from './TeamEditor';
 import MonsterPortrait from './MonsterPortrait';
 import TeamCardExport from './TeamCardExport';
@@ -91,7 +91,7 @@ export default function GuildHub({templates,onChange,account,options,reservedIds
     <button className="button small" onClick={()=>{cancel();setDraft(templateDraft(template));setNotice('');}}><Pencil size={15}/>Editar</button>
     <button className="button small" aria-label={`Exportar ${template.name}`} onClick={()=>exportTemplates([template])}><Download size={15}/>Exportar</button>
     <TeamCardExport team={{...template.team,name:template.name,description:template.description,gameMode:'siege',mode:'defense'}}/>
-    <button className="icon-button" aria-label={`Excluir ${template.name}`} onClick={()=>onChange(templates.filter(t=>t.id!==template.id))}><Trash2 size={16}/></button>
+    <button className="icon-button" aria-label={`Excluir ${template.name}`} onClick={()=>onChange(templates.filter(t=>t.id!==template.id))}><Skull size={16}/></button>
    </div>
   </article>)}</div>
   {active&&<section className="template-match" aria-label="Teste de template">
