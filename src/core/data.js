@@ -1,0 +1,44 @@
+import catalog from './catalog.json' with { type: 'json' };
+export const SETS={1:'Energy',2:'Guard',3:'Swift',4:'Blade',5:'Rage',6:'Focus',7:'Endure',8:'Fatal',10:'Despair',11:'Vampire',13:'Violent',14:'Nemesis',15:'Will',16:'Shield',17:'Revenge',18:'Destroy',19:'Fight',20:'Determination',21:'Enhance',22:'Accuracy',23:'Tolerance',24:'Seal',25:'Intangible'};
+export const STAT_NAMES={1:'HP',2:'HP%',3:'ATK',4:'ATK%',5:'DEF',6:'DEF%',8:'SPD',9:'TC%',10:'DC%',11:'RES%',12:'ACC%'};
+export const ELEMENTS={1:'Água',2:'Fogo',3:'Vento',4:'Luz',5:'Trevas'};
+export const FOUR=new Set([3,5,8,10,11,13]);
+export const STATS=['hp','def','spd','atk','cr','cd','res','acc'];
+export const LABELS={hp:'HP',def:'DEF',spd:'SPD',atk:'ATK',cr:'TC',cd:'DC',res:'RES',acc:'ACC'};
+export function monsterName(master){return catalog[master]||`${catalog[String(master).slice(0,3)]||'Monstro'} (${ELEMENTS[master%10]||master})`;}
+const number=(x,fallback=0)=>Number.isFinite(Number(x))?Number(x):fallback;
+function effect(e){return Array.isArray(e)?e.slice(0,4).map(x=>number(x)):[];}
+export function normalizeAccount(raw){
+ if(!raw||!Array.isArray(raw.unit_list)||!Array.isArray(raw.runes))throw new Error('Escolha um JSON original do SWEX com unit_list e runes.');
+ if(raw.unit_list.length>10000||raw.runes.length>100000)throw new Error('Inventário acima do limite de importação.');
+ const runeMap=new Map(),artifactMap=new Map(),locked=new Set((raw.rune_lock_list||[]).map(x=>number(typeof x==='object'?x.rune_id:x)));
+ function addRune(r,owner){
+  if(!r||!Number.isSafeInteger(r.rune_id)||r.slot_no<1||r.slot_no>6||!Array.isArray(r.pri_eff))return;
+  runeMap.set(r.rune_id,{id:r.rune_id,slot:r.slot_no,set:number(r.set_id),stars:number(r.class)%10,level:number(r.upgrade_curr),owner:number(owner??r.occupied_id),main:effect(r.pri_eff),innate:effect(r.prefix_eff),subs:(r.sec_eff||[]).map(effect),locked:locked.has(r.rune_id)});
+ }
+ function addArtifact(a,owner){if(a?.rid)artifactMap.set(a.rid,{id:a.rid,owner:number(owner??a.occupied_id),type:number(a.type),element:number(a.attribute),style:number(a.unit_style),main:effect(a.pri_effect),level:number(a.level)});}
+ raw.runes.forEach(r=>addRune(r));(raw.artifacts||[]).forEach(a=>addArtifact(a));
+ const units=raw.unit_list.filter(u=>u.unit_id&&u.unit_master_id&&u.con>0).map(u=>{
+  (u.runes||[]).forEach(r=>addRune(r,u.unit_id));(u.artifacts||[]).forEach(a=>addArtifact(a,u.unit_id));
+  return {id:u.unit_id,master:u.unit_master_id,name:monsterName(u.unit_master_id),level:number(u.unit_level),stars:number(u.class),element:number(u.attribute,u.unit_master_id%10),base:{hp:number(u.con)*15,atk:number(u.atk),def:number(u.def),spd:number(u.spd),cr:number(u.critical_rate),cd:number(u.critical_damage),res:number(u.resist),acc:number(u.accuracy)},runeIds:(u.runes||[]).map(r=>r.rune_id),artifactIds:(u.artifacts||[]).map(a=>a.rid)};
+ });
+ const unitIds=new Set(units.map(u=>u.id));
+ const siege=(raw.guildsiege_defense_deck_unit_list||[]).map((d,i)=>({name:`Defesa ${i+1}`,unitIds:(d.unit_id_list||[]).filter(id=>unitIds.has(id)),equipment:raw.guildsiege_defense_deck_equip_list?.[d.deck_id]?.equip?.map(e=>({unitId:e.unit_id,runeIds:e.rune_id_list||[],artifactIds:e.artifact_id_list||[]}))||[]}));
+ if(!units.length||!runeMap.size)throw new Error('Não há monstros e runas válidos neste arquivo.');
+ return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege};
+}
+export function blankConfig(unit=null,name='Escolher monstro'){
+ return {key:crypto.randomUUID(),unitId:unit?.id||null,label:unit?.name||name,enabled:true,sets:[0,0],strictSets:true,mains:{2:0,4:0,6:0},goals:{hp:'',def:'',spd:'',atk:'',cr:'',cd:'',res:'',acc:''},basis:'bonus',objective:'balanced'};
+}
+export function initialTeams(account){
+ const configs=['Molly','Vritra','Solveig'].map(name=>{
+  const matches=account?.units.filter(u=>u.name===name).sort((a,b)=>b.level-a.level)||[];
+  const c=blankConfig(matches[0],name);
+  if(name==='Vritra'){c.sets=[10,17];c.strictSets=false;}
+  else{c.sets=[13,0];c.mains={2:8,4:2,6:2};c.goals.hp=28001;c.goals.def=700;c.objective=name==='Solveig'?'cr':'balanced';}
+  return c;
+ });
+ return [{id:crypto.randomUUID(),name:'Molly · Vritra · Solveig',mode:'defense',priority:1,order:'soft',configs}];
+}
+export function makeTeam(){return {id:crypto.randomUUID(),name:'Novo time',mode:'defense',priority:1,order:'off',configs:[blankConfig(),blankConfig(),blankConfig()]};}
+export const DEFAULT_OPTIONS={equipped:true,respectLocks:false,artifacts:true,depth:'balanced',minLevel:12};
