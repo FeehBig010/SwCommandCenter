@@ -4,6 +4,7 @@ import { SETS, STAT_NAMES, LABELS, STATS, ELEMENTS, GAME_MODES, changeGameMode, 
 import { MONSTER_CATALOG, catalogMonster } from '../core/monsters';
 import { SLOT_MAINS } from '../core/guild';
 import MonsterPortrait from './MonsterPortrait';
+import TeamCardExport from './TeamCardExport';
 
 function Select({label,children,...props}){
  return <label className="field"><span>{label}</span><select aria-label={label} {...props}>{children}</select></label>;
@@ -68,6 +69,6 @@ export default function TeamEditor({teams,account,onChange,onAdd}){
   <div className="game-mode-bar"><Select label={`Modo de jogo do time ${i+1}`} value={team.gameMode||'siege'} onChange={e=>patchTeam(team.id,changeGameMode(team,e.target.value))}>{Object.entries(GAME_MODES).map(([key,mode])=><option key={key} value={key}>{mode.label}</option>)}</Select><p>Slots retirados ficam guardados ao trocar de modo. Somente os cards visíveis participam da busca.</p></div>
   <div className="game-mode-bar">{[['towerSpd','Torre SPD (%)',100],['leaderSpd','Líder SPD (%)',100],['enemyCombatSpd','SPD de combate inimiga (opcional)',1000]].map(([key,label,max])=><label className="field" key={key}><span>{label}</span><input aria-label={`${label} do time ${i+1}`} type="number" min="0" max={max} step="1" value={team[key]??''} placeholder="0" onChange={e=>patchTeam(team.id,{[key]:e.target.value})}/></label>)}<p>Bônus sobre SPD base. Informe só bônus aplicáveis a todos os cards. Inimigo: ordem inicial em ticks de 7%, sem habilidades; empate com inimigo é conservador.</p></div>
   <div className={`monster-grid slots-${team.configs.length}`}>{team.configs.map((c,j)=><MonsterEditor key={c.key} config={c} index={j} slotCount={team.configs.length} account={account} onChange={updated=>patchTeam(team.id,{configs:team.configs.map(x=>x.key===c.key?updated:x)})} onMove={direction=>{if(j+direction<0||j+direction>=team.configs.length)return;const configs=team.configs.slice();[configs[j],configs[j+direction]]=[configs[j+direction],configs[j]];patchTeam(team.id,{configs});}}/>)}</div>
-  <footer className="team-footer"><div>{team.mode==='defense'?<Shield size={17}/>:<Swords size={17}/>}<span>SPD vinculada: {team.configs.filter(c=>c.enabled&&c.lockSpeedSync).map(c=>c.label).join(' → ')||'Marque ao menos dois monstros'}</span></div><label className="check-label small"><input type="checkbox" checked={team.order==='soft'} onChange={e=>patchTeam(team.id,{order:e.target.checked?'soft':'off'})}/>Preferir também a ordem dos demais</label></footer>
+  <footer className="team-footer"><div>{team.mode==='defense'?<Shield size={17}/>:<Swords size={17}/>}<span>SPD vinculada: {team.configs.filter(c=>c.enabled&&c.lockSpeedSync).map(c=>c.label).join(' → ')||'Marque ao menos dois monstros'}</span></div><label className="check-label small"><input type="checkbox" checked={team.order==='soft'} onChange={e=>patchTeam(team.id,{order:e.target.checked?'soft':'off'})}/>Preferir também a ordem dos demais</label><TeamCardExport team={team} account={account}/></footer>
  </article>)}</>;
 }

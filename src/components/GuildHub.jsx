@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Download, Upload, Plus, Pencil, Trash2, Play, Square, Users } from 'lucide-react';
 import { MonsterEditor } from './TeamEditor';
 import MonsterPortrait from './MonsterPortrait';
+import TeamCardExport from './TeamCardExport';
 import Results from './Results';
 import { LABELS, SETS, STAT_NAMES } from '../core/data';
 import { downloadJSON } from '../core/storage';
@@ -89,6 +90,7 @@ export default function GuildHub({templates,onChange,account,options,reservedIds
    <div className="button-group"><button className="button primary small" disabled={running} onClick={()=>run(template)}><Play size={15}/>Testar no meu JSON</button>
     <button className="button small" onClick={()=>{cancel();setDraft(templateDraft(template));setNotice('');}}><Pencil size={15}/>Editar</button>
     <button className="button small" aria-label={`Exportar ${template.name}`} onClick={()=>exportTemplates([template])}><Download size={15}/>Exportar</button>
+    <TeamCardExport team={{...template.team,name:template.name,description:template.description,gameMode:'siege',mode:'defense'}}/>
     <button className="icon-button" aria-label={`Excluir ${template.name}`} onClick={()=>onChange(templates.filter(t=>t.id!==template.id))}><Trash2 size={16}/></button>
    </div>
   </article>)}</div>

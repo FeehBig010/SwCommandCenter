@@ -100,3 +100,47 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .template-requirements summary{cursor:pointer;padding:6px 0;color:var(--accent)}
 .template-requirements article{padding:12px 0;border-bottom:1px solid var(--border);font-size:11px;line-height:1.8;overflow-wrap:anywhere}
 .template-requirements strong{color:#dce0e9}
+
+/* The share card has a fixed canvas layout independent of the editor viewport. */
+.team-footer{flex-wrap:wrap}
+.team-png-export,.team-footer>.team-png-export{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;max-width:100%}
+.png-export-message{font-size:10px;line-height:1.6;overflow-wrap:anywhere;color:var(--muted);max-width:360px}
+.png-export-stage{position:fixed;left:-20000px;top:0;pointer-events:none}
+.png-team-card{box-sizing:border-box;background:#101925;color:#eaf0f7;padding:36px;border:1px solid #394552;border-radius:18px;font-family:Inter,Arial,sans-serif;line-height:1.5;font-size:16px}
+.png-team-card *{box-sizing:border-box}
+.png-team-header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;border-bottom:1px solid #394552;padding-bottom:24px}
+.png-team-header>div{min-width:0}
+.png-team-card .png-eyebrow{font-size:12px;font-weight:700;letter-spacing:2px;color:#d4b87e;margin-bottom:10px}
+.png-team-card h1{font-size:36px;line-height:1.25;letter-spacing:-.8px;overflow-wrap:anywhere;margin:0 0 10px;font-weight:800;color:#f1f4f9}
+.png-team-card .png-team-mode{font-size:15px;color:#b3c0d2}
+.png-team-seal{width:68px;height:68px;border:2px solid #c9a96c;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#d4b87e;font-size:23px;font-weight:800}
+.png-team-description{padding:20px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;color:#b9c5d6;font-size:15px}
+.png-combat-bonuses{display:flex;flex-wrap:wrap;gap:12px;margin:22px 0;color:#b8c5d5;font-size:13px}
+.png-combat-bonuses>span{background:#172433;border:1px solid #344253;padding:8px 12px;border-radius:6px}
+.png-combat-bonuses b{color:#e7cf9d;margin-left:8px}
+.png-monster-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.png-team-size-1 .png-monster-grid{grid-template-columns:minmax(0,1fr)}
+.png-team-size-2 .png-monster-grid,.png-team-size-4 .png-monster-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.png-monster{min-width:0;padding:20px;border:1px solid #39485b;border-radius:10px;background:#172332;display:flex;flex-direction:column}
+.png-monster-heading{display:flex;align-items:center;gap:14px;margin-bottom:22px;min-width:0}
+.png-monster-heading>div{min-width:0}
+.png-monster-heading small{font-size:10px;letter-spacing:1.3px;color:#a7b5c8}
+.png-team-card h2{font-size:22px;line-height:1.3;margin:5px 0 0;overflow-wrap:anywhere;color:#f1f4f9}
+.png-portrait{width:64px;height:64px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid #c9a96c;border-radius:50%;overflow:hidden;background:#253445;color:#e6cc96;font-size:29px;font-weight:700}
+.png-portrait img{width:64px;height:64px;object-fit:cover;display:block}
+.png-team-card .png-section-label{font-size:10px;letter-spacing:.7px;color:#acbad0;font-weight:700;margin-bottom:10px}
+.png-set-badges{display:flex;flex-wrap:wrap;gap:7px;min-height:32px;margin-bottom:18px}
+.png-set-badges span{background:#c9a96c15;color:#e1c68e;border:1px solid #766343;padding:4px 10px;font-size:13px;border-radius:5px}
+.png-main-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:22px}
+.png-main-stats>div{border:1px solid #344253;background:#101b29;border-radius:6px;padding:9px}
+.png-main-stats small{font-size:10px;display:block;color:#a1b0c5}
+.png-main-stats strong{font-size:16px;display:block;margin-top:3px;color:#f0e0bf}
+.png-targets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:20px}
+.png-targets>div{display:flex;flex-direction:column;gap:3px;padding:9px 12px;border-radius:6px;background:#101b29;border:1px solid #344253}
+.png-targets span{font-size:11px;color:#a5b5ca}
+.png-targets strong{font-size:19px;font-variant-numeric:tabular-nums;color:#eaf0f7}
+.png-sync-badge{margin-top:auto;font-size:11px;font-weight:700;letter-spacing:.4px;padding:10px 12px;border:1px solid #415168;border-radius:6px;color:#b8c5d5;background:#1a293a}
+.png-sync-badge.png-sync-locked{color:#ead29e;border-color:#a58b56;background:#38301f}
+.png-team-footer{margin-top:24px;border-top:1px solid #394552;padding-top:18px;color:#b1bfd2;overflow-wrap:anywhere}
+.png-team-footer p{font-size:14px;color:#d8bd84;margin-bottom:10px}
+.png-team-footer span{display:block;font-size:11px;line-height:1.8}

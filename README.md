@@ -120,3 +120,8 @@ Phase 4: Analytics & Artifacts
 [ ] Implement artifact subproperty damage calculation.
 
 [ ] Build IndexedDB snapshot history and idle high-efficiency rune detector.
+
+
+## Visual team cards
+
+Use **Exportar card (PNG)** on a completed team or Guild Hub composition to download `[TeamName]-SW-CommandCenter.png`. The image includes monster thumbnails, rune sets, slot 2/4/6 mains, minimum targets and speed-sync badges in a padded, high-resolution layout. Missing external thumbnails fall back to initials; the rest of the card still exports. Only included visible monsters appear, and no account IDs or rune inventory are shared in the PNG.
