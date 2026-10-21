@@ -14,7 +14,7 @@ export function normalizeAccount(raw){
  const runeMap=new Map(),artifactMap=new Map(),locked=new Set((raw.rune_lock_list||[]).map(x=>number(typeof x==='object'?x.rune_id:x)));
  function addRune(r,owner){
   if(!r||!Number.isSafeInteger(r.rune_id)||r.slot_no<1||r.slot_no>6||!Array.isArray(r.pri_eff))return;
-  runeMap.set(r.rune_id,{id:r.rune_id,slot:r.slot_no,set:number(r.set_id),stars:number(r.class)%10,level:number(r.upgrade_curr),owner:number(owner??r.occupied_id),main:effect(r.pri_eff),innate:effect(r.prefix_eff),subs:(r.sec_eff||[]).map(effect),locked:locked.has(r.rune_id)});
+  runeMap.set(r.rune_id,{id:r.rune_id,slot:r.slot_no,set:number(r.set_id),stars:number(r.class)%10,ancient:number(r.class)>10,level:number(r.upgrade_curr),owner:number(owner??r.occupied_id),main:effect(r.pri_eff),innate:effect(r.prefix_eff),subs:(r.sec_eff||[]).map(effect),locked:locked.has(r.rune_id)});
  }
  function addArtifact(a,owner){if(a?.rid)artifactMap.set(a.rid,{id:a.rid,owner:number(owner??a.occupied_id),type:number(a.type),element:number(a.attribute),style:number(a.unit_style),main:effect(a.pri_effect),level:number(a.level)});}
  raw.runes.forEach(r=>addRune(r));(raw.artifacts||[]).forEach(a=>addArtifact(a));
@@ -41,7 +41,7 @@ export function initialTeams(account){
  return [{id:crypto.randomUUID(),name:'Molly · Vritra · Solveig',mode:'defense',priority:1,order:'soft',configs}];
 }
 export function makeTeam(gameMode='siege'){return {id:crypto.randomUUID(),name:'Novo time',gameMode,mode:'defense',priority:1,order:'off',configs:Array.from({length:GAME_MODES[gameMode]?.slots||3},()=>blankConfig())};}
-export const DEFAULT_OPTIONS={equipped:true,respectLocks:false,artifacts:true,depth:'balanced',minLevel:12};
+export const DEFAULT_OPTIONS={equipped:true,respectLocks:false,artifacts:true,depth:'balanced',minLevel:12,maxGrindsGems:false};
 
 export const GAME_MODES = {
  solo: {label:'1 Slot (Solo)', slots:1},

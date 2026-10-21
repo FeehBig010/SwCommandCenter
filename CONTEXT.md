@@ -1,6 +1,6 @@
 # Development Context
 
-Last reviewed: **2026-10-21**. Version: **0.1.0**. Source root: `/workspace/sites/d8stino-siege`.
+Last reviewed: **2026-10-21**. Version: **0.1.0**. Source root: `/workspace/SwCommandCenter`.
 
 ## Product Requirements to Preserve
 
@@ -32,14 +32,14 @@ Last reviewed: **2026-10-21**. Version: **0.1.0**. Source root: `/workspace/site
 - `data.js` normalizes raw exports to `{ version, id, name, guild, importedAt, units, runes, artifacts, siege }`. Only normalized data enters the optimizer.
 - Teams contain `{ id, name, mode, priority, order, configs }`. A config references an actual `unitId` plus enabled state, sets, mains, goals, basis and objective.
 - `optimize(account, teams, options, onProgress, reservedIds)` returns `met`, `approximate`, `no_assignment` or `conflict`, plus builds, failures, elapsed time and candidate count. Missing/duplicate/invalid units throw errors.
-- Search prioritizes weighted normalized target deficits, then utility and optional sheet-SPD ordering. Candidate pools/beams are bounded; conflicting allocations trigger candidate expansion. This is not an exact solver.
+- Search prioritizes weighted normalized target deficits, then utility and optional combat-SPD ordering. Candidate pools/beams are bounded; conflicting allocations trigger candidate expansion. This is not an exact solver.
 - Artifact calculation uses `unit.artifactIds`. Imported `siege[].equipment` is currently not consumed by calculations.
 - IndexedDB: database `d8stino-siege-v1`, store `data`, keys `account`, `teams`, `options`, `saved`, `brand`. Saved builds carry `accountId`; editable teams/options have one current global entry. No migrations exist.
 - Goal-plan format: `{ type: 'd8stino-plan', version: 1, teams }`. Result export is a different format and has no import path. Plan import may fall back to monster-name matching; verify duplicate instances.
 
 ## Validation Status
 
-- **Re-run for this documentation review:** `npm test` — **10 passing tests**; `npm run build` — passes.
+- **Re-run for this documentation review:** `npm test` — **24 passing tests**; `npm run build` — passes (Phase 2).
 - Tests cover stat/grind summation, import deduplication/privacy, rune uniqueness, missing/duplicate units, sets/mains/locks/reservations, unmet targets and conflicting allocations. They do not validate every game mechanic.
 - Earlier session Playwright/Chromium QA checked desktop **1536×1024** and mobile **390×844**. Import → exclude missing Vritra → optimize → inspect runes → save/reserve → inventory search → reload/mobile navigation passed, with no page errors or mobile horizontal overflow observed. Browser QA was not repeated for these documentation-only edits.
 - The supplied export normalized to **761 units / 3,762 unique runes**. A two-unit test met Molly/Solveig HP/DEF goals without rune reuse. A separate five-defense test allocated **15 units / 90 distinct runes** in approximately **3.3 seconds** in this environment. The latter used default goals, not fifteen constrained competitive builds.
@@ -52,7 +52,7 @@ Last reviewed: **2026-10-21**. Version: **0.1.0**. Source root: `/workspace/site
 3. **Validate and extend optimization.** Check rounding against independent game fixtures; benchmark constrained multi-team allocations. Add optional hard numerical targets/max caps, Intangible and artifact allocation, keeping heuristic status honest.
 4. **Complete private delivery.** Verify the GitHub source push and deploy with the existing Site identity. Verify owner-private access. Obtain member identities and invitation authorization before enabling guild access; never make the site public as a shortcut.
 5. **Implement authenticated guild persistence.** Backend storage, per-member permissions, shared templates, account history and cross-device synchronization. IndexedDB alone cannot provide these features.
-6. **Add combat-aware planning.** Leader/tower/invoker/team-set bonuses, artifact subproperties, passives, buffs, ATB/tick-based turn order and upgrade/gem/grind simulations, each backed by validated rules/tests.
+6. **Extend combat-aware planning.** Phase 2 implements tower/leader SPD, a first-rotation tick model and regular gem/grind projections. Remaining: invoker/team-set bonuses, artifact subproperties, passives, buffs, skill-driven ATB effects, Ancient stones and stone inventory constraints; validate game-specific behavior against independent combat fixtures.
 7. **Extend modules and guild tools.** Counters/defense library, tower planning/history and separate Arena/RTA/PvE areas. Capture authorized screen references for closer visual alignment.
 8. **Improve maintainability.** Commit sanitized E2E tests and CI, split the large App component, format source/CSS, add schema validation and storage migrations; assess TypeScript. The current deterministic solver needs no AI API key.
 
@@ -79,7 +79,7 @@ The following code-review findings are **not fixed by this documentation update*
 - Last inspected access was custom/owner-private; external visitor invites were supported. Recheck live access before publication or membership changes.
 - Expected URL: `https://cla-d8stino-siege.darkseid010.chatgpt.site`. This is a registered address, **not proof of deployment**.
 - Previous short-lived source credentials expired. Obtain fresh ones when needed; never persist tokens in docs/source or expose them in command arguments.
-- `origin` targets the private GitHub repository `https://github.com/FeehBig010/SwCommandCenter.git`; the delivery branch is `main`. The existing initial commit is preserved. `/workspace/SwCommandCenter` is a separate checkout that may lag behind; fetch/update it before using it instead of this source directory.
+- `origin` targets the private GitHub repository `https://github.com/FeehBig010/SwCommandCenter.git`; the delivery branch is `main`. The existing initial commit is preserved. `/workspace/SwCommandCenter` is the current checkout; fetch before starting further work.
 
 
 ## Phase 1: Foundation & UX — 2026-10-21
@@ -92,3 +92,20 @@ The following code-review findings are **not fixed by this documentation update*
 - `npm test`: 10 passing; `npm run build`: passing. New regression cases cover mode resizing/preservation, selective SPD pair constraints and joint allocation with locked/unlocked cards.
 - The remote update fetched at the start of this work put the V2 roadmap in `README.md` (headed CONTEXT.md); the original `CONTEXT.md` remained unchanged remotely. Both were read; Phase 1 follows the explicit user request and that roadmap.
 - Phase 1 browser QA: Playwright/Chromium at `http://localhost:4173`, desktop 1536×1024 and mobile 390×844. Verified all four slot counts, final-slot movement boundary, monster/sets/main-stat/HP/speed-lock edits, resize preservation, reload, JSON roundtrip including hidden slots, and add/remove with mode inheritance. No runtime errors or Vite overlay; mobile has no horizontal overflow. Existing `/favicon.ico` request returns 404. Browser plugin unavailable; used installed Playwright. Temporary evidence: `/tmp/phase1-browser.mjs`, `/tmp/phase1-desktop.png`, `/tmp/phase1-mobile.png`.
+
+
+## Phase 2: Combat Engine Upgrades & Grinds Simulator — Complete, 2026-10-21
+
+- [x] Tower/leader SPD inputs per team, preserved by IndexedDB and goal-plan import/export. Inputs are explicit percentages applicable to every active member; no automatic leader/element eligibility is inferred.
+- [x] Sheet SPD and combat SPD are separate. Sheet goals retain their existing meaning. Combat SPD recombines fractional base-SPD bonuses from Swift, tower and leader before one ceiling: `ceil(baseSPD × (1 + Swift% + tower% + leader%) + flat rune SPD)`. Swift is 25% per completed set. The previously rounded sheet Swift contribution is removed before recombining. Example: base 101, Swift, tower 15%, leader 24% → sheet 127, combat 166 (not 167).
+- [x] Selective speed sync now uses combat SPD. Equal allied combat speeds follow visual card order; unlocked/excluded cards do not become mandatory links. Optional soft ordering also uses combat SPD. Legacy callers supplying only sheet stats retain Phase 1's strict comparison.
+- [x] Optional enemy **combat** SPD input enables a bounded first-rotation simulation: every tick adds `combatSPD × 0.07` percent ATB to all actors, including after an action. Highest ATB above the 100% threshold acts and resets to zero; other actors retain overflow. Ties use speed, then allied visual position; an exact enemy tie is conservatively rejected. All enabled allies, including unlocked cards, participate. Every marked card must take its first turn before the enemy. Partial assignments remain expandable.
+- [x] Optional max gems/grinds search enumerates legal alternatives for **regular six-star runes**, rather than adding every possible gem simultaneously. Normal legendary caps: gems HP 580, ATK/DEF 40, HP%/ATK%/DEF% 13, SPD 10, CR 9, CD 10, RES/ACC 11; grinds HP 550, ATK/DEF 30, HP%/ATK%/DEF% 10, SPD 5. Existing grinds are replaced by the maximum, never added twice or reduced; nongrindable stats receive no new grind.
+- [x] At most one substat index is enchanted. An existing enchanted index is the only index that can be re-gemmed; replacement resets the old grind. Main/innate/other-substat duplicates and slot-1 DEF / slot-3 ATK exclusions are enforced. Gem swaps require four revealed subs and +12 or higher. Native stats are not re-gemmed in place; an already enchanted same-stat roll may be improved up to its cap. Above-cap existing rolls are retained, never manufactured by gems. Ancient/unknown-grade runes are left unchanged; new SWEX imports retain the Ancient flag.
+- [x] Variant identities include the upgrade plan, while allocation/reservations continue to use physical rune IDs. Builds export chosen projected substats in `upgrades`; imported inventory is immutable. Results identify the projection and show both sheet/combat SPD plus the exact rune changes alongside current inventory values.
+
+Validation: `npm test` **24/24 pass**, zero skipped/failed; `npm run build` passes. Added synthetic regression cases for fractional rounding, equal speeds, ATB threshold boundaries/overflow, cutting/partial chains, gem restrictions/re-gemming, replacement grinds, Ancient import, immutable inventory, projection export, and joint rune uniqueness under simulation.
+
+Browser smoke QA: Browser plugin unavailable; used installed Playwright/Chromium. Synthetic SWEX → plan import → tower/leader/enemy inputs → simulation → worker optimization → projected results → reload persistence passed at desktop 1536×1024 and mobile 390×844, with no page errors, Vite overlay or horizontal mobile overflow. Temporary script/screenshots are `/tmp/phase2-browser.cjs`, `/tmp/phase2-desktop.png`, `/tmp/phase2-mobile.png`.
+
+Scope: this completes the Phase 2 roadmap's explicit model, not a full battle simulator. No passive, buff, skill-driven ATB boost/reduction, extra-turn, team-set, Ancient-stone, future rune-level roll or stone-stock simulation is claimed. Enemy SPD must already include its applicable bonuses; exact enemy ties deliberately use a conservative assumption. Tests verify the documented model with synthetic fixtures; independent in-game combat validation and constrained real-account benchmarks remain follow-up work. Candidate/variant beams are bounded and cannot prove global feasibility or optimality. Re-import older stored accounts if Ancient classification was lost by the previous normalizer.

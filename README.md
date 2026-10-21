@@ -103,11 +103,11 @@ Phase 1: Foundation & UX (Multi-Mode & Panels)
 [x] Add "Lock Speed Sync" checkbox per monster card.
 
 Phase 2: Engine Upgrades (Speed Sync & Calculations)
-[ ] Update src/core/optimizer.js to process selective speed sync bounds.
+[x] Update src/core/optimizer.js to process selective combat speed sync and first-rotation enemy cutting checks.
 
-[ ] Add Guild Tower and Leader Skill SPD calculation formula to combat engine.
+[x] Add Guild Tower and Leader Skill SPD calculation formula to combat engine.
 
-[ ] Add "Consider Max Grinds/Gems" toggle into search heuristics.
+[x] Add "Consider Max Grinds/Gems" toggle into search heuristics (regular six-star legendary stones, at most one enchanted substat per rune).
 
 Phase 3: Guild Hub & Template Matching
 [ ] Create GuildHub.jsx component with template creation for leaders.
