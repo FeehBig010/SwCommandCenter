@@ -28,7 +28,7 @@ export function normalizeAccount(raw){
  return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege};
 }
 export function blankConfig(unit=null,name='Escolher monstro'){
- return {key:crypto.randomUUID(),unitId:unit?.id||null,label:unit?.name||name,enabled:true,sets:[0,0],strictSets:true,mains:{2:0,4:0,6:0},goals:{hp:'',def:'',spd:'',atk:'',cr:'',cd:'',res:'',acc:''},basis:'bonus',objective:'balanced'};
+ return {key:crypto.randomUUID(),unitId:unit?.id||null,label:unit?.name||name,enabled:true,lockSpeedSync:false,sets:[0,0],strictSets:true,mains:{2:0,4:0,6:0},goals:{hp:'',def:'',spd:'',atk:'',cr:'',cd:'',res:'',acc:''},basis:'bonus',objective:'balanced'};
 }
 export function initialTeams(account){
  const configs=['Molly','Vritra','Solveig'].map(name=>{
@@ -40,5 +40,23 @@ export function initialTeams(account){
  });
  return [{id:crypto.randomUUID(),name:'Molly · Vritra · Solveig',mode:'defense',priority:1,order:'soft',configs}];
 }
-export function makeTeam(){return {id:crypto.randomUUID(),name:'Novo time',mode:'defense',priority:1,order:'off',configs:[blankConfig(),blankConfig(),blankConfig()]};}
+export function makeTeam(gameMode='siege'){return {id:crypto.randomUUID(),name:'Novo time',gameMode,mode:'defense',priority:1,order:'off',configs:Array.from({length:GAME_MODES[gameMode]?.slots||3},()=>blankConfig())};}
 export const DEFAULT_OPTIONS={equipped:true,respectLocks:false,artifacts:true,depth:'balanced',minLevel:12};
+
+export const GAME_MODES = {
+ solo: {label:'1 Slot (Solo)', slots:1},
+ siege: {label:'3 Slots (Siege / WGB)', slots:3},
+ arena: {label:'4 Slots (Arena Offense / Defense)', slots:4},
+ cairos: {label:'5 Slots (Cairos Dungeons)', slots:5},
+};
+export function changeGameMode(team, gameMode) {
+ const slots=GAME_MODES[gameMode]?.slots;
+ if(!slots)return team;
+ const configs=[...team.configs,...(team.inactiveConfigs||[])];
+ while(configs.length<slots)configs.push(blankConfig());
+ return {...team,gameMode,configs:configs.slice(0,slots),inactiveConfigs:configs.slice(slots)};
+}
+// Legacy three-slot plans default to Siege. Stored hidden slots never enter a search.
+export function restoreTeam(team) {
+ return changeGameMode(team, GAME_MODES[team.gameMode]?team.gameMode:'siege');
+}

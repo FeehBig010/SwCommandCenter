@@ -96,11 +96,11 @@ Unlike existing single-monster optimizers, this tool performs **joint multi-team
 
 5. Prioritized Execution Roadmap
 Phase 1: Foundation & UX (Multi-Mode & Panels)
-[ ] Implement mode switcher (1, 3, 4, 5 slots) in TeamEditor.jsx.
+[x] Implement mode switcher (1, 3, 4, 5 slots) in TeamEditor.jsx.
 
-[ ] Add individual stat target UI panels per monster slot.
+[x] Add individual stat target UI panels per monster slot.
 
-[ ] Add "Lock Speed Sync" checkbox per monster card.
+[x] Add "Lock Speed Sync" checkbox per monster card.
 
 Phase 2: Engine Upgrades (Speed Sync & Calculations)
 [ ] Update src/core/optimizer.js to process selective speed sync bounds.

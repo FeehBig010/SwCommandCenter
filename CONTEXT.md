@@ -16,7 +16,7 @@ Last reviewed: **2026-10-21**. Version: **0.1.0**. Source root: `/workspace/site
 | --- | --- |
 | Import | File picker/drag-drop, 50 MB UI limit, core SWEX validation, units/runes/artifact mains/Siege defense references, rune deduplication and game rune-lock flags. |
 | Privacy | Explicit field whitelist; no raw JSON upload or preservation of session/authentication/social fields. Personal exports are outside the source tree. |
-| Team editor | Up to ten teams, three positions each; naming, priorities, instance selection, reordering, exclusion, attack/defense labels and imported defense compositions. |
+| Team editor | Up to ten teams, with 1/3/4/5 positions for Solo/Siege-WGB/Arena/Cairos; naming, priorities, instance selection, reordering, exclusion, attack/defense labels and imported defense compositions. |
 | Specifications | Required/preferred sets, slot 2/4/6 mains, eight minimum targets, additional/total basis, balanced/HP/SPD/CR/ATK-based damage objectives and the user's initial preset. |
 | Calculations | Base HP from `con × 15`, current main/innate/substat/grind values, personal stat-set bonuses and optional fixed equipped-artifact mains. |
 | Joint allocation | Candidate generation followed by joint beam search, rune/unit uniqueness, weighted priorities and additional candidate searches when allocations conflict. |
@@ -39,7 +39,7 @@ Last reviewed: **2026-10-21**. Version: **0.1.0**. Source root: `/workspace/site
 
 ## Validation Status
 
-- **Re-run for this documentation review:** `npm test` — **7 passing tests**; `npm run build` — passes.
+- **Re-run for this documentation review:** `npm test` — **10 passing tests**; `npm run build` — passes.
 - Tests cover stat/grind summation, import deduplication/privacy, rune uniqueness, missing/duplicate units, sets/mains/locks/reservations, unmet targets and conflicting allocations. They do not validate every game mechanic.
 - Earlier session Playwright/Chromium QA checked desktop **1536×1024** and mobile **390×844**. Import → exclude missing Vritra → optimize → inspect runes → save/reserve → inventory search → reload/mobile navigation passed, with no page errors or mobile horizontal overflow observed. Browser QA was not repeated for these documentation-only edits.
 - The supplied export normalized to **761 units / 3,762 unique runes**. A two-unit test met Molly/Solveig HP/DEF goals without rune reuse. A separate five-defense test allocated **15 units / 90 distinct runes** in approximately **3.3 seconds** in this environment. The latter used default goals, not fifteen constrained competitive builds.
@@ -80,3 +80,15 @@ The following code-review findings are **not fixed by this documentation update*
 - Expected URL: `https://cla-d8stino-siege.darkseid010.chatgpt.site`. This is a registered address, **not proof of deployment**.
 - Previous short-lived source credentials expired. Obtain fresh ones when needed; never persist tokens in docs/source or expose them in command arguments.
 - `origin` targets the private GitHub repository `https://github.com/FeehBig010/SwCommandCenter.git`; the delivery branch is `main`. The existing initial commit is preserved. `/workspace/SwCommandCenter` is a separate checkout that may lag behind; fetch/update it before using it instead of this source directory.
+
+
+## Phase 1: Foundation & UX — 2026-10-21
+
+- Implemented per-team `gameMode` (`solo`, `siege`, `arena`, `cairos`), separate from the existing attack/defense `mode` label. Cards render exactly 1/3/4/5 slots. New teams inherit the last team's game mode.
+- `changeGameMode` / `restoreTeam` in `data.js` retain trimmed cards in `inactiveConfigs`; these do not participate in validation, counts or allocation. IndexedDB and JSON plan export/import preserve them. Legacy plans default to Siege.
+- All eight minimum stat fields are visible, including ATK. Existing mandatory/preferred sets, slot 2/4/6 mains, account-instance selector and bonus/total controls remain available.
+- Per-card `lockSpeedSync` defaults to false and persists with plans. The optimizer requires strictly descending total sheet SPD between enabled marked cards in visual order; unmarked cards are excluded from that constraint. Existing team-wide soft ordering is still optional. Search capacity is now 50 monsters (10 teams × 5 slots).
+- This is sheet-SPD ordering only: combat speed bounds, towers, leaders, ATB and prevention of enemy cutting remain Phase 2 work. Game mode currently controls team size, not mode-specific combat rules.
+- `npm test`: 10 passing; `npm run build`: passing. New regression cases cover mode resizing/preservation, selective SPD pair constraints and joint allocation with locked/unlocked cards.
+- The remote update fetched at the start of this work put the V2 roadmap in `README.md` (headed CONTEXT.md); the original `CONTEXT.md` remained unchanged remotely. Both were read; Phase 1 follows the explicit user request and that roadmap.
+- Phase 1 browser QA: Playwright/Chromium at `http://localhost:4173`, desktop 1536×1024 and mobile 390×844. Verified all four slot counts, final-slot movement boundary, monster/sets/main-stat/HP/speed-lock edits, resize preservation, reload, JSON roundtrip including hidden slots, and add/remove with mode inheritance. No runtime errors or Vite overlay; mobile has no horizontal overflow. Existing `/favicon.ico` request returns 404. Browser plugin unavailable; used installed Playwright. Temporary evidence: `/tmp/phase1-browser.mjs`, `/tmp/phase1-desktop.png`, `/tmp/phase1-mobile.png`.

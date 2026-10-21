@@ -36,3 +36,40 @@ test('unmet numerical targets are explicitly approximate, not a false success',(
 test('impossible simultaneous equipment assignment does not return duplicated gear',()=>{
  const u2={...unit,id:2,name:'Outro'};const a={units:[unit,u2],runes:Array.from({length:6},(_,i)=>rune(i+1,i+1)),artifacts:[]};const r=optimize(a,[{id:'t',name:'Time',priority:1,configs:[config(),config(u2)]}],{...DEFAULT_OPTIONS,depth:'fast'});assert.equal(r.status,'conflict');assert.equal(r.builds.length,0);
 });
+
+test('game modes preserve hidden slots and specifications through resize and restore',async()=>{
+ const {makeTeam,changeGameMode,restoreTeam}=await import('../src/core/data.js');
+ let team=makeTeam('cairos');assert.equal(team.configs.length,5);
+ team.configs[4].goals.hp=28001;team.configs[4].lockSpeedSync=true;
+ const lastKey=team.configs[4].key;
+ team=changeGameMode(team,'solo');assert.equal(team.configs.length,1);
+ team=restoreTeam(JSON.parse(JSON.stringify(team)));
+ team=changeGameMode(team,'arena');assert.equal(team.configs.length,4);
+ team=changeGameMode(team,'cairos');assert.equal(team.configs.length,5);
+ assert.equal(team.configs[4].key,lastKey);assert.equal(team.configs[4].goals.hp,28001);assert.equal(team.configs[4].lockSpeedSync,true);
+ assert.equal(restoreTeam({configs:[blankConfig(),blankConfig(),blankConfig()]}).gameMode,'siege');
+ assert.equal(makeTeam('siege').configs.length,3);
+});
+test('speed synchronization skips unlocked/excluded cards and checks nonadjacent assigned pairs',async()=>{
+ const {speedSyncValid}=await import('../src/core/optimizer.js');
+ const configs=Array.from({length:5},()=>({...blankConfig(),lockSpeedSync:true}));
+ configs[1].lockSpeedSync=false;configs[3].enabled=false;
+ const assignments=Object.fromEntries(configs.map((c,i)=>[c.key,{stats:{total:{spd:[200,300,180,400,160][i]}}}]));
+ assert.equal(speedSyncValid(assignments,[{configs}]),true);
+ assignments[configs[4].key].stats.total.spd=210;delete assignments[configs[2].key];
+ assert.equal(speedSyncValid(assignments,[{configs}]),false);
+ assignments[configs[4].key].stats.total.spd=200;
+ assert.equal(speedSyncValid(assignments,[{configs}]),false);
+});
+test('joint optimizer enforces marked SPD order while leaving unmarked units free',()=>{
+ const slow={...unit,id:1,base:{...unit.base,spd:100}};
+ const fast={...unit,id:2,base:{...unit.base,spd:120}};
+ const third={...unit,id:3,base:{...unit.base,spd:150}};
+ const account={units:[slow,fast,third],runes:Array.from({length:18},(_,i)=>({...rune(i+1,i%6+1),owner:Math.floor(i/6)+1})),artifacts:[]};
+ const a={...config(slow),lockSpeedSync:true},b={...config(fast),lockSpeedSync:true},c=config(third);
+ const options={...DEFAULT_OPTIONS,equipped:false,depth:'fast'};
+ const team={id:'t',name:'Test',priority:1,order:'off',configs:[a,c,b]};
+ assert.equal(optimize(account,[team],options).status,'conflict');
+ team.configs=[b,c,a];const result=optimize(account,[team],options);
+ assert.equal(result.status,'met');assert.equal(new Set(result.builds.flatMap(b=>b.runeIds)).size,18);
+});

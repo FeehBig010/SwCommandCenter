@@ -19,3 +19,11 @@
 @media(max-width:950px){.brand img{width:52px;height:52px}.brand{padding:20px 8px}.account-actions{margin-left:auto}.account-strip{flex-wrap:wrap}.account-actions>div{z-index:21}}
 @media(max-width:600px){.sidebar{visibility:hidden}.sidebar.is-open{visibility:visible}.sidebar.is-open .brand img{width:122px;height:122px}.sidebar.is-open .brand strong{font-size:20px}.sidebar.is-open .brand span{font-size:9px}.brand{padding:20px 12px}.account-actions{width:100%;padding-top:7px;border-top:1px solid var(--border)}.account-actions>div{left:0;right:auto;width:min(270px,calc(100vw - 65px))}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* Foundation: variable-size teams and selective speed synchronization. */
+.game-mode-bar{display:flex;align-items:center;gap:20px;padding:14px;background:#111b28;border-bottom:1px solid var(--border)}
+.game-mode-bar .field{margin:0;flex:0 1 320px}.game-mode-bar p{font-size:11px;line-height:1.6;color:var(--muted);max-width:480px}
+.speed-sync{margin:12px 0;color:var(--accent)}
+.monster-grid.slots-1{grid-template-columns:minmax(0,1fr);max-width:560px}
+@media(min-width:951px){.monster-grid.slots-4{grid-template-columns:repeat(2,minmax(0,1fr))}.monster-grid.slots-4 .monster-editor:nth-child(n+3),.monster-grid.slots-5 .monster-editor:nth-child(n+4){border-top:1px solid var(--border)}}
+@media(max-width:600px){.game-mode-bar{flex-direction:column;align-items:stretch;gap:8px}.game-mode-bar .field{flex:auto}.game-mode-bar p{margin:0}}

@@ -63,6 +63,17 @@ export function generateCandidates(account,unit,c,options,reserved=new Set(),pro
  if(equipped.length===6&&equipped.every(Boolean)&&new Set(equipped.map(r=>r.slot)).size===6&&equipped.every(r=>!Number(c.mains[r.slot])||r.main[0]===Number(c.mains[r.slot]))){const counts=setCounts(equipped);if(!c.strictSets||setsValid(counts,req)){const stats=calculateStats(unit,equipped,flat);all.set('equipped',{runeIds:equipped.map(r=>r.id),stats,counts,...evaluate(stats,c,counts)});}}
  return {candidates:[...all.values()].sort(compare),reason:all.size?'':'Nenhuma combinação encontrada com os sets e slots exigidos nesta busca.'};
 }
+export function speedSyncValid(assignments,teams){
+ for(const team of teams){
+  const chain=team.configs.filter(c=>c.enabled&&c.lockSpeedSync===true);
+  // Compare every assigned pair, even if a middle slot has not been assigned yet.
+  for(let i=0;i<chain.length;i++)for(let j=i+1;j<chain.length;j++){
+   const a=assignments[chain[i].key],b=assignments[chain[j].key];
+   if(a&&b&&a.stats.total.spd<=b.stats.total.spd)return false;
+  }
+ }
+ return true;
+}
 function orderCost(assignments,teams){let cost=0;for(const t of teams){if(t.order!=='soft')continue;const cs=t.configs.filter(c=>c.enabled);for(let i=1;i<cs.length;i++){const a=assignments[cs[i-1].key],b=assignments[cs[i].key];if(a&&b&&a.stats.total.spd<=b.stats.total.spd)cost+=0.15+(b.stats.total.spd-a.stats.total.spd)/1000;}}return cost;}
 export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[]){
  const started=Date.now(),reserved=new Set(reservedIds),jobs=[];const seen=new Set();
@@ -73,7 +84,7 @@ export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[])
   jobs.push({unit,config,team});
  }
  if(!jobs.length)throw new Error('Inclua ao menos um monstro na busca.');
- if(jobs.length>30)throw new Error('Esta versão aceita até 30 monstros por busca.');
+ if(jobs.length>50)throw new Error('Esta versão aceita até 50 monstros por busca.');
  const failures=[];
  for(let i=0;i<jobs.length;i++){
   const job=jobs[i];onProgress({percent:Math.round(i/jobs.length*75),message:`Buscando combinações para ${job.unit.name}…`});
@@ -91,7 +102,7 @@ export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[])
   let regenerated=0;
   for(const state of beam){let accepted=0;
    for(const c of job.candidates){if(c.runeIds.some(id=>state.used.has(id)))continue;
-    const assignments={...state.assignments,[job.config.key]:c};const used=new Set([...state.used,...c.runeIds]);
+    const assignments={...state.assignments,[job.config.key]:c};if(!speedSyncValid(assignments,teams))continue;const used=new Set([...state.used,...c.runeIds]);
     next.push({used,assignments,deficit:state.deficit+c.deficit*weight,utility:state.utility+c.utility*weight});
     if(++accepted>=35)break;
    }
@@ -103,10 +114,10 @@ export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[])
     const expanded=generateCandidates(account,job.unit,job.config,options,blocked).candidates;
     const existing=new Set(job.candidates.map(c=>c.runeIds.join(',')));
     for(const c of expanded)if(!existing.has(c.runeIds.join(','))){job.candidates.push(c);existing.add(c.runeIds.join(','));}
-    for(const c of expanded.slice(0,35))next.push({used:new Set([...state.used,...c.runeIds]),assignments:{...state.assignments,[job.config.key]:c},deficit:state.deficit+c.deficit*weight,utility:state.utility+c.utility*weight});
+    for(const c of expanded.filter(c=>speedSyncValid({...state.assignments,[job.config.key]:c},teams)).slice(0,35))next.push({used:new Set([...state.used,...c.runeIds]),assignments:{...state.assignments,[job.config.key]:c},deficit:state.deficit+c.deficit*weight,utility:state.utility+c.utility*weight});
    }
   }
-  if(!next.length)return {status:'conflict',failures:[{name:job.unit.name,reason:'As combinações encontradas disputam runas já necessárias aos outros monstros. Amplie a busca, libere reservas ou ajuste as metas.'}],builds:[],elapsed:Date.now()-started,checked:jobs.reduce((s,j)=>s+j.candidates.length,0)};
+  if(!next.length)return {status:'conflict',failures:[{name:job.unit.name,reason:'Nenhuma distribuição encontrada sem repetir runas e respeitando os vínculos de SPD. Amplie a busca, libere reservas ou ajuste as metas e a ordem dos cards.'}],builds:[],elapsed:Date.now()-started,checked:jobs.reduce((s,j)=>s+j.candidates.length,0)};
   next.sort((a,b)=>a.deficit-b.deficit||(b.utility-orderCost(b.assignments,teams))-(a.utility-orderCost(a.assignments,teams)));
   beam=next.slice(0,breadth);onProgress({percent:80+Math.round((i+1)/ordered.length*19),message:'Comparando distribuições sem repetir runas…'});
  }
