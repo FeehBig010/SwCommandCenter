@@ -1,28 +1,66 @@
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Plus, Shield, Swords, Trash2, AlertCircle, GripVertical } from 'lucide-react';
-import { SETS, STAT_NAMES, LABELS, STATS, ELEMENTS, GAME_MODES, changeGameMode } from '../core/data';
-const allowed={2:[8,2,4,6,1,3,5],4:[9,10,2,4,6,1,3,5],6:[2,4,6,11,12,1,3,5]};
-function Select({label,children,...props}){return <label className="field"><span>{label}</span><select aria-label={label} {...props}>{children}</select></label>;}
-export function MonsterEditor({config,index,slotCount,account,onChange,onMove}){
+import { SETS, STAT_NAMES, LABELS, STATS, ELEMENTS, GAME_MODES, changeGameMode, FOUR } from '../core/data';
+import { MONSTER_CATALOG, catalogMonster } from '../core/monsters';
+import { SLOT_MAINS } from '../core/guild';
+import MonsterPortrait from './MonsterPortrait';
+
+function Select({label,children,...props}){
+ return <label className="field"><span>{label}</span><select aria-label={label} {...props}>{children}</select></label>;
+}
+const COMMON_SETS=[13,15,10,3,6,4,5,17];
+
+export function MonsterEditor({config,index,slotCount,account,onChange,onMove,catalogMode=false}){
  const [query,setQuery]=useState('');
- const unit=account?.units.find(u=>u.id===config.unitId),missing=account&&!unit;
- const candidates=account?.units.filter(u=>u.id===config.unitId||u.name.toLocaleLowerCase().includes(query.toLocaleLowerCase())).sort((a,b)=>a.name.localeCompare(b.name)||b.level-a.level)||[];
+ const unit=account?.units.find(u=>u.id===config.unitId);
+ const master=unit?.master||config.masterId||MONSTER_CATALOG.find(m=>m.name===config.label)?.master;
+ const monster=unit||catalogMonster(master,config.label);
+ const useCatalog=catalogMode||!account;
+ const missing=!catalogMode&&account&&!unit;
+ const candidates=(useCatalog?MONSTER_CATALOG:account.units)
+  .filter(u=>(useCatalog?u.master===Number(master):u.id===config.unitId)||u.name.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
+  .slice().sort((a,b)=>a.name.localeCompare(b.name)||(b.level||0)-(a.level||0));
  const update=(key,value)=>onChange({...config,[key]:value});
+ const selectedSets=config.sets.filter(Boolean);
+ function setCount(id,count){
+  const next=[...selectedSets.filter(s=>s!==id),...Array(count).fill(id)];
+  update('sets',next);
+ }
+ function setOption(id){
+  const count=selectedSets.filter(s=>s===id).length;
+  const used=selectedSets.reduce((n,s)=>n+(FOUR.has(s)?4:2),0);
+  const disabled=!count&&used+(FOUR.has(id)?4:2)>6;
+  return <div className="set-choice" key={id}>
+   <label className="check-label"><input type="checkbox" checked={count>0} disabled={disabled} onChange={e=>setCount(id,e.target.checked?1:0)}/>{SETS[id]}</label>
+   {count>0&&!FOUR.has(id)&&<select aria-label={`Quantidade de sets ${SETS[id]} de ${config.label}`} value={count} onChange={e=>setCount(id,Number(e.target.value))}>{[1,2,3].filter(n=>used-count*2+n*2<=6).map(n=><option key={n} value={n}>{n}×</option>)}</select>}
+  </div>;
+ }
  return <section className={`monster-editor ${!config.enabled?'muted-editor':''}`} aria-label={`Configuração de ${config.label}`}>
-  <div className="monster-heading"><span className={`avatar element-${unit?.element||0}`}>{(unit?.name||config.label)[0]}</span><div><h3>{unit?.name||config.label}</h3><small>{unit?`${ELEMENTS[unit.element]} · Nv. ${unit.level}`:'Escolha uma unidade da conta'}</small></div><div className="move-controls"><button className="icon-button" title="Mover para a esquerda" aria-label={`Mover ${config.label} para a esquerda`} disabled={index===0} onClick={()=>onMove(-1)}><ArrowLeft size={14}/></button><button className="icon-button" title="Mover para a direita" aria-label={`Mover ${config.label} para a direita`} disabled={index===slotCount-1} onClick={()=>onMove(1)}><ArrowRight size={14}/></button></div></div>
-  <div className="monster-select"><label className="field"><span>Buscar monstro</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Nome do monstro…"/></label><Select label="Unidade da conta" value={config.unitId||''} onChange={e=>{const u=account.units.find(u=>u.id===Number(e.target.value));onChange({...config,unitId:u?.id||null,label:u?.name||config.label});}} disabled={!account}><option value="">{config.label} — selecionar</option>{candidates.map(u=><option key={u.id} value={u.id}>{u.name} · Nv.{u.level} · #{String(u.id).slice(-5)}</option>)}</Select></div>
+  <div className="monster-heading">
+   <MonsterPortrait master={master} name={monster.name} element={monster.element}/>
+   <div className="monster-title"><h3>{monster.name}</h3><small>{unit?`${ELEMENTS[unit.element]||''} · Nv. ${unit.level}`:useCatalog?'Catálogo de monstros':'Escolha uma unidade da conta'}</small></div>
+   {onMove&&<div className="move-controls"><button type="button" className="icon-button" title="Mover para a esquerda" aria-label={`Mover ${config.label} para a esquerda`} disabled={index===0} onClick={()=>onMove(-1)}><ArrowLeft size={14}/></button><button type="button" className="icon-button" title="Mover para a direita" aria-label={`Mover ${config.label} para a direita`} disabled={index===slotCount-1} onClick={()=>onMove(1)}><ArrowRight size={14}/></button></div>}
+  </div>
+  <div className="monster-select">
+   <label className="field"><span>Buscar monstro</span><input aria-label={`Buscar monstro da posição ${index+1}`} value={query} onChange={e=>setQuery(e.target.value)} placeholder="Nome do monstro…"/></label>
+   <Select label={useCatalog?`Monstro do catálogo — posição ${index+1}`:`Unidade da conta — posição ${index+1}`} value={(useCatalog?master:config.unitId)||''} onChange={e=>{
+    const u=candidates.find(u=>(useCatalog?u.master:u.id)===Number(e.target.value));
+    onChange({...config,unitId:useCatalog?null:u?.id||null,masterId:u?.master||null,label:u?.name||'Escolher monstro'});
+   }}><option value="">Selecionar monstro</option>{candidates.map(u=><option key={useCatalog?u.master:u.id} value={useCatalog?u.master:u.id}>{u.name}{useCatalog?` · ${ELEMENTS[u.element]||u.master}`:` · Nv.${u.level} · #${String(u.id).slice(-5)}`}</option>)}</Select>
+  </div>
+  {useCatalog&&!catalogMode&&<p className="fineprint">Importe seu JSON para selecionar a cópia da conta e otimizar.</p>}
   {missing&&<div className="inline-warning"><AlertCircle size={14}/><span>{config.label} não encontrado neste JSON. Selecione uma unidade ou desmarque “Incluir”.</span></div>}
-  <div className="two-fields"><Select label="Set principal" value={config.sets[0]} onChange={e=>update('sets',[Number(e.target.value),config.sets[1]])}><option value={0}>Livre</option>{Object.entries(SETS).filter(([id])=>id!=='25').map(([id,name])=><option key={id} value={id}>{name}</option>)}</Select><Select label="Complemento" value={config.sets[1]} onChange={e=>update('sets',[config.sets[0],Number(e.target.value)])}><option value={0}>Livre</option>{Object.entries(SETS).filter(([id])=>id!=='25').map(([id,name])=><option key={id} value={id}>{name}</option>)}</Select></div>
-  <label className="check-label small"><input type="checkbox" checked={config.strictSets} onChange={e=>update('strictSets',e.target.checked)}/>Sets obrigatórios</label>
-  <div className="three-fields">{[2,4,6].map(slot=><Select key={slot} label={`Slot ${slot}`} value={config.mains[slot]} onChange={e=>update('mains',{...config.mains,[slot]:Number(e.target.value)})}><option value={0}>Livre</option>{allowed[slot].map(id=><option key={id} value={id}>{STAT_NAMES[id]}</option>)}</Select>)}</div>
+  <fieldset className="rune-set-picker"><legend>Sets de runas</legend><div className="set-choices">{COMMON_SETS.map(setOption)}</div><details><summary>Outros sets</summary><div className="set-choices">{Object.keys(SETS).map(Number).filter(id=>id!==25&&!COMMON_SETS.includes(id)).map(setOption)}</div></details></fieldset>
+  {!catalogMode&&<label className="check-label small"><input type="checkbox" checked={config.strictSets} onChange={e=>update('strictSets',e.target.checked)}/>Sets obrigatórios</label>}
+  <div className="three-fields">{[2,4,6].map(slot=><Select key={slot} label={`Slot ${slot} de ${config.label}`} value={config.mains[slot]} onChange={e=>update('mains',{...config.mains,[slot]:Number(e.target.value)})}>{SLOT_MAINS[slot].map(id=><option key={id} value={id}>{id?STAT_NAMES[id]:'Livre'}</option>)}</Select>)}</div>
   <div className="section-label"><span>Metas mínimas</span><select aria-label={`Tipo de atributos de ${config.label}`} className="inline-select" value={config.basis} onChange={e=>update('basis',e.target.value)}><option value="bonus">Adicionais (+)</option><option value="total">Totais</option></select></div>
   <div className="stat-fields">{STATS.map(key=><label className="field" key={key}><span>{['cr','cd','res','acc'].includes(key)?`${LABELS[key]} total %`:`${config.basis==='bonus'?'+ ':''}${LABELS[key]}`}</span><input aria-label={`${config.label} ${key}`} type="number" min="0" max={['cr','res','acc'].includes(key)?100:undefined} value={config.goals[key]} placeholder="Livre" onChange={e=>update('goals',{...config.goals,[key]:e.target.value})}/></label>)}</div>
-
-  <Select label="Objetivo após atingir as metas" value={config.objective} onChange={e=>update('objective',e.target.value)}><option value="balanced">Equilíbrio</option><option value="cr">Taxa crítica</option><option value="spd">Velocidade</option><option value="hp">Vida</option><option value="damage">Dano médio por ATK</option></Select>
+  <Select label={`Objetivo após atingir as metas de ${config.label}`} value={config.objective} onChange={e=>update('objective',e.target.value)}><option value="balanced">Equilíbrio</option><option value="cr">Taxa crítica</option><option value="spd">Velocidade</option><option value="hp">Vida</option><option value="damage">Dano médio por ATK</option></Select>
   <label className="check-label speed-sync"><input type="checkbox" checked={config.lockSpeedSync===true} onChange={e=>update('lockSpeedSync',e.target.checked)}/>Lock Speed Sync · Vincular ordem de SPD</label>
-  <label className="check-label include-monster"><input type="checkbox" checked={config.enabled} onChange={e=>update('enabled',e.target.checked)}/>Incluir na otimização</label>
+  {!catalogMode&&<label className="check-label include-monster"><input type="checkbox" checked={config.enabled} onChange={e=>update('enabled',e.target.checked)}/>Incluir na otimização</label>}
  </section>;
 }
+
 export default function TeamEditor({teams,account,onChange,onAdd}){
  function patchTeam(id,patch){onChange(teams.map(t=>t.id===id?{...t,...patch}:t));}
  return <><div className="section-toolbar"><h2>Times e modos <span className="count">{teams.length}</span></h2><button className="button outline small" disabled={teams.length>=10} onClick={onAdd}><Plus size={16}/>Adicionar time</button></div>{teams.map((team,i)=><article className="team-panel" key={team.id}>

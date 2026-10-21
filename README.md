@@ -110,11 +110,11 @@ Phase 2: Engine Upgrades (Speed Sync & Calculations)
 [x] Add "Consider Max Grinds/Gems" toggle into search heuristics (regular six-star legendary stones, at most one enchanted substat per rune).
 
 Phase 3: Guild Hub & Template Matching
-[ ] Create GuildHub.jsx component with template creation for leaders.
+[x] Create GuildHub.jsx component with local template creation/editing for leaders.
 
-[ ] Build "Test on My JSON" auto-matcher with deficit reporting.
+[x] Build "Test on My JSON" auto-matcher with joint allocation and explicit deficit reporting.
 
-[ ] Implement local/JSON template import and export for guild sharing.
+[x] Implement local/JSON template import and export for guild sharing (manual file sharing; no authenticated server feed).
 
 Phase 4: Analytics & Artifacts
 [ ] Implement artifact subproperty damage calculation.

@@ -27,3 +27,76 @@
 .monster-grid.slots-1{grid-template-columns:minmax(0,1fr);max-width:560px}
 @media(min-width:951px){.monster-grid.slots-4{grid-template-columns:repeat(2,minmax(0,1fr))}.monster-grid.slots-4 .monster-editor:nth-child(n+3),.monster-grid.slots-5 .monster-editor:nth-child(n+4){border-top:1px solid var(--border)}}
 @media(max-width:600px){.game-mode-bar{flex-direction:column;align-items:stretch;gap:8px}.game-mode-bar .field{flex:auto}.game-mode-bar p{margin:0}}
+
+/* Cards keep a useful minimum width; every control stays in normal document flow. */
+.team-panel{min-width:0;overflow:visible}
+.monster-grid,.monster-grid[class*="slots-"]{grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));align-items:stretch;max-width:none;gap:12px;margin:12px;border:0;background:transparent}
+.monster-grid.slots-1{max-width:600px}
+.monster-grid .monster-editor{display:flex;flex-direction:column;align-self:stretch;min-width:0;width:100%;height:auto;max-height:none;overflow:visible;border:1px solid var(--border);border-radius:8px;padding:16px;background:#151e2a}
+.monster-heading{min-width:0;align-items:center;flex-wrap:nowrap}
+.monster-title{flex:1;min-width:0;overflow-wrap:anywhere}
+.monster-heading h3{white-space:normal;font-size:17px}
+.monster-portrait.avatar{width:48px;height:48px;overflow:hidden;border-radius:10px;flex-shrink:0;background:#252d37}
+.monster-portrait img{width:100%;height:100%;display:block;object-fit:cover}
+.monster-select{grid-template-columns:minmax(0,1fr);gap:0}
+.monster-select>.field:first-child{display:flex}
+.monster-editor .field input,.monster-editor .field select{width:100%;max-width:100%;min-width:0;height:40px;font-size:12px}
+.monster-editor .stat-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.monster-editor .three-fields{gap:8px}
+.monster-editor .field>span{font-size:11px;overflow-wrap:anywhere}
+.monster-editor .speed-sync{padding:12px;border:1px solid #c9a96c50;border-radius:6px;background:#c9a96c0c;margin:8px 0;font-size:12px;font-weight:600;align-items:flex-start}
+.monster-editor .speed-sync:has(input:checked){border-color:var(--accent);background:#c9a96c19;color:#ead6ad}
+.rune-set-picker{min-width:0;margin:12px 0;padding:10px;border:1px solid var(--border);border-radius:6px}
+.rune-set-picker legend{font-size:12px;padding-inline:5px;color:#dce0e9}
+.set-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.set-choice{display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0}
+.set-choice .check-label{font-size:11px;overflow-wrap:anywhere}
+.set-choice select{width:47px;height:28px;padding:2px;font-size:10px}
+.rune-set-picker details{margin-top:12px;color:var(--muted);font-size:11px}
+.rune-set-picker summary{cursor:pointer;padding-block:4px}
+.rune-set-picker details[open] .set-choices{margin-top:10px}
+.game-mode-bar{flex-wrap:wrap;align-items:flex-start}
+.game-mode-bar .field{flex:1 1 165px;min-width:0}
+.game-mode-bar p{flex:1 1 240px}
+.guild-hub{min-width:0}
+.guild-privacy{display:flex;align-items:flex-start;gap:12px;border-color:var(--border);color:var(--muted);margin-bottom:18px;background:#17212e}
+.guild-privacy svg{color:var(--accent)}
+.guild-toolbar{flex-wrap:wrap}
+.button-group{flex-wrap:wrap}
+.template-editor-header,.template-editor-actions{padding:18px}
+.template-editor-header h2{margin-bottom:20px}
+.template-editor-actions{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap}
+textarea{font:inherit;resize:vertical;min-height:85px;width:100%;padding:10px;border:1px solid var(--border);border-radius:5px;background:#121c29;color:#eef0f5;font-size:12px;line-height:1.6}
+textarea:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.template-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px;margin-top:18px}
+.template-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:20px;min-width:0}
+.template-card-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.template-card h2,.template-description{overflow-wrap:anywhere}
+.template-badge{font-size:10px;color:var(--accent);background:#c9a96c0c;padding:5px 8px;border-radius:5px}
+.template-description{font-size:12px;line-height:1.7;color:var(--muted);margin-top:12px;white-space:pre-wrap}
+.template-lineup{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:22px 0}
+.template-lineup>div{display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;font-size:12px;min-width:0;overflow-wrap:anywhere}
+.template-match{margin-top:24px;padding:20px;border:1px solid var(--border);border-radius:8px;background:#131d29;min-width:0;scroll-margin-top:20px}
+.template-match>h2{margin-bottom:10px;overflow-wrap:anywhere}
+.match-units{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:14px;min-width:0;border:0;padding:18px 0 0}
+.guild-deficits{margin-top:22px;min-width:0}
+.guild-deficits h3{margin-bottom:12px}
+.deficit-card{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;padding:12px;margin-bottom:8px;border:1px solid var(--border);border-radius:5px;font-size:12px;line-height:1.7}
+.guild-deficits>.results-panel{margin-top:18px}
+@media(max-width:600px){
+ .monster-grid,.monster-grid[class*="slots-"]{grid-template-columns:minmax(0,1fr);margin:8px;gap:10px}
+ .monster-grid .monster-editor{padding:14px}
+ .game-mode-bar .field,.game-mode-bar p{flex:auto;width:100%}
+ .guild-toolbar .button-group{gap:8px;width:100%}
+ .guild-toolbar .button{flex:1 1 auto;justify-content:center}
+ .template-editor-header,.template-editor-actions,.template-card,.template-match{padding:14px}
+ .template-list{grid-template-columns:minmax(0,1fr)}
+ .template-editor-header .three-fields{grid-template-columns:minmax(0,1fr)}
+ .template-card .button-group>.button{flex:1 1 auto;justify-content:center}
+}
+.monster-portrait.portrait-fallback{border-radius:50%}
+
+.template-requirements{margin:0 0 18px;font-size:12px;color:var(--muted)}
+.template-requirements summary{cursor:pointer;padding:6px 0;color:var(--accent)}
+.template-requirements article{padding:12px 0;border-bottom:1px solid var(--border);font-size:11px;line-height:1.8;overflow-wrap:anywhere}
+.template-requirements strong{color:#dce0e9}
