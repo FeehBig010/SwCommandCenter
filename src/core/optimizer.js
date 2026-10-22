@@ -1,3 +1,5 @@
+import {currentRuneIds} from './loadouts.js';
+import {allocationScore,compareAllocation,isPriority} from './allocation.js';
 import {combatAttributes,simulateFirstTurns,simulateCombat,scenarioForTeam,missingDefenseConditions} from './speedTuner.js';
 import {artifactEffects,normalizeArtifactSubstats} from './artifacts.js';
 import {estimateRealDamage,normalizeDamageSettings} from './damage.js';
@@ -140,6 +142,7 @@ function orderCost(assignments,teams){
  return cost;
 }
 export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[]){
+ teams=teams.filter(t=>t.active!==false);
  const started=Date.now(),reserved=new Set(reservedIds),jobs=[];const seen=new Set();
  for(const team of teams){
   for(const field of ['towerSpd','guildSpd','leaderSpd','enemyCombatSpd'])if(!Number.isFinite(Number(team[field]??0))||Number(team[field]??0)<0||Number(team[field]??0)>(field==='enemyCombatSpd'?1000:100))throw new Error('Bônus de SPD ou SPD inimiga inválidos.');
@@ -151,7 +154,6 @@ export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[])
   jobs.push({unit,config,team});
  }
  if(!jobs.length)throw new Error('Inclua ao menos um monstro na busca.');
- if(jobs.length>50)throw new Error('Esta versão aceita até 50 monstros por busca.');
  const failures=[];
  for(let i=0;i<jobs.length;i++){
   const job=jobs[i];onProgress({percent:Math.round(i/jobs.length*75),message:`Buscando combinações para ${job.unit.name}…`});
@@ -161,7 +163,8 @@ export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[])
  if(failures.length)return {status:'no_assignment',failures,builds:[],elapsed:Date.now()-started,checked:jobs.reduce((s,j)=>s+j.candidates.length,0)};
  onProgress({percent:80,message:'Distribuindo runas entre todos os times…'});
  // Joint beam search considers competing assignments instead of committing one monster at a time.
- const ordered=jobs.slice().sort((a,b)=>a.candidates.length-b.candidates.length||Number(b.team.priority)-Number(a.team.priority));
+ const ordered=jobs.slice().sort((a,b)=>Number(isPriority(b.team))-Number(isPriority(a.team))||a.candidates.length-b.candidates.length);
+ const bestUtility=Object.fromEntries(jobs.map(job=>[job.config.key,Math.max(...job.candidates.map(c=>c.utility))]));
  const breadth=options.depth==='deep'?220:options.depth==='fast'?60:120;
  let beam=[{used:new Set(),assignments:{},deficit:0,utility:0}];
  for(let i=0;i<ordered.length;i++){
@@ -185,12 +188,25 @@ export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[])
    }
   }
   if(!next.length)return {status:'conflict',failures:[{name:job.unit.name,reason:'Nenhuma distribuição encontrada sem repetir runas e respeitando os vínculos de SPD. Amplie a busca, libere reservas ou ajuste as metas e a ordem dos cards.'}],builds:[],elapsed:Date.now()-started,checked:jobs.reduce((s,j)=>s+j.candidates.length,0)};
-  next.sort((a,b)=>a.deficit-b.deficit||(b.utility-orderCost(b.assignments,teams))-(a.utility-orderCost(a.assignments,teams)));
+  for(const state of next)state.score=allocationScore(state.assignments,teams,bestUtility);
+  next.sort((a,b)=>compareAllocation(a.score,b.score)||orderCost(a.assignments,teams)-orderCost(b.assignments,teams));
   beam=next.slice(0,breadth);onProgress({percent:80+Math.round((i+1)/ordered.length*19),message:'Comparando distribuições sem repetir runas…'});
  }
  const best=beam[0];const builds=jobs.map(job=>{const c=best.assignments[job.config.key];return {key:job.config.key,unitId:job.unit.id,name:job.unit.name,teamId:job.team.id,teamName:job.team.name,...c,goals:goalReport(c.stats,job.config),artifactIds:options.artifacts&&job.config.artifacts!==false?job.unit.artifactIds:[],damage:job.config.damage?.enabled?estimateRealDamage(job.unit,c.stats,job.config.damage,artifactEffects(account,job.unit,options.artifacts&&job.config.artifacts!==false)):null,role:job.team.mode==='attack'?'offense':'defense',enemyDefense:job.team.enemyDefense||[]};});
- return {status:builds.every(b=>b.goals.every(g=>g.met))?'met':'approximate',builds,failures:[],elapsed:Date.now()-started,checked:jobs.reduce((s,j)=>s+j.candidates.length,0),completedAt:new Date().toISOString(),scope:options.maxGrindsGems?'simulated-max-regular-stones':'current-runes-combat-spd',options};
+ return {status:builds.every(b=>b.goals.every(g=>g.met))?'met':'approximate',builds,failures:[],elapsed:Date.now()-started,checked:jobs.reduce((s,j)=>s+j.candidates.length,0),completedAt:new Date().toISOString(),scope:options.maxGrindsGems?'simulated-max-regular-stones':'current-runes-combat-spd',allocation:'priority-then-minimax-team-deficit-and-relative-quality',options};
 }
+
+// A local planned loadout never mutates the imported SWEX inventory.
+export function equippedBuild(account,team,config,options={}){
+ const unit=account?.units.find(u=>u.id===config.unitId);if(!unit)return null;
+ const runeIds=currentRuneIds(account,team,config,unit),runes=runeIds.map(id=>account.runes.find(r=>r.id===id));
+ if(runes.length!==6||!runes.every(Boolean)||new Set(runes.map(r=>r.slot)).size!==6)return null;
+ const stats=calculateStats(unit,runes,options.artifacts!==false&&config.artifacts!==false?artifactBonus(account,unit):{}),counts=setCounts(runes),effects=artifactEffects(account,unit,options.artifacts!==false&&config.artifacts!==false);
+ stats.combat={...combatAttributes(unit,stats,counts,team,config.combat,effects),effects:effects.totals};
+ if(config.damage?.enabled)stats.damage={total:estimateRealDamage(unit,stats,config.damage,effects).total};
+ return {key:config.key,unitId:unit.id,name:unit.name,runeIds:[...runeIds],counts,stats,goals:goalReport(stats,config),deficit:evaluate(stats,config,counts).deficit,utility:objective(stats,config)};
+}
+export function equippedTeamBuilds(account,team,options={}){return team.configs.filter(c=>c.enabled!==false).map(c=>equippedBuild(account,team,c,options)).filter(Boolean);}
 
 // First-rotation preview: prefer current optimized builds; otherwise use complete equipped sets.
 export function teamTurnPreview(account,team,options={},builds=null){
@@ -201,7 +217,7 @@ export function teamTurnPreview(account,team,options={},builds=null){
   if(!unit){missing.push(config.label);continue;}
   let stats=build?.stats,counts=build?.counts;
   if(stats?.combat&&!stats.total){actors.push({key:config.key,unitId:unit.id,master:unit.master,name:unit.name,spd:stats.combat.spd,attributes:stats.combat,combat:config.combat});continue;}
-  if(!stats){const runes=unit.runeIds.map(id=>account.runes.find(r=>r.id===id)).filter(Boolean);if(runes.length!==6||new Set(runes.map(r=>r.slot)).size!==6){missing.push(unit.name);continue;}stats=calculateStats(unit,runes,options.artifacts!==false&&config.artifacts!==false?artifactBonus(account,unit):{});counts=setCounts(runes);}
+  if(!stats){const runes=currentRuneIds(account,team,config,unit).map(id=>account.runes.find(r=>r.id===id)).filter(Boolean);if(runes.length!==6||new Set(runes.map(r=>r.slot)).size!==6){missing.push(unit.name);continue;}stats=calculateStats(unit,runes,options.artifacts!==false&&config.artifacts!==false?artifactBonus(account,unit):{});counts=setCounts(runes);}
   const effects=artifactEffects(account,unit,options.artifacts!==false&&config.artifacts!==false),combat=combatAttributes(unit,stats,counts,team,config.combat,effects);
   actors.push({key:config.key,unitId:unit.id,master:unit.master,name:unit.name,spd:combat.spd,rawSpd:combat.rawSpd,attributes:combat,combat:config.combat,effects,nemesisSets:Math.floor((counts?.[14]||0)/2)});
  }

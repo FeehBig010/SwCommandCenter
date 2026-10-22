@@ -30,7 +30,15 @@ export function normalizeAccount(raw){
  const unitIds=new Set(units.map(u=>u.id));
  const siege=(raw.guildsiege_defense_deck_unit_list||[]).map((d,i)=>({name:`Defesa ${i+1}`,unitIds:(d.unit_id_list||[]).filter(id=>unitIds.has(id)),equipment:raw.guildsiege_defense_deck_equip_list?.[d.deck_id]?.equip?.map(e=>({unitId:e.unit_id,runeIds:e.rune_id_list||[],artifactIds:e.artifact_id_list||[]}))||[]}));
  if(!units.length||!runeMap.size)throw new Error('Não há monstros e runas válidos neste arquivo.');
- return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege,accountPresets:extractAccountPresets(raw.deck_list,units)};
+ const presets=extractAccountPresets(raw.deck_list,units);
+ const supplemental=extractAccountPresets({siege:raw.guildsiege_defense_deck_unit_list},units);
+ if(Array.isArray(raw.defense_unit_list)&&raw.defense_unit_list.length===4&&raw.defense_unit_list.every(u=>Number.isSafeInteger(Number(u.unit_id)))){
+  const ordered=raw.defense_unit_list.slice().sort((a,b)=>Number(a.pos_id??0)-Number(b.pos_id??0));
+  supplemental.push(...extractAccountPresets({arena:{deck_name:'Defesa Arena',unit_id_list:ordered.map(u=>Number(u.unit_id))}},units));
+ }
+ const existing=new Set(presets.map(p=>JSON.stringify([p.gameMode,p.dungeon,p.unitIds])));
+ for(const preset of supplemental){const key=JSON.stringify([preset.gameMode,preset.dungeon,preset.unitIds]);if(!existing.has(key)){existing.add(key);presets.push({...preset,id:`source-${preset.id}`});}}
+ return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege,accountPresets:presets};
 }
 export function blankConfig(unit=null,name='Escolher monstro'){
  return {key:crypto.randomUUID(),unitId:unit?.id||null,masterId:unit?.master||null,label:unit?.name||name,enabled:true,lockSpeedSync:false,artifacts:true,sets:[0,0],strictSets:true,mains:{2:0,4:0,6:0},goals:{hp:'',def:'',spd:'',atk:'',cr:'',cd:'',res:'',acc:''},basis:'bonus',objective:'balanced'};
@@ -66,7 +74,7 @@ export function restoreTeam(team) {
  return changeGameMode(team, GAME_MODES[team.gameMode]?team.gameMode:'siege');
 }
 
-export function teamFromPreset(preset,account,team=makeTeam('siege')){
- const base=changeGameMode(team,'siege');
- return {...base,name:preset.name,configs:Array.from({length:3},(_,i)=>blankConfig(account.units.find(u=>u.id===preset.unitIds[i]))),inactiveConfigs:[],leaderKey:null};
+export function teamFromPreset(preset,account,team=makeTeam(preset.gameMode||'siege')){
+ const base=changeGameMode(team,preset.gameMode||team.gameMode||'siege');
+ return {...base,name:preset.name,configs:Array.from({length:base.configs.length},(_,i)=>blankConfig(account.units.find(u=>u.id===preset.unitIds[i]))),inactiveConfigs:[],leaderKey:null};
 }

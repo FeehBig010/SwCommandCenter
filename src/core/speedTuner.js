@@ -112,3 +112,10 @@ export function missingDefenseConditions(team){
  const configured=new Set((team.combatScenario?.enemies||[]).filter(e=>Number(e.spd)>0).map(e=>Number(e.master??e.masterId)));
  return (team.enemyDefense||[]).filter(m=>!configured.has(Number(m.masterId))&&(PASSIVES[m.masterId]||passiveNotices[m.masterId])).map(m=>`${m.label}: informe SPD e eventos da defesa no cenário anti-corte; há mecânica de SPD/barra a considerar.`);
 }
+
+// Exact displayed delta after rounding, buffs/passives and capped combat attributes.
+export function leaderImpact(unit,stats,counts,team,combat={},effects={}){
+ const withLeader=combatAttributes(unit,stats,counts,team,combat,effects);
+ const without=combatAttributes(unit,stats,counts,{...team,leader:null,leaderSpd:0},combat,effects);
+ return {combat:withLeader,bonus:Object.fromEntries(['hp','atk','def','spd','cr','res','acc'].map(k=>[k,withLeader[k]-without[k]]))};
+}

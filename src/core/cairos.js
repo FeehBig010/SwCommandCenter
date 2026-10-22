@@ -1,3 +1,4 @@
+import {teamFromGameDeck} from './account-teams.js';
 import waves from './cairos-waves.json' with {type:'json'};
 import {blankConfig,makeTeam} from './data.js';
 import {MONSTER_CATALOG} from './monsters.js';
@@ -12,11 +13,15 @@ export const CAIROS_PROFILES=[
  {id:'sf10',name:'SF10',title:'Fortaleza de Aço 10',members:['Loren','Zinc','Kro','Raoq','Fran'],accuracySlots:[0,1,2,3],speed:[210,200,180,170,220]},
  {id:'pc10',name:'PC10',title:'Cripta do Justiceiro 10',members:['Verdehile','Icaru','Icaru','Icaru','Lushen'],accuracySlots:[1,2,3],speed:[180,170,165,160,150]},
 ].map(profile=>({...profile,...waves[profile.id]}));
+export const LEGACY_CAIROS_PROFILES=[['gb12',0,'GB12','Gigante B12'],['db12',1,'DB12','Dragão B12'],['nb12',2,'NB12','Necro B12']].map(([id,index,name,title])=>({...CAIROS_PROFILES[index],id,name,title,accuracy:45,waves:null}));
+export const ALL_CAIROS_PROFILES=[...CAIROS_PROFILES,...LEGACY_CAIROS_PROFILES];
 export const WAVE_SKILLS={13413:{name:'Amputation Magic · Lushen',multiplier:.68,hits:3,ignoreDefense:true,maxSkillUps:30},13911:{name:'Thousand Shots · Julie (HP cheio)',multiplier:1.2,hits:6,ignoreDefense:false,maxSkillUps:15}};
 export function makeCairosTeam(profile,account){
  if(!profile)throw new Error('Masmorra inválida.');
+ const preset=account?.accountPresets?.find(p=>p.dungeon===profile.id);
+ if(preset)return teamFromGameDeck(preset,account);
  const used=new Set();
- return {...makeTeam('cairos'),name:profile.name,configs:profile.members.map((name,i)=>{
+ return {...makeTeam('cairos'),dungeon:profile.id,name:profile.name,configs:profile.members.map((name,i)=>{
   const master=MONSTER_CATALOG.find(m=>m.name===name)?.master;
   const unit=account?.units.filter(u=>u.name===name&&!used.has(u.id)).sort((a,b)=>b.level-a.level||b.master-a.master)[0];
   if(unit)used.add(unit.id);
@@ -25,6 +30,7 @@ export function makeCairosTeam(profile,account){
  })};
 }
 export function cairosWaveReport(account,builds,attackerKey,profile,settings={}){
+ if(!profile.waves)throw new Error('Dados de waves B12 não incluídos neste snapshot; use o checklist e o cenário de chefe.');
  const build=builds.find(b=>b.key===attackerKey),unit=account.units.find(u=>u.id===build?.unitId);
  if(!build||!unit)throw new Error('Selecione um atacante presente na distribuição otimizada.');
  const skill=WAVE_SKILLS[unit.master];
