@@ -8,7 +8,7 @@ export function normalizeLeader(raw){
 }
 export function leaderApplies(leader,unit,context='siege'){
  if(!leader)return false;
- return leader.scope==='general'||leader.scope==='element'&&Number(unit.element??unit.master%10)===leader.element||leader.scope==='guild'&&context==='siege'||leader.scope==='arena'&&context==='arena'||leader.scope==='dungeon'&&context==='cairos';
+ return leader.scope==='general'||leader.scope==='element'&&Number(unit.element??unit.master%10)===leader.element||leader.scope==='guild'&&context==='siege'||leader.scope==='arena'&&context==='arena'||leader.scope==='dungeon'&&['cairos','dimensional','rift','toa'].includes(context);
 }
 export function speedLeaderBonus(unit,team){
  if(!team.leader)return Number(team.leaderSpd||0);

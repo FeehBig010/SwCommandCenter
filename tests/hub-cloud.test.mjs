@@ -9,7 +9,7 @@ const owner='11111111-1111-4111-8111-111111111111',guild='22222222-2222-4222-822
 function team(size=3){return {...makeTeam({3:'siege',4:'arena',5:'cairos'}[size]),name:'Ofensa',mode:'attack',configs:Array.from({length:size},(_,i)=>({...blankConfig(),unitId:100+i,masterId:13413,label:'Lushen',accountSession:'private',damage:{enabled:true,multiplier:2}}))};}
 test('portable hub teams support 3/4/5 slots and exclude inventory, copies, sessions and hidden slots',()=>{
  for(const n of [3,4,5]){const t=team(n);t.session_key='private';t.inactiveConfigs=[{session_key:'private'}];const portable=portableTeam(t);assert.equal(portable.configs.length,n);assert.ok(!JSON.stringify(portable).includes('private'));assert.ok(!JSON.stringify(portable).includes('unitId'));assert.equal(portable.configs[0].damage.multiplier,2);assert.equal(portable.mode,'attack');}
- assert.throws(()=>portableTeam({...team(),configs:[{}]}),/3, 4 ou 5/);
+ assert.throws(()=>portableTeam({...team(),configs:[{}]}),/3 a 6/);
 });
 test('copy to optimizer is independent, matches exact masters and distinct account copies, and reports missing instances',()=>{
  const source=portableTeam(team());const account={units:[{id:900,master:13413,name:'Lushen',level:40},{id:901,master:13413,name:'Lushen',level:35},{id:902,master:13911,name:'Julie',level:40}]};

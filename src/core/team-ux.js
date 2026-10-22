@@ -14,7 +14,7 @@ export function reorderTeam(team,from,to){
  const configs=team.configs.slice();if(from<0||to<0||from>=configs.length||to>=configs.length)return team;
  [configs[from],configs[to]]=[configs[to],configs[from]];
  const ref=k=>{if(!k.startsWith('ally:'))return k;const old=team.configs[Number(k.split(':')[1])];return `ally:${configs.findIndex(c=>c.key===old?.key)}`;};
- return updateAutomaticName(team,{...team,configs,leaderIndex:Math.max(0,configs.findIndex(c=>c.key===team.leaderKey)),...(team.combatScenario?{combatScenario:{...team.combatScenario,events:team.combatScenario.events.map(e=>({...e,afterKey:ref(e.afterKey),targets:e.targets.map(ref)}))}}:{})});
+ return updateAutomaticName(team,{...team,configs,leaderIndex:Math.max(0,configs.findIndex(c=>c.key===team.leaderKey)),...(team.combatScenario?{combatScenario:{...team.combatScenario,events:(team.combatScenario.events||[]).map(e=>({...e,afterKey:ref(e.afterKey),targets:e.targets.map(ref)}))}}:{})});
 }
 
 export function normalizeFocuses(values){return [...new Set(Array.isArray(values)?values:[])].filter(key=>Object.hasOwn(GOAL_PRESETS,key));}

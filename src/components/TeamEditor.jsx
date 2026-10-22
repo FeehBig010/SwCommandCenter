@@ -25,11 +25,13 @@ import CombatScenarioEditor from './CombatScenarioEditor';
 import CombatContext from './CombatContext';
 import SpeedTuneWidget from './SpeedTuneCard';
 
-function Select({label,children,...props}){
- return <label className="field"><span>{label}</span><select aria-label={label} {...props}>{children}</select></label>;
+function EditorDetails({compact,children}){return compact?<details className="compact-edit-details"><summary>Metas & combate</summary>{children}</details>:<>{children}</>;}
+
+function Select({label,visibleLabel,children,...props}){
+ return <label className="field"><span>{visibleLabel||label}</span><select aria-label={label} {...props}>{children}</select></label>;
 }
 
-export function MonsterEditor({config,index,slotCount,account,onChange,onMove,catalogMode=false,team={},options={},build=null,onLeader,leaderActive=false}){
+export function MonsterEditor({config,index,slotCount,account,onChange,onMove,compact=false,catalogMode=false,team={},options={},build=null,onLeader,leaderActive=false}){
  const [leaderBusy,setLeaderBusy]=useState(false),[leaderNotice,setLeaderNotice]=useState('');
  const unit=account?.units.find(u=>u.id===config.unitId);
  const master=unit?.master||config.masterId||MONSTER_CATALOG.find(m=>m.name===config.label)?.master;
@@ -50,11 +52,13 @@ export function MonsterEditor({config,index,slotCount,account,onChange,onMove,ca
   {missing&&<div className="inline-warning"><AlertCircle size={14}/><span>{config.label} não encontrado neste JSON. Selecione uma unidade ou desmarque “Incluir”.</span></div>}
   {leaderNotice&&<small role="status">{leaderNotice}</small>}
   {!catalogMode&&<CombatStatsPreview account={account} team={team} config={config} options={options} build={build}/>}
-  <div className="goal-presets" aria-label={`Presets de ${config.label}`}>{Object.entries(GOAL_PRESETS).map(([key,p])=><button key={key} className="preset-button" type="button" aria-pressed={normalizeFocuses(config.focuses).includes(key)} title="Focos podem ser combinados. Desmarcar preserva as metas editadas." onClick={()=>onChange(toggleGoalFocus(config,key,unit?.base||monsterBase(master)||{}))}>{p.label}</button>)}</div>
+
   <RuneSetPicker sets={config.sets} monster={config.label} onChange={sets=>update('sets',sets)}/>
 
   {!catalogMode&&<label className="check-label small"><input type="checkbox" checked={config.strictSets} onChange={e=>update('strictSets',e.target.checked)}/>Sets obrigatórios</label>}
-  <div className="three-fields">{[2,4,6].map(slot=><Select key={slot} label={`Slot ${slot} de ${config.label}`} value={config.mains[slot]} onChange={e=>update('mains',{...config.mains,[slot]:Number(e.target.value)})}>{SLOT_MAINS[slot].map(id=><option key={id} value={id}>{id?STAT_NAMES[id]:'Livre'}</option>)}</Select>)}</div>
+  <div className="three-fields">{[2,4,6].map(slot=><Select key={slot} label={`Slot ${slot} de ${config.label}`} visibleLabel={`Slot ${slot}`} value={config.mains[slot]} onChange={e=>update('mains',{...config.mains,[slot]:Number(e.target.value)})}>{SLOT_MAINS[slot].map(id=><option key={id} value={id}>{id?STAT_NAMES[id]:'Livre'}</option>)}</Select>)}</div>
+  <EditorDetails compact={compact}>
+  <div className="goal-presets" aria-label={`Presets de ${config.label}`}>{Object.entries(GOAL_PRESETS).map(([key,p])=><button key={key} className="preset-button" type="button" aria-pressed={normalizeFocuses(config.focuses).includes(key)} title="Focos podem ser combinados. Desmarcar preserva as metas editadas." onClick={()=>onChange(toggleGoalFocus(config,key,unit?.base||monsterBase(master)||{}))}>{p.label}</button>)}</div>
   <div className="section-label"><span>Metas mínimas</span><select aria-label={`Tipo de atributos de ${config.label}`} className="inline-select" value={config.basis} onChange={e=>update('basis',e.target.value)}><option value="bonus">Adicionais (+)</option><option value="total">Ficha total</option></select></div>
   <div className="stat-fields compact-stat-fields">{STATS.map(key=><StatGoalControl key={key} stat={key} label={['cr','cd','res','acc'].includes(key)?`${LABELS[key]} total %`:`${config.basis==='bonus'?'+ ':''}${LABELS[key]}`} monster={config.label} value={config.goals[key]} onChange={value=>update('goals',{...config.goals,[key]:value})}/>)}</div>
   <CombatContext config={config} master={master} onChange={onChange}/>
@@ -63,9 +67,10 @@ export function MonsterEditor({config,index,slotCount,account,onChange,onMove,ca
   {!catalogMode&&<label className="check-label artifact-toggle"><input type="checkbox" role="switch" aria-label={`Artefatos de ${config.label}`} checked={config.artifacts!==false} onChange={e=>update('artifacts',e.target.checked)}/>Artefatos <strong>{config.artifacts!==false?'ON':'OFF'}</strong></label>}
   {!catalogMode&&<DamageEditor config={config} account={account} team={team} options={options} build={build} onChange={onChange}/>}
   </details>
-  {!catalogMode&&account&&<EquipmentInspector account={account} team={team} config={config} options={options} build={build}/>}
-  <label className="check-label speed-sync"><input type="checkbox" checked={config.lockSpeedSync===true} onChange={e=>update('lockSpeedSync',e.target.checked)}/>Lock Speed Sync · Vincular ordem de SPD</label>
+  <label className="check-label speed-sync"><input type="checkbox" checked={config.lockSpeedSync===true} onChange={e=>update('lockSpeedSync',e.target.checked)}/>Lock Speed Sync</label>
   {!catalogMode&&<label className="check-label include-monster"><input type="checkbox" checked={config.enabled} onChange={e=>update('enabled',e.target.checked)}/>Incluir na otimização</label>}
+  </EditorDetails>
+  {!catalogMode&&account&&<EquipmentInspector account={account} team={team} config={config} options={options} build={build}/>}
  </section>;
 }
 

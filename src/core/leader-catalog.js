@@ -1,6 +1,6 @@
-import leaders from './leader-skills.json' with {type:'json'};
+import {monsterLeader} from './monsterDatabase.js';
 import {normalizeLeader} from './leaders.js';
-export function catalogLeader(master){return leaders[Number(master)]?{...leaders[Number(master)]}:null;}
+export function catalogLeader(master){return monsterLeader(master);}
 export function leaderForTeam(team){
  if(Object.hasOwn(team,'leader'))return normalizeLeader(team.leader);
  if(Number(team.leaderSpd)>0)return {stat:'spd',value:Number(team.leaderSpd),scope:'general',element:0};

@@ -1,9 +1,9 @@
 import {assertPresetArea} from './deckManager.js';
-import {blankConfig,makeTeam,FOUR} from './data.js';
+import {blankConfig,makeTeam,FOUR,GAME_MODES} from './data.js';
 import {catalogLeader} from './leader-catalog.js';
 import {automaticTeamName} from './team-ux.js';
 export function teamFromGameDeck(preset,account,previous){
- const mode=preset.gameMode||previous?.gameMode||'siege';assertPresetArea(preset,mode,preset.dungeon);if(previous&&(previous.gameMode||'siege')!==mode)throw new Error('Não é possível carregar um deck de outra área.');const slots=mode==='cairos'?5:mode==='arena'?4:3;
+ const mode=preset.gameMode||previous?.gameMode||'siege';assertPresetArea(preset,mode,preset.dungeon);if(previous&&(previous.gameMode||'siege')!==mode)throw new Error('Não é possível carregar um deck de outra área.');const slots=GAME_MODES[mode]?.slots||3;
  const oldByUnit=new Map((previous?.configs||[]).map(c=>[c.unitId,c]));
  const configs=Array.from({length:slots},(_,i)=>{
   const unit=account.units.find(u=>u.id===preset.unitIds[i]),old=unit&&oldByUnit.get(unit.id);
@@ -27,7 +27,7 @@ export function syncAccountTeams(account,previous=[],sameAccount=false){
 }
 export function syncCairosPlans(account,previous={},sameAccount=false){
  const next=sameAccount?Object.fromEntries(Object.entries(previous).map(([key,t])=>[key,{...refreshManualTeam(account,t),sourceDeckId:null,sourceDeckName:null}])):{},selected=new Set();
- for(const p of account.accountPresets||[])if(p.gameMode==='cairos'&&p.dungeon&&!selected.has(p.dungeon)){
+ for(const p of account.accountPresets||[])if(['cairos','dimensional','rift','toa'].includes(p.gameMode)&&p.dungeon&&!selected.has(p.dungeon)){
   selected.add(p.dungeon);const old=sameAccount?previous[p.dungeon]:null;
   const selectedDeck=old?.sourceDeckId&&(account.accountPresets||[]).find(d=>d.dungeon===p.dungeon&&d.id===old.sourceDeckId);
   next[p.dungeon]=teamFromGameDeck(selectedDeck||p,account,old);

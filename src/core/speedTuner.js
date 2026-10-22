@@ -1,3 +1,4 @@
+import {monsterOpener} from './monsterDatabase.js';
 import passiveNotices from './passive-notices.json' with {type:'json'};
 import {leaderApplies,speedLeaderBonus} from './leaders.js';
 export const PASSIVES={20615:'amduat',25311:'miles',23512:'masha',23612:'masha_dismounted',26113:'sonia',21214:'tian_lang',16615:'ragdoll',22211:'abellio',22311:'abellio_beast',16312:'antares',16613:'leo',21314:'tablo'};
@@ -13,7 +14,7 @@ export function runtimeSpeed(raw,master,combat={},effects={}){
 }
 export function combatAttributes(unit,stats,counts={},team={},combat={},effects={}){
  const swift=25*Math.floor((counts[3]||0)/4),guild=(team.gameMode||'siege')==='siege'?Number(team.guildSpd||0):0;
- const raw=stats.total.spd-Math.ceil(unit.base.spd*swift/100)+unit.base.spd*(swift+Number(team.towerSpd||0)+guild+speedLeaderBonus(unit,team))/100;
+ const raw=team.sheetSpeedFormula===true?Number(stats.total.spd)+unit.base.spd*(Number(team.towerSpd||0)+guild+speedLeaderBonus(unit,team))/100:stats.total.spd-Math.ceil(unit.base.spd*swift/100)+unit.base.spd*(swift+Number(team.towerSpd||0)+guild+speedLeaderBonus(unit,team))/100;
  if(!Number.isFinite(raw)||raw<=0)throw new Error('SPD de combate inválida.');
  const total={...stats.total,spd:runtimeSpeed(raw,unit.master,combat,effects)},leader=team.leader;
  if(leader&&leader.stat!=='spd'&&leaderApplies(leader,unit,team.gameMode||'siege')){
@@ -55,6 +56,11 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
   log.push({tick,source:source.key,type:event.type,targets:targets.map(t=>t.key),amount});
   if(event.type==='leo_attack'){if(source.passive!=='leo')throw new Error('Ataque Leo exige Leo.');const vulnerable=targets.filter(t=>!t.will||t.turns>0);if(vulnerable.length)apply({...event,type:'reduce',targets:vulnerable.map(t=>t.key),amount:15},source,tick);if(vulnerable.length!==targets.length)log.push({tick,source:source.key,type:'will_immunity',targets:targets.filter(t=>t.will&&t.turns===0).map(t=>t.key),amount:0});}
   else if(event.type==='cleanse'){for(const t of targets){t.combat.disabled=false;t.combat.slow=false;}}
+  else if(event.type==='tiana'){
+   if(source.master!==18913)throw new Error('Wind of Changes exige Tiana.');
+   for(const target of alive()){target.combat.disabled=false;target.combat.slow=false;target.combat.speedBuff=false;target.combat.buffCount=0;target.will=false;}
+   skillBoost(alive().filter(t=>same(t,source)),30,source);
+  }
   else if(event.type==='boost'){skillBoost(targets,amount,source);}
   else if(event.type==='reduce'){
    for(const t of targets){const before=t.atb;t.atb=Math.max(0,t.atb-amount*(t.passive==='masha'&&!same(t,source)?.5:1));if(t.atb<before&&!same(t,source))for(const m of alive().filter(m=>m.passive==='masha'&&same(m,t)))m.combat.mashaStacks=Math.min(5,m.combat.mashaStacks+1);}
@@ -99,14 +105,14 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
  if(deadAllies)risks.push('Um aliado foi eliminado antes da primeira ação no cenário de dano informado.');
  return {turns,firstTurns,log,risks:[...new Set(risks)],cut,state:state.map(a=>({key:a.key,hp:a.hp,atb:a.atb,dead:a.dead,spd:a.spd})),assumptions:'Eventos informados como resolvidos; sem sorteio de procs, resistência, dano ou seleção automática de habilidade.'};
 }
-export const COMBAT_EVENTS={boost:'Boost de barra',reduce:'Redução de barra',damage:'Dano (% HP máximo por alvo/hit)',heal:'Cura resolvida (% HP máximo)',tablo:'Tablo · reset + buff SPD',buffs:'Quantidade global de buffs',speed_buff:'Aplicar buff SPD',slow:'Aplicar slow',antares:'Forçar proc Antares (RNG)',leo_attack:'Leo · ataque com redução 15%',cleanse:'Remover incapacidade/slow'};
+export const COMBAT_EVENTS={tiana:'Tiana S3 · remoção de efeitos + 30% ATB',boost:'Boost de barra',reduce:'Redução de barra',damage:'Dano (% HP máximo por alvo/hit)',heal:'Cura resolvida (% HP máximo)',tablo:'Tablo · reset + buff SPD',buffs:'Quantidade global de buffs',speed_buff:'Aplicar buff SPD',slow:'Aplicar slow',antares:'Forçar proc Antares (RNG)',leo_attack:'Leo · ataque com redução 15%',cleanse:'Remover incapacidade/slow'};
 export function normalizeScenario(raw={}){
  if(!Array.isArray(raw.enemies||[])||!Array.isArray(raw.events||[])||(raw.enemies||[]).length>5||(raw.events||[]).length>100)throw new Error('Cenário inválido.');
- const ref=v=>{if(typeof v!=='string'||! /^(ally|enemy):[0-4]$/.test(v))throw new Error('Referência de cenário inválida.');return v;};
+ const ref=v=>{if(typeof v!=='string'||! /^(?:ally:[0-5]|enemy:[0-4])$/.test(v))throw new Error('Referência de cenário inválida.');return v;};
  return {enemies:(raw.enemies||[]).map(e=>{const spd=number(e.spd,0,0,10000,'SPD inimiga'),master=number(e.master??e.masterId,0,0,1000000,'Monstro'),nemesisSets=number(e.nemesisSets,0,0,3,'Nemesis');if(!Number.isInteger(master)||!Number.isInteger(nemesisSets))throw new Error('Monstro/Nemesis inválido.');return {will:e.will===true,master,label:String(e.label||'Inimigo').slice(0,80),spd,nemesisSets,combat:normalizeCombat(e.combat)};}),events:(raw.events||[]).map(e=>{if(!COMBAT_EVENTS[e.type])throw new Error('Evento inválido.');const occurrence=number(e.occurrence,1,1,100,'Turno');if(!Number.isInteger(occurrence)||!Array.isArray(e.targets||[])||(e.targets||[]).length>10)throw new Error('Alvos/turno inválidos.');return {afterKey:ref(e.afterKey),occurrence,type:e.type,targets:(e.targets||[]).map(ref),amount:number(e.amount,0,0,1000,'Valor'),critical:e.critical===true,glancing:e.glancing===true,enabled:e.enabled!==false};})};
 }
 export function scenarioForTeam(team,actors){
- const raw=normalizeScenario(team.combatScenario);if(team.autoEnemyPassives)raw.enemies.forEach((e,i)=>{if(e.master===16613&&!raw.events.some(v=>v.afterKey===`enemy:${i}`&&v.type==='leo_attack'))raw.events.push({afterKey:`enemy:${i}`,type:'leo_attack',occurrence:1,targets:[`ally:${team.leoTarget||0}`],amount:15,critical:false,glancing:false});});const ref=k=>k.startsWith('ally:')?team.configs[Number(k.split(':')[1])]?.key:k;
+ const raw=normalizeScenario(team.combatScenario);if(team.autoEnemyPassives)raw.enemies.forEach((e,i)=>{if(e.master===16613&&!raw.events.some(v=>v.afterKey===`enemy:${i}`&&v.type==='leo_attack'))raw.events.push({afterKey:`enemy:${i}`,type:'leo_attack',occurrence:1,targets:[`ally:${team.leoTarget||0}`],amount:15,critical:false,glancing:false});});if(team.autoOpener){const opener=team.configs[0],skill=monsterOpener(opener?.masterId);if(skill&&!raw.events.some(e=>e.afterKey==='ally:0'&&Number(e.occurrence??1)===1&&['boost','tiana'].includes(e.type)))raw.events.push({afterKey:'ally:0',type:skill.type,occurrence:1,targets:[],amount:skill.boost});}const ref=k=>k.startsWith('ally:')?team.configs[Number(k.split(':')[1])]?.key:k;
  return {actors:[...actors,...raw.enemies.filter(e=>e.spd>0).map(e=>{const i=raw.enemies.indexOf(e);return {...e,key:`enemy:${i}`,rawSpd:e.spd,enemy:true,name:e.label};})],events:raw.events.map(e=>({...e,afterKey:ref(e.afterKey),targets:e.targets.map(ref)}))};
 }
 export function missingDefenseConditions(team){
