@@ -1,6 +1,7 @@
 import waves from './cairos-waves.json' with {type:'json'};
 import {blankConfig,makeTeam} from './data.js';
 import {MONSTER_CATALOG} from './monsters.js';
+import {artifactEffects} from './artifacts.js';
 import {validateWaveClear} from './optimizer.js';
 
 // Starting compositions, not a guarantee of dungeon success or fastest clear time.
@@ -30,5 +31,7 @@ export function cairosWaveReport(account,builds,attackerKey,profile,settings={})
  if(!skill)throw new Error('Wave Clear disponível para Lushen e Julie. As metas de SPD/ACC continuam disponíveis para os demais.');
  if(Number(settings.skillUps||0)>skill.maxSkillUps)throw new Error(`Skill-ups de dano: máximo ${skill.maxSkillUps}% para esta habilidade.`);
  if(unit.master===13911&&settings.fullHp!==true)throw new Error('O modelo de Julie exige HP cheio para os seis ataques.');
- return {attacker:unit.name,skill:skill.name,waves:[1,3].map(number=>({number,enemies:validateWaveClear(unit,build.stats,skill,profile.waves[number],settings)}))};
+ const effects=artifactEffects(account,{...unit,artifactIds:build.artifactIds||[]});
+ const waveSettings={...settings,...(effects.artifactIds.length?{artifactEffects:effects}:{})};
+ return {attacker:unit.name,skill:skill.name,waves:[1,3].map(number=>({number,enemies:validateWaveClear(unit,build.stats,skill,profile.waves[number],waveSettings)}))};
 }

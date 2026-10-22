@@ -1,3 +1,4 @@
+import {normalizeDamageSettings} from './damage.js';
 import { blankConfig, SETS, FOUR, STATS } from './data.js';
 
 export const TEMPLATE_TYPE='d8stino-guild-templates';
@@ -29,7 +30,7 @@ export function cleanTemplate(input,{newId=false}={}){
   }));
   return {masterId:Number(c.masterId),label:text(c.label,80,true),sets,strictSets:true,mains,
    goals:Object.fromEntries(STATS.map(k=>[k,metric(c.goals?.[k])])),
-   basis:c.basis==='bonus'?'bonus':'total',artifacts:c.artifacts!==false,lockSpeedSync:c.lockSpeedSync===true,
+   basis:c.basis==='bonus'?'bonus':'total',damage:normalizeDamageSettings(c.damage),artifacts:c.artifacts!==false,lockSpeedSync:c.lockSpeedSync===true,
    objective:['balanced','hp','spd','cr','damage'].includes(c.objective)?c.objective:'balanced'};
  });
  return {id:newId?crypto.randomUUID():text(input.id||crypto.randomUUID(),80,true),name:text(input.name,100,true),description:text(input.description||'',1000),

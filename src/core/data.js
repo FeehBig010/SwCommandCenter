@@ -1,3 +1,4 @@
+import {normalizeArtifactSubstats} from './artifacts.js';
 import { extractAccountPresets } from './decks.js';
 import catalog from './catalog.json' with { type: 'json' };
 export const SETS={1:'Energy',2:'Guard',3:'Swift',4:'Blade',5:'Rage',6:'Focus',7:'Endure',8:'Fatal',10:'Despair',11:'Vampire',13:'Violent',14:'Nemesis',15:'Will',16:'Shield',17:'Revenge',18:'Destroy',19:'Fight',20:'Determination',21:'Enhance',22:'Accuracy',23:'Tolerance',24:'Seal',25:'Intangible'};
@@ -17,12 +18,15 @@ export function normalizeAccount(raw){
   if(!r||!Number.isSafeInteger(r.rune_id)||r.slot_no<1||r.slot_no>6||!Array.isArray(r.pri_eff))return;
   runeMap.set(r.rune_id,{id:r.rune_id,slot:r.slot_no,set:number(r.set_id),stars:number(r.class)%10,ancient:number(r.class)>10,level:number(r.upgrade_curr),owner:number(owner??r.occupied_id),main:effect(r.pri_eff),innate:effect(r.prefix_eff),subs:(r.sec_eff||[]).map(effect),locked:locked.has(r.rune_id)});
  }
- function addArtifact(a,owner){if(a?.rid)artifactMap.set(a.rid,{id:a.rid,owner:number(owner??a.occupied_id),type:number(a.type),element:number(a.attribute),style:number(a.unit_style),main:effect(a.pri_effect),level:number(a.level)});}
+ function addArtifact(a,owner){const id=a?.rid??a?.artifact_id;if(Number.isSafeInteger(id)&&id>0)artifactMap.set(id,{id,owner:number(owner??a.occupied_id),type:number(a.type),element:number(a.attribute),style:number(a.unit_style),main:effect(a.pri_effect??a.pri_eff),subs:normalizeArtifactSubstats(a),level:number(a.level)});}
  raw.runes.forEach(r=>addRune(r));(raw.artifacts||[]).forEach(a=>addArtifact(a));
  const units=raw.unit_list.filter(u=>u.unit_id&&u.unit_master_id&&u.con>0).map(u=>{
   (u.runes||[]).forEach(r=>addRune(r,u.unit_id));(u.artifacts||[]).forEach(a=>addArtifact(a,u.unit_id));
-  return {id:u.unit_id,master:u.unit_master_id,name:monsterName(u.unit_master_id),level:number(u.unit_level),stars:number(u.class),element:number(u.attribute,u.unit_master_id%10),base:{hp:number(u.con)*15,atk:number(u.atk),def:number(u.def),spd:number(u.spd),cr:number(u.critical_rate),cd:number(u.critical_damage),res:number(u.resist),acc:number(u.accuracy)},runeIds:(u.runes||[]).map(r=>r.rune_id),artifactIds:(u.artifacts||[]).map(a=>a.rid)};
+  return {id:u.unit_id,master:u.unit_master_id,name:monsterName(u.unit_master_id),level:number(u.unit_level),stars:number(u.class),element:number(u.attribute,u.unit_master_id%10),base:{hp:number(u.con)*15,atk:number(u.atk),def:number(u.def),spd:number(u.spd),cr:number(u.critical_rate),cd:number(u.critical_damage),res:number(u.resist),acc:number(u.accuracy)},runeIds:(u.runes||[]).map(r=>r.rune_id),artifactIds:(u.artifacts||[]).map(a=>a.rid??a.artifact_id)};
  });
+ const artifactsByOwner=new Map();
+ for(const a of artifactMap.values()){if(!artifactsByOwner.has(a.owner))artifactsByOwner.set(a.owner,[]);artifactsByOwner.get(a.owner).push(a.id);}
+ for(const unit of units)if(!unit.artifactIds.length)unit.artifactIds=artifactsByOwner.get(unit.id)||[];
  const unitIds=new Set(units.map(u=>u.id));
  const siege=(raw.guildsiege_defense_deck_unit_list||[]).map((d,i)=>({name:`Defesa ${i+1}`,unitIds:(d.unit_id_list||[]).filter(id=>unitIds.has(id)),equipment:raw.guildsiege_defense_deck_equip_list?.[d.deck_id]?.equip?.map(e=>({unitId:e.unit_id,runeIds:e.rune_id_list||[],artifactIds:e.artifact_id_list||[]}))||[]}));
  if(!units.length||!runeMap.size)throw new Error('Não há monstros e runas válidos neste arquivo.');

@@ -1,0 +1,7 @@
+const fmt=n=>Math.round(n).toLocaleString('pt-BR');
+export default function DamagePreview({damage,compact=false}){
+ if(!damage)return null;
+ return <section className={`damage-preview ${compact?'compact':''}`} aria-label="Prévia de dano estimado"><div className="damage-total"><span>Dano Real estimado</span><strong>{fmt(damage.total)}</strong><small>{damage.hits} golpe(s) · cenário configurado</small></div><p>Habilidade: {fmt(damage.skillDamage)} · Adicional de artefatos: <b>{fmt(damage.additionalDamage)}</b></p>
+ {!compact&&<><p>Chance crítica modelada: {fmt(damage.critChance)}% · DC efetivo: {fmt(damage.effectiveCritDamage)}% · ACC da habilidade: +{damage.skillAccuracy}%</p><p>Cura configurada: {fmt(damage.healing.base)} → {fmt(damage.healing.total)} (+{damage.healing.bonus}%). Redução elemental: {damage.defense.elementReduction}%; redução crítica recebida: {damage.defense.critReduction}%.</p>{damage.assumptions.incomingDamage>0&&<p>Dano recebido no cenário: {fmt(damage.assumptions.incomingDamage)} → {fmt(damage.defense.received)}</p>}<p className="fineprint">Dano estimado para os multiplicadores, buffs e HP informados. Bônus condicionais de DC interpolam o HP no início da habilidade; dano adicional aplica por golpe, sem crítico ou multiplicador de habilidade. Não simula passivas, IA ou procs.</p></>}
+ {(damage.unknown.length>0||damage.unmodeled.length>0)&&<p className="fineprint">Há {damage.unknown.length+damage.unmodeled.length} efeito(s) preservado(s) que não entram neste modelo de dano.</p>}</section>;
+}

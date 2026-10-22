@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
 import { Anchor, Gem } from 'lucide-react';
+import {artifactEffectLabel,normalizeArtifactSubstats} from '../core/artifacts';
 import { SETS, STAT_NAMES } from '../core/data';
 
 function Effect({effect}){
@@ -40,7 +41,7 @@ export default function EquipmentWheel({build,account}){
    <footer>{account.units.find(u=>u.id===current.owner)?.name||'No inventário'}<br/><span>Runa #{current.id}</span></footer>
   </article>:<p className="notice warning">As runas desta build não estão disponíveis no JSON atual.</p>}</div></div>
   <section className="artifact-hold" aria-label={`Artefatos de ${build.name}`}><h4>Artefatos · Tesouros equipados</h4><div className="artifact-chests">{artifacts.map(({id,artifact},i)=><article className={`artifact-chest ${artifact?'occupied':'empty'}`} key={i}>
-   <div className="treasure-chest" aria-hidden="true"><Gem size={30}/></div><div><h5>Artefato {i+1}</h5>{artifact?<><strong>{({100:'HP',101:'ATK',102:'DEF'})[artifact.main?.[0]]||'Atributo principal'} +{artifact.main?.[1]??0}</strong><small>+{artifact.level} · #{artifact.id}</small></>:<p>{id?`Artefato #${id} indisponível no JSON atual`:'Nenhum artefato considerado nesta build'}</p>}</div>
+   <div className="treasure-chest" aria-hidden="true"><Gem size={30}/></div><div><h5>Artefato {i+1}</h5>{artifact?<><strong>{({100:'HP',101:'ATK',102:'DEF'})[artifact.main?.[0]]||'Atributo principal'} +{artifact.main?.[1]??0}</strong><small>+{artifact.level} · #{artifact.id}</small><ul className="artifact-substats">{normalizeArtifactSubstats(artifact).map((e,j)=><li key={j}>{artifactEffectLabel(e)} +{e.value}%</li>)}</ul></>:<p>{id?`Artefato #${id} indisponível no JSON atual`:'Nenhum artefato considerado nesta build'}</p>}</div>
   </article>)}</div><p className="fineprint">Somente artefatos considerados no resultado. Nenhum item é equipado automaticamente.</p></section>
  </section>;
 }

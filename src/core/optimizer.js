@@ -1,3 +1,6 @@
+import {artifactEffects,normalizeArtifactSubstats} from './artifacts.js';
+import {estimateRealDamage,normalizeDamageSettings} from './damage.js';
+export {artifactEffects,normalizeArtifactSubstats,estimateRealDamage};
 export { extractAccountPresets } from './decks.js';
 import { FOUR, STATS } from './data.js';
 const zero=()=>Array(13).fill(0);
@@ -67,7 +70,7 @@ export function goalValue(stats,config,key){return stats[config.basis==='total'|
 export function goalReport(stats,config){return STATS.filter(k=>Number(config.goals[k])>0).map(key=>{const target=Number(config.goals[key]);const actual=goalValue(stats,config,key);return {key,target,actual,missing:Math.max(0,target-actual),met:actual>=target};});}
 function setRequirements(c){const req={};for(const id of c.sets.filter(Boolean))req[id]=(req[id]||0)+(FOUR.has(id)?4:2);return req;}
 function setsValid(counts,req){return Object.entries(req).every(([id,n])=>(counts[id]||0)>=n);}
-function objective(stats,c){const s=stats.total;switch(c.objective){case 'cr':return Math.min(s.cr,100)/100;case 'spd':return Math.min(s.spd/400,1.5);case 'hp':return Math.min(s.hp/70000,1.5);case 'damage':return Math.min((s.atk*(1+Math.min(100,s.cr)/100*s.cd/100))/10000,1.5);default:return Math.min(s.hp/60000+s.def/2500+s.spd/350,3)/3;}}
+function objective(stats,c){const s=stats.total;switch(c.objective){case 'cr':return Math.min(s.cr,100)/100;case 'spd':return Math.min(s.spd/400,1.5);case 'hp':return Math.min(s.hp/70000,1.5);case 'damage':if(stats.damage)return stats.damage.total/100000;return Math.min((s.atk*(1+Math.min(100,s.cr)/100*s.cd/100))/10000,1.5);default:return Math.min(s.hp/60000+s.def/2500+s.spd/350,3)/3;}}
 function evaluate(stats,c,counts,progress=1){let deficit=0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0){const desired=target*progress;const actual=goalValue(stats,c,k);deficit+=Math.max(0,desired-actual)/Math.max(target,1);}}
  let preference=0;if(!c.strictSets){const req=setRequirements(c);preference=Object.entries(req).reduce((s,[id,n])=>s+Math.min((counts[id]||0)/n,1),0)*0.03;}
  return {deficit,utility:objective(stats,c)+preference};
@@ -79,7 +82,7 @@ function pickPool(pool,unit,c,depth){
  const take=rs=>rs.forEach(r=>chosen.set(variantKey(r),r));take(sorted.slice(0,depth));
  for(const id of c.sets.filter(Boolean))take(sorted.filter(r=>r.set===id).slice(0,depth));
  // Keep distinct stat extremes, so a balanced scalar ranking does not erase useful trades.
- for(const k of STATS.filter(k=>Number(c.goals[k])>0||k===c.objective))take(pool.slice().sort((a,b)=>statsFromVector(unit,b.vector,{},{}).bonus[k]-statsFromVector(unit,a.vector,{},{}).bonus[k]).slice(0,Math.ceil(depth/2)));
+ for(const k of STATS.filter(k=>Number(c.goals[k])>0||k===c.objective||(c.objective==='damage'&&c.damage?.enabled)))take(pool.slice().sort((a,b)=>statsFromVector(unit,b.vector,{},{}).bonus[k]-statsFromVector(unit,a.vector,{},{}).bonus[k]).slice(0,Math.ceil(depth/2)));
  return [...chosen.values()];
 }
 export function generateCandidates(account,unit,c,options,reserved=new Set(),progress=()=>{}){
@@ -90,8 +93,9 @@ export function generateCandidates(account,unit,c,options,reserved=new Set(),pro
  const pools=Array.from({length:6},(_,i)=>{const slot=i+1;return pickPool(allowed.filter(r=>r.slot===slot&&(!Number(c.mains[slot])||r.main[0]===Number(c.mains[slot]))),unit,c,setting.depth);});
  const empty=pools.findIndex(p=>p.length===0);if(empty>=0)return {candidates:[],reason:`Nenhuma runa disponível para o slot ${empty+1} com esses filtros.`};
  const flat=options.artifacts&&c.artifacts!==false?artifactBonus(account,unit):{};
+ const damageSettings=normalizeDamageSettings(c.damage),effects=artifactEffects(account,unit,options.artifacts&&c.artifacts!==false);
  const originalById=new Map(account.runes.map(r=>[r.id,r]));
- const finishStats=(v,counts)=>{const stats=statsFromVector(unit,v,counts,flat);return {...stats,combat:{spd:combatSpeed(unit,stats,counts,options.combat)}};};
+ const finishStats=(v,counts)=>{const stats=statsFromVector(unit,v,counts,flat);stats.combat={spd:combatSpeed(unit,stats,counts,options.combat)};if(damageSettings.enabled)stats.damage={total:estimateRealDamage(unit,stats,damageSettings,effects).total};return stats;};
  const upgrades=runes=>options.maxGrindsGems?runes.filter(r=>JSON.stringify(r.subs)!==JSON.stringify(originalById.get(r.id).subs)).map(r=>({runeId:r.id,subs:r.subs})):[];
  const frequency=new Map(),all=new Map();
  for(let pass=0;pass<setting.passes;pass++){
@@ -206,7 +210,7 @@ export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[])
   next.sort((a,b)=>a.deficit-b.deficit||(b.utility-orderCost(b.assignments,teams))-(a.utility-orderCost(a.assignments,teams)));
   beam=next.slice(0,breadth);onProgress({percent:80+Math.round((i+1)/ordered.length*19),message:'Comparando distribuições sem repetir runas…'});
  }
- const best=beam[0];const builds=jobs.map(job=>{const c=best.assignments[job.config.key];return {key:job.config.key,unitId:job.unit.id,name:job.unit.name,teamId:job.team.id,teamName:job.team.name,...c,goals:goalReport(c.stats,job.config),artifactIds:options.artifacts&&job.config.artifacts!==false?job.unit.artifactIds:[]};});
+ const best=beam[0];const builds=jobs.map(job=>{const c=best.assignments[job.config.key];return {key:job.config.key,unitId:job.unit.id,name:job.unit.name,teamId:job.team.id,teamName:job.team.name,...c,goals:goalReport(c.stats,job.config),artifactIds:options.artifacts&&job.config.artifacts!==false?job.unit.artifactIds:[],damage:job.config.damage?.enabled?estimateRealDamage(job.unit,c.stats,job.config.damage,artifactEffects(account,job.unit,options.artifacts&&job.config.artifacts!==false)):null,role:job.team.mode==='attack'?'offense':'defense',enemyDefense:job.team.enemyDefense||[]};});
  return {status:builds.every(b=>b.goals.every(g=>g.met))?'met':'approximate',builds,failures:[],elapsed:Date.now()-started,checked:jobs.reduce((s,j)=>s+j.candidates.length,0),completedAt:new Date().toISOString(),scope:options.maxGrindsGems?'simulated-max-regular-stones':'current-runes-combat-spd',options};
 }
 
@@ -246,8 +250,17 @@ export function validateWaveClear(unit,stats,skill,enemies,settings={}){
   const critical=guaranteedCrit?1+Math.max(0,stats.total.cd+towerCd-(enemy.critReduction||0))/100:1;
   const defense=skill.ignoreDefense?0:enemy.def;
   const perHit=Math.floor(atk*skill.multiplier*(1+skillUps/100)*critical*1000/(1140+3.5*defense)*variance*(disadvantage?.7:1));
-  const damage=perHit*skill.hits;
-  return {...enemy,damage,missing:Math.max(0,enemy.hp-damage),guaranteedCrit,disadvantage,
+  let damage=perHit*skill.hits,additionalDamage=0;
+  if(settings.artifactEffects){const report=estimateRealDamage(unit,stats,{enabled:true,skill:3,hits:skill.hits,multiplier:skill.multiplier,enemyDef:enemy.def,enemyElement:enemy.element||0,ignoreDefense:skill.ignoreDefense===true,towerAtk,leaderAtk,towerCd,skillUps,attackBuff:attackBuff===50,variance,critMode:guaranteedCrit?'critical':'normal',singleTarget:false,enemyCritReduction:enemy.critReduction||0},settings.artifactEffects);damage=report.total;additionalDamage=report.additionalDamage;}
+  return {...enemy,damage,additionalDamage,missing:Math.max(0,enemy.hp-damage),guaranteedCrit,disadvantage,
    clearInOneTurn:settings.skillReady===true&&damage>=enemy.hp};
  });
+}
+
+export function equippedDamagePreview(account,config,team={},options={},build=null){
+ if(!config.damage?.enabled)return null;
+ const unit=account?.units.find(u=>u.id===config.unitId);if(!unit)throw new Error('Selecione uma unidade da conta para estimar dano.');
+ let stats=build?.stats;
+ if(!stats){const runes=(unit.runeIds||[]).map(id=>account.runes.find(r=>r.id===id)).filter(Boolean);if(runes.length!==6||new Set(runes.map(r=>r.slot)).size!==6)throw new Error('Importe seis runas equipadas ou otimize para calcular a prévia.');stats=calculateStats(unit,runes,options.artifacts!==false&&config.artifacts!==false?artifactBonus(account,unit):{});stats.combat={spd:combatSpeed(unit,stats,setCounts(runes),team)};}
+ return estimateRealDamage(unit,stats,config.damage,artifactEffects(account,unit,options.artifacts!==false&&config.artifacts!==false));
 }

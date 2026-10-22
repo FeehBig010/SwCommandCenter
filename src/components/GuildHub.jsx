@@ -4,14 +4,17 @@ import { MonsterEditor } from './TeamEditor';
 import MonsterPortrait from './MonsterPortrait';
 import TeamCardExport from './TeamCardExport';
 import MonsterCombobox from './MonsterCombobox';
+import GuildCloudPanel from './GuildCloudPanel';
+import CounterComposer from './CounterComposer';
+import MatchupCard from './MatchupCard';
 import Results from './Results';
 import { LABELS, SETS, STAT_NAMES } from '../core/data';
 import { downloadJSON } from '../core/storage';
 import { bindTemplate, cleanTemplate, newTemplate, parseTemplateFile, templateDraft, templateFile, templateMissing } from '../core/guild';
 
 const fmt=n=>Number(n).toLocaleString('pt-BR');
-export default function GuildHub({templates,onChange,account,options,reservedIds=[]}){
- const [draft,setDraft]=useState(null),[notice,setNotice]=useState(''),[active,setActive]=useState(null);
+export default function GuildHub({templates,onChange,account,options,reservedIds=[],teams=[],onCopy=()=>{},matchups=[],onMatchupsChange=()=>{},cloud,session,onAuth=()=>{}}){
+ const [counterDraft,setCounterDraft]=useState(null),[draft,setDraft]=useState(null),[notice,setNotice]=useState(''),[active,setActive]=useState(null);
  const [result,setResult]=useState(null),[progress,setProgress]=useState(null),[running,setRunning]=useState(false);
  const fileRef=useRef(),workerRef=useRef();
  const context=JSON.stringify([account?.id,account?.importedAt,options,reservedIds,templates]);
@@ -64,8 +67,10 @@ export default function GuildHub({templates,onChange,account,options,reservedIds
  }
  return <div className="guild-hub">
   <div className="page-intro"><h1>Estratégias da guilda.</h1><p>Composições da liderança, testadas nas suas runas.</p></div>
+  {cloud&&<GuildCloudPanel key={`${session?.user.id||'guest'}-${cloud.guildId||'none'}`} cloud={cloud} session={session} onAuth={onAuth} teams={teams} account={account} onCopy={onCopy} localTemplates={templates}/>}
+  <section className="local-matchups"><div className="section-toolbar"><h2>Meus confrontos · Ofensa × Defesa</h2><button type="button" className="button primary small" disabled={matchups.length>=100} onClick={()=>setCounterDraft({})}>Registrar confronto</button></div>{counterDraft&&<CounterComposer key={counterDraft.id||'new'} teams={teams} account={account} initial={counterDraft.id?counterDraft:null} onCancel={()=>setCounterDraft(null)} onSave={payload=>{const row={...payload,id:counterDraft.id||crypto.randomUUID()};onMatchupsChange(counterDraft.id?matchups.map(m=>m.id===row.id?row:m):[row,...matchups]);setCounterDraft(null);setNotice('Confronto salvo neste navegador.');}}/>}{matchups.map(m=><MatchupCard key={m.id} matchup={m}><button type="button" className="button primary small" onClick={()=>onCopy(m.offense,m.enemyDefense)}>Copiar para o Meu Hub</button><button type="button" className="button small" onClick={()=>setCounterDraft(m)}>Editar confronto</button><button type="button" className="button small" disabled={!cloud?.enabled||!cloud.guildId||running} onClick={async()=>{try{await cloud.save({name:m.name,kind:'counter',visibility:'guild',guild_id:cloud.guildId,is_leadership:false,payload:m});setNotice('Confronto compartilhado com a guilda.');}catch(e){setNotice(e.message);}}}>Compartilhar na guilda</button><button type="button" className="button small" onClick={()=>onMatchupsChange(matchups.filter(row=>row.id!==m.id))}>Excluir confronto local</button></MatchupCard>)}</section>
   <div className="notice guild-privacy"><Users size={18}/><p>Biblioteca local de templates Siege/WGB. Crie recomendações e compartilhe o JSON com a guilda. Seu inventário e seus dados de conta não entram no arquivo.</p></div>
-  <div className="section-toolbar guild-toolbar"><h2>Templates <span className="count">{templates.length}</span></h2><div className="button-group">
+  <div className="section-toolbar guild-toolbar"><h2>Templates locais <span className="count">{templates.length}</span></h2><div className="button-group">
    <button className="button outline small" onClick={()=>fileRef.current.click()}><Upload size={15}/>Importar templates</button>
    <button className="button outline small" disabled={!templates.length} onClick={()=>exportTemplates(templates)}><Download size={15}/>Exportar todos</button>
    <button className="button primary small" disabled={templates.length>=100} onClick={()=>{cancel();setDraft(newTemplate());setNotice('');}}><Plus size={15}/>Novo template</button>
@@ -88,7 +93,7 @@ export default function GuildHub({templates,onChange,account,options,reservedIds
    {template.description&&<p className="template-description">{template.description}</p>}
    <div className="template-lineup">{template.team.configs.map((c,i)=><div key={i}><MonsterPortrait master={c.masterId} name={c.label}/><span>{c.label}</span></div>)}</div>
    <details className="template-requirements"><summary>Ver metas da liderança</summary>{template.team.configs.map((c,i)=><article key={i}><strong>{i+1}. {c.label}</strong><p>Sets: {c.sets.map(id=>SETS[id]).join(' / ')||'Livres'} · Slots 2/4/6: {[2,4,6].map(slot=>STAT_NAMES[c.mains[slot]]||'Livre').join(' / ')}</p><p>{Object.entries(c.goals).filter(([,value])=>Number(value)>0).map(([key,value])=>`${LABELS[key]} ${fmt(value)}`).join(' · ')||'Sem metas numéricas'} · {c.basis==='bonus'?'Adicionais (+)':'Totais'}{c.lockSpeedSync?' · SPD vinculada':''}</p></article>)}</details>
-   <div className="button-group"><button className="button primary small" disabled={running} onClick={()=>run(template)}><Play size={15}/>Testar no meu JSON</button>
+   <div className="button-group"><button type="button" className="button primary small" onClick={()=>onCopy({...template.team,name:template.name,mode:'defense'})}>Copiar para o Meu Hub</button><button className="button primary small" disabled={running} onClick={()=>run(template)}><Play size={15}/>Testar no meu JSON</button>
     <button className="button small" onClick={()=>{cancel();setDraft(templateDraft(template));setNotice('');}}><Pencil size={15}/>Editar</button>
     <button className="button small" aria-label={`Exportar ${template.name}`} onClick={()=>exportTemplates([template])}><Download size={15}/>Exportar</button>
     <TeamCardExport team={{...template.team,name:template.name,description:template.description,gameMode:'siege',mode:'defense'}}/>
