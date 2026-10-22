@@ -1,3 +1,4 @@
+import {calculateStats,artifactBonus} from './optimizer.js';
 import {assertPresetArea} from './deckManager.js';
 import {blankConfig,makeTeam,FOUR,GAME_MODES} from './data.js';
 import {catalogLeader} from './leader-catalog.js';
@@ -20,7 +21,7 @@ export function teamFromGameDeck(preset,account,previous){
 }
 function refreshManualTeam(account,team){return {...team,plannedRunes:null,configs:team.configs.map(c=>{const unit=account.units.find(u=>u.id===c.unitId);return unit?{...c,masterId:unit.master,label:unit.name}:{...c,unitId:null};})};}
 export function syncAccountTeams(account,previous=[],sameAccount=false){
- const decks=(account.accountPresets||[]).filter(p=>['siege','arena'].includes(p.gameMode));
+ const decks=(account.accountPresets||[]).filter(p=>['siege','arena'].includes(p.gameMode)).filter((p,i,all)=>p.gameMode!=='siege'||all.slice(0,i).filter(v=>v.gameMode==='siege').length<10);
  const kept=sameAccount?previous.filter(t=>!t.sourceDeckId).map(t=>refreshManualTeam(account,t)):[];
  const imported=decks.map(p=>teamFromGameDeck(p,account,sameAccount?previous.find(t=>t.sourceDeckId===p.id):null));
  return [...kept,...imported];
@@ -33,4 +34,20 @@ export function syncCairosPlans(account,previous={},sameAccount=false){
   next[p.dungeon]=teamFromGameDeck(selectedDeck||p,account,old);
  }
  return next;
+}
+
+// Manual calculator gets a snapshot of the equipped sheet, never base-only values.
+export function quickPlansFromAccount(account){
+ const plans={};
+ for(const area of ['siege','arena','cairos']){
+  const preset=(account.accountPresets||[]).find(p=>p.gameMode===area&&p.unitIds.length<=GAME_MODES[area].slots);
+  if(!preset)continue;
+  const team=teamFromGameDeck(preset,account);
+  plans[area]={...team,sheetSpeedFormula:true,autoOpener:true,configs:team.configs.map(c=>{
+   const unit=account.units.find(u=>u.id===c.unitId);if(!unit)return {...c,manual:{base:{hp:10000,atk:800,def:650,spd:100,cr:15,cd:50,res:15,acc:0},sheet:{hp:10000,atk:800,def:650,spd:100,cr:15,cd:50,res:15,acc:0}},autoSpeed:false};
+   const runes=account.runes.filter(r=>unit.runeIds.includes(r.id));
+   return {...c,autoSpeed:false,manual:{base:{...unit.base},sheet:calculateStats(unit,runes,artifactBonus(account,unit)).total}};
+  })};
+ }
+ return plans;
 }

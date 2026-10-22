@@ -26,11 +26,12 @@ export function extractAccountPresets(deckList,units,forcedArea=null){
  function walk(node,path='',depth=0,inherited={}){
   if(!node||typeof node!=='object'||depth>8||seen.has(node))return;seen.add(node);
   const context={...inherited,...Object.fromEntries(['dungeon_id','content_id','dungeon_name','content_name','area','mode','game_mode','deck_type'].filter(key=>Object.hasOwn(node,key)).map(key=>[key,node[key]]))};
-  const rawIds=node.monster_ids??node.unit_id_list??node.unit_ids;
+  const rawIds=node.monster_ids??node.unit_id_list??node.unit_ids??(Array.isArray(node.unit_list)?node.unit_list:undefined);
   if(Array.isArray(rawIds)){
    const ids=rawIds.slice(0,6).map(v=>Number(typeof v==='object'?v?.unit_id??v?.id:v));
    if(!ids.length||!ids.some(id=>Number.isSafeInteger(id)&&id>0))return;
-   const inferred=classifyDeck({...context,...node},path,ids.length);
+   let inferred=classifyDeck({...context,...node},path,ids.length);
+   if(!inferred.gameMode&&/\/native_defense(?:\/|$)/.test(path)&&[3,4].includes(ids.length))inferred={gameMode:ids.length===3?'siege':'arena',dungeon:null};
    const area=forcedArea==='pve'?(['cairos','dimensional','rift','toa'].includes(inferred.gameMode)?inferred:{gameMode:'cairos',dungeon:null}):['siege','arena','rta'].includes(forcedArea)?{gameMode:forcedArea,dungeon:null}:inferred;
    const base=`deck-${String(node.deck_id??node.id??path).slice(0,80)}-${path.replace(/\/\d+(?=\/|$)/g,'').slice(0,80)}`,occurrence=idsSeen.get(base)||0;idsSeen.set(base,occurrence+1);
    const leaderId=Number(node.leader_unit_id??0),leaderIndex=leaderId>0?Math.max(0,ids.indexOf(leaderId)):Math.max(0,Math.min(ids.length-1,Math.floor(Number(node.leader_index)||0)));

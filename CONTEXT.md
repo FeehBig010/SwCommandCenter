@@ -334,3 +334,10 @@ Validation: **196/196 tests pass**, no failures/skips; clean production build. N
 - Alteração do mestre reativa AUTO e sincroniza seguidores atomicamente; conversão para ficha desconta bônus uma vez.
 - Simulação por ticks permanece independente; coeficiente não é prova universal SWOP nem imunidade a cortes. Ver docs/COMBAT.md.
 - 199 testes passando, build limpo, input/range e mobile validados com Playwright.
+
+### Auto-importação de decks e inventário privado automático
+- `world_arena_deck_list`, `defense_deck_list` com unit_list, decks PvE e fontes já existentes normalizadas; áreas isoladas.
+- Upload autenticado faz upsert privado; login restaura inventário e monta Siege (até 10), Arena, PvE e Calculadora Livre com ficha equipada.
+- AccountContext expõe estado; coordenador protege contra respostas atrasadas, troca de usuário e saves fora de ordem; sem backup/falha preserva modo local.
+- Sem migration nova; reutiliza account_snapshots e suas RLS. JSON bruto/segredos não são enviados. Ver docs/SUPABASE.md.
+- Verificação: 204 testes passando, build limpo; Playwright com Auth/REST simulados confirma upload/upsert, restauração em navegador novo, fichas preenchidas e responsividade mobile. Validação remota real entre dispositivos pendente do proprietário.

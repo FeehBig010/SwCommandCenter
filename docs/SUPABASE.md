@@ -104,3 +104,39 @@ Aplique `supabase/migrations/202610220006_equipment_pool_backup.sql` após a 005
 Aplique `supabase/migrations/202610220007_onboarding_profile.sql` depois das migrations anteriores. Adiciona `profiles.has_completed_onboarding`, inicialmente `false`, e os RPCs `complete_my_onboarding()` / `save_my_display_profile(text)`. Ambos exigem autenticação, atualizam somente `auth.uid()` e não aceitam nem alteram cargos. O nome é validado entre 2 e 80 caracteres. Permissões diretas de escrita em `profiles` continuam bloqueadas. Testes PostgreSQL/PGlite verificam dono, outro usuário, anônimo e tentativa de promoção.
 
 Sem projeto configurado, o tour, nome local e conta SWEX funcionam no navegador. Fechar/concluir o tour grava `has_completed_onboarding=true` no localStorage; salvar o perfil após importar também conclui o tour. Com login, os RPCs sincronizam essa preferência. Uma falha de sincronização não remove os planos locais. Nenhum banco remoto foi provisionado nesta alteração.
+
+## Sincronização automática de inventário (atualização)
+
+Esta seção substitui as descrições antigas de backup exclusivamente manual:
+com sessão autenticada, cada novo upload SWEX salva automaticamente o inventário
+normalizado via upsert em `account_snapshots`, chave `user_id=auth.uid()`.
+O JSON bruto, tokens e dados sociais continuam excluídos. Decks gerais/defesa/RTA
+são normalizados em `accountPresets`, com IDs de instância referenciando `units`,
+runas e artefatos. Não há tabela nova: são necessárias as migrations 004–007 já
+incluídas na configuração do projeto.
+
+Ao iniciar uma sessão (não a cada refresh do token), o cliente busca o backup
+privado, revalida o payload e monta times de Siege/Arena, planos PvE e fichas
+manuais da Calculadora Livre com equipamento atual. Siege monta até dez decks;
+o restante permanece na biblioteca. RTA continua isolada. Decks sem categoria ou
+masmorra reconhecível não são atribuídos silenciosamente a um chefe arbitrário.
+Context API expõe inventário, times e planos; a persistência local existente
+mantém as composições ao alternar telas ou recarregar offline.
+
+Leituras atrasadas são ignoradas após um upload ou troca de sessão. Saves são
+serializados para impedir que um upload antigo sobrescreva o mais recente.
+Falhas mostram aviso e preservam os dados locais. O badge verde só aparece após
+carga ou gravação concluída. Usuário sem backup continua no modo local; importar
+antes de login não envia retroativamente a conta local (use Salvar conta).
+Botões manuais continuam disponíveis em Dados SWEX. Logout mantém o inventário
+local no dispositivo: use Apagar dados locais em computadores compartilhados.
+
+Validação automatizada com HTTP simulado/coordenador e testes PostgreSQL/RLS;
+a conexão real entre dispositivos ainda requer teste com uma conta do proprietário,
+sem compartilhar senha ou tokens com o assistente.
+
+QA desta atualização: 204 testes passaram e build Vite limpo. Playwright
+(Browser plugin indisponível) validou upload autenticado com um único upsert,
+restauração em contexto de navegador novo, presets da Calculadora Livre,
+navegação PvE e viewport 390 px sem overflow ou erros JavaScript. Endpoints de
+Auth/REST foram interceptados com respostas sintéticas, sem login real.

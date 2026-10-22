@@ -21,7 +21,7 @@ import InfoTooltip from './InfoTooltip';
 const choices=MONSTER_CATALOG.map(u=>({...u,value:String(u.master)}));
 const AUTO={siege:['Mihyang','Anavel','Solveig'],arena:['Moore','Chiwu','Galleon','Lushen'],cairos:['Julie','Shaina','Kyle','Liam','Konamiya']};
 export default function QuickCalculator({plans:externalPlans,onPlansChange}){
- const [area,setArea]=useState('siege'),[selected,setSelected]=useState(0),[localPlans,setLocalPlans]=useState(()=>({siege:quickTeam()}));const plans=externalPlans||localPlans,setPlans=onPlansChange||setLocalPlans,fallback=useMemo(()=>quickTeam(area),[area]),team=plans[area]||fallback;
+ const [area,setArea]=useState(()=>externalPlans?.siege?'siege':externalPlans?.arena?'arena':externalPlans?.cairos?'cairos':'siege'),[selected,setSelected]=useState(0),[localPlans,setLocalPlans]=useState(()=>({siege:quickTeam()}));const plans=externalPlans||localPlans,setPlans=onPlansChange||setLocalPlans,fallback=useMemo(()=>quickTeam(area),[area]),team=plans[area]||fallback;
  const update=next=>setPlans(all=>{const previous=all[area]||team,changed=typeof next==='function'?next(previous):next;return {...all,[area]:autoTuneQuickTeam(updateAutomaticName(previous,{...changed,towerSpd:15,guildSpd:area==='siege'?5:0}))};});
  const patch=(key,next)=>update(t=>({...t,configs:t.configs.map(c=>c.key===key?next:c)}));let preview,error;try{preview=quickPreview(team);if(preview.complete)preview={...preview,conditional:scanEnemyThreats(team).some(r=>r.conditional)||preview.scenario.risks.length>0||preview.turns.filter(t=>!t.enemy).some((t,i)=>t.key!==team.configs[i]?.key)};}catch(e){error=e.message;}
  const requirements=preview?.complete?openerRequirements(team):null;
