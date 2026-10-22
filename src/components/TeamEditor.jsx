@@ -6,21 +6,21 @@ import { SLOT_MAINS } from '../core/guild';
 import MonsterPortrait from './MonsterPortrait';
 import TeamCardExport from './TeamCardExport';
 import StatGoalControl from './StatGoalControl';
-import MonsterCombobox from './MonsterCombobox';
+import MonsterCombobox from './MonsterSearch';
 import DamageEditor from './DamageEditor';
 import BuilderControls from './BuilderControls';
-import {GOAL_PRESETS,applyGoalPreset,updateAutomaticName,automaticTeamName,reorderTeam} from '../core/team-ux';
-import RuneSetPicker from './RuneSetPicker';
+import {updateAutomaticName,automaticTeamName,reorderTeam} from '../core/team-ux';
+import RuneSetPicker from './RuneSetSelector';
 import CombatScenarioEditor from './CombatScenarioEditor';
 import CombatContext from './CombatContext';
-import SpeedTuneWidget from './SpeedTuneWidget';
+import SpeedTuneWidget from './SpeedTuneCard';
 
 function Select({label,children,...props}){
  return <label className="field"><span>{label}</span><select aria-label={label} {...props}>{children}</select></label>;
 }
 
 export function MonsterEditor({config,index,slotCount,account,onChange,onMove,catalogMode=false,team={},options={},build=null,onLeader,leaderActive=false}){
- const [sliders,setSliders]=useState(false),[leaderBusy,setLeaderBusy]=useState(false),[leaderNotice,setLeaderNotice]=useState('');
+ const [leaderBusy,setLeaderBusy]=useState(false),[leaderNotice,setLeaderNotice]=useState('');
  const unit=account?.units.find(u=>u.id===config.unitId);
  const master=unit?.master||config.masterId||MONSTER_CATALOG.find(m=>m.name===config.label)?.master;
  const monster=unit||catalogMonster(master,config.label);
@@ -39,15 +39,13 @@ export function MonsterEditor({config,index,slotCount,account,onChange,onMove,ca
   {useCatalog&&!catalogMode&&<p className="fineprint">Importe seu JSON para selecionar a cópia da conta e otimizar.</p>}
   {missing&&<div className="inline-warning"><AlertCircle size={14}/><span>{config.label} não encontrado neste JSON. Selecione uma unidade ou desmarque “Incluir”.</span></div>}
   {onLeader&&<label className="check-label monster-leader-toggle"><input type="checkbox" checked={leaderActive} disabled={leaderBusy||!master} onChange={e=>toggleLeader(e.target.checked)}/>👑 Líder {leaderBusy?'…':''}</label>}{leaderNotice&&<small role="status">{leaderNotice}</small>}
-  <div className="goal-presets" aria-label={`Presets de ${config.label}`}>{Object.entries(GOAL_PRESETS).map(([key,p])=><button key={key} className="preset-button" type="button" title="Sugestão de metas totais; ajuste conforme sua composição" onClick={()=>onChange(applyGoalPreset(config,key))}>{p.label}</button>)}</div>
   <RuneSetPicker sets={config.sets} monster={config.label} onChange={sets=>update('sets',sets)}/>
 
   {!catalogMode&&<label className="check-label small"><input type="checkbox" checked={config.strictSets} onChange={e=>update('strictSets',e.target.checked)}/>Sets obrigatórios</label>}
   <div className="three-fields">{[2,4,6].map(slot=><Select key={slot} label={`Slot ${slot} de ${config.label}`} value={config.mains[slot]} onChange={e=>update('mains',{...config.mains,[slot]:Number(e.target.value)})}>{SLOT_MAINS[slot].map(id=><option key={id} value={id}>{id?STAT_NAMES[id]:'Livre'}</option>)}</Select>)}</div>
   <div className="section-label"><span>Metas mínimas</span><select aria-label={`Tipo de atributos de ${config.label}`} className="inline-select" value={config.basis} onChange={e=>update('basis',e.target.value)}><option value="bonus">Adicionais (+)</option><option value="total">Ficha total</option></select></div>
-  <div className="stat-fields compact-stat-fields">{STATS.map(key=><StatGoalControl compact={!sliders} key={key} stat={key} label={['cr','cd','res','acc'].includes(key)?`${LABELS[key]} total %`:`${config.basis==='bonus'?'+ ':''}${LABELS[key]}`} monster={config.label} value={config.goals[key]} onChange={value=>update('goals',{...config.goals,[key]:value})}/>)}</div>
-  <button className="text-button slider-disclosure" type="button" aria-expanded={sliders} onClick={()=>setSliders(!sliders)}>{sliders?'Ocultar barras':'Ajustar com barras'}</button>
-  <CombatContext config={config} master={master} onChange={onChange} tickPercent={options.speedTick??7}/>
+  <div className="stat-fields compact-stat-fields">{STATS.map(key=><StatGoalControl key={key} stat={key} label={['cr','cd','res','acc'].includes(key)?`${LABELS[key]} total %`:`${config.basis==='bonus'?'+ ':''}${LABELS[key]}`} monster={config.label} value={config.goals[key]} onChange={value=>update('goals',{...config.goals,[key]:value})}/>)}</div>
+  <CombatContext config={config} master={master} onChange={onChange}/>
   <details className="monster-advanced"><summary>Objetivo, artefatos e dano</summary>
   <Select label={`Objetivo após atingir as metas de ${config.label}`} value={config.objective} onChange={e=>update('objective',e.target.value)}><option value="balanced">Equilíbrio</option><option value="cr">Taxa crítica</option><option value="spd">Velocidade</option><option value="hp">Vida</option><option value="damage">Dano estimado / ATK médio sem cenário</option></Select>
   {!catalogMode&&<label className="check-label artifact-toggle"><input type="checkbox" role="switch" aria-label={`Artefatos de ${config.label}`} checked={config.artifacts!==false} onChange={e=>update('artifacts',e.target.checked)}/>Artefatos <strong>{config.artifacts!==false?'ON':'OFF'}</strong></label>}
@@ -64,7 +62,7 @@ export default function TeamEditor({teams,account,onChange,onAdd,options={},onOp
  function clearAll(){onChange(teams.map(t=>({...t,combatScenario:{enemies:[],events:[]},leader:null,leaderKey:null,guildSpd:0,towerSpd:0,leaderSpd:0,enemyCombatSpd:0,configs:t.configs.map(()=>blankConfig()),inactiveConfigs:[]})));setDeckNotice('Seleções e metas limpas. Seu inventário foi mantido.');}
 
  function patchTeam(id,patch){onChange(teams.map(t=>{if(t.id!==id)return t;const leaderKey=t.leaderKey||t.configs[0]?.key;const changed=patch.leaderKey!==undefined&&patch.leaderKey!==leaderKey||patch.configs&&patch.configs.find(c=>c.key===leaderKey)?.masterId!==t.configs.find(c=>c.key===leaderKey)?.masterId;return updateAutomaticName(t,{...t,...patch,...(t.leader&&changed&&!Object.hasOwn(patch,'leader')?{leader:null,leaderSpd:0}:{})});}));}
- return <><BuilderControls team={teams[0]} options={options} onOptions={onOptions} onRecalc={()=>{setRevision(n=>n+1);setDeckNotice('Ordem recalculada com a build otimizada vigente ou as runas equipadas.');}} onSave={onSavePlan} onLoad={onLoadPlan} onClear={clearAll}/>{deckNotice&&<p className="fineprint builder-feedback" role="status">{deckNotice}</p>}<div className="section-toolbar"><h2>Composições <span className="count">{teams.length}</span></h2><button className="button outline small" disabled={teams.length>=maxTeams} onClick={onAdd}><Plus size={16}/>Adicionar time</button></div>{teams.map((team,i)=><article className="team-panel" key={team.id}>
+ return <><BuilderControls team={teams[0]} options={options} onOptions={onOptions} onRecalc={()=>{setRevision(n=>n+1);setDeckNotice('Ordem recalculada com a build otimizada vigente ou as runas equipadas.');}} onSave={onSavePlan} onLoad={onLoadPlan} onClear={clearAll}/>{deckNotice&&<p className="fineprint builder-feedback" role="status">{deckNotice}</p>}<div className="team-list-actions"><span className="count" aria-label="Quantidade de times">{teams.length} times</span><button className="button outline small" disabled={teams.length>=maxTeams} onClick={onAdd}><Plus size={16}/>Adicionar time</button></div>{teams.map((team,i)=><article className="team-panel" key={team.id}>
   <header className="team-header"><GripVertical size={17} className="grip"/><strong>Time {String(i+1).padStart(2,'0')}</strong><input className="team-name" aria-label={`Nome do time ${i+1}`} value={team.autoName===true?automaticTeamName(team.configs):team.name} onChange={e=>patchTeam(team.id,{name:e.target.value,autoName:false})}/><div className="team-meta"><label><span>Função</span><select aria-label={`Função do time ${i+1}`} value={team.mode} onChange={e=>patchTeam(team.id,{mode:e.target.value})}><option value="defense">Defesa</option><option value="attack">Ataque</option></select></label><label><span>Prioridade</span><select aria-label={`Prioridade do time ${i+1}`} value={team.priority} onChange={e=>patchTeam(team.id,{priority:Number(e.target.value)})}><option value={1}>Normal</option><option value={2}>Alta</option><option value={4}>Máxima</option></select></label><button className="icon-button" title="Remover time" aria-label={`Remover time ${i+1}`} disabled={teams.length===1} onClick={()=>onChange(teams.filter(t=>t.id!==team.id))}><Skull size={17}/></button></div></header>
   {team.enemyDefense?.length>0&&<p className="opponent-context">⚔ Ofensa VS Defesa: {team.enemyDefense.map(m=>m.label).join(', ')}</p>}
   {!!account?.accountPresets?.length&&<div className="game-decks-bar"><label className="field"><span>Meus Decks do Jogo</span><select aria-label={`Meus Decks do Jogo — time ${i+1}`} value="" disabled={!account?.accountPresets?.length} onChange={e=>{const preset=account.accountPresets.find(p=>p.id===e.target.value);if(preset){patchTeam(team.id,teamFromPreset(preset,account,team));setDeckNotice(`${preset.name} carregado.${preset.missingIds.length?' Há monstros ausentes no JSON.':''}${preset.unitIds.length>3?' Usando as primeiras três posições.':''}`);}}}><option value="">{account?.accountPresets?.length?'Carregar composição do SWEX':'Nenhum deck no JSON importado'}</option>{account?.accountPresets?.map(p=><option key={p.id} value={p.id}>{p.name}{p.missingIds.length?' · incompleto':''}</option>)}</select></label></div>}

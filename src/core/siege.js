@@ -20,7 +20,7 @@ export function matchesDefense(defense,query){
 export function requiredTurnPlan(counter){
  const actors=counter.offense.configs.map((c,i)=>({key:String(i),name:c.label,spd:Number(c.combatSpd)||0}));
  if(actors.some(a=>a.spd<=0))return [];
- return firstTurns(actors,counter.siege?.speedTick??7).map(t=>({...t,name:actors.find(a=>a.key===t.key).name}));
+ return firstTurns(actors).map(t=>({...t,name:actors.find(a=>a.key===t.key).name}));
 }
 export function validateSiegeAccount(raw,account,member={towerSpd:0},options={}){
  const counter=cleanSiegeCounter(raw),team=counter.offense,spec=counter.siege;
@@ -50,7 +50,7 @@ export function validateSiegeAccount(raw,account,member={towerSpd:0},options={})
   let turns=[];
   try{
    const actors=members.map(m=>({key:m.key,spd:m.spd,rawSpd:m.rawSpd,combat:m.combat,effects:m.effects,nemesisSets:m.nemesisSets,master:m.masterId})),configured=scenarioForTeam({...team,configs:team.configs.map((c,i)=>({...c,key:String(i)}))},actors),enemy=Number(team.enemyCombatSpd)||0;
-   const simulation=simulateCombat([...configured.actors,...(!configured.actors.some(a=>a.enemy)&&enemy>0?[{key:'enemy',spd:enemy,enemy:true}]:[])],{tickPercent:spec.speedTick,events:configured.events,stopAfterFirst:true});turns=simulation.firstTurns;if(simulation.risks.length)issues.push(...simulation.risks);
+   const simulation=simulateCombat([...configured.actors,...(!configured.actors.some(a=>a.enemy)&&enemy>0?[{key:'enemy',spd:enemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true});turns=simulation.firstTurns;if(simulation.risks.length)issues.push(...simulation.risks);
    const allies=turns.filter(t=>!t.enemy);
    if(spec.requireOrder&&allies.some((t,i)=>t.key!==String(i)))issues.push('Ajustar a ordem: os cards devem agir de 1 → 2 → 3.');
    for(const m of members){const tick=turns.find(t=>t.key===m.key)?.tick,target=team.configs[Number(m.key)].maxTick;if(target&&tick>target)issues.push(`${m.name}: age no Tick ${tick}; precisa agir até o Tick ${target}.`);}

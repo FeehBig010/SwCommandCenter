@@ -1,0 +1,13 @@
+import {useEffect,useRef,useState} from 'react';
+import {SETS,FOUR} from '../core/data';
+import {setRuneSlot} from '../core/team-ux';
+function RuneIcon({id}){return id?<img className="rune-set-icon" src={`/game-icons/runes/${SETS[id].toLowerCase()}.png`} alt=""/>:<span className="rune-empty-slot" aria-hidden="true">+</span>;}
+function Slot({index,selected,allowed,disabled,onChoose,monster}){
+ const [open,setOpen]=useState(false),[query,setQuery]=useState('');const root=useRef();
+ useEffect(()=>{const close=e=>{if(!root.current?.contains(e.target))setOpen(false);};document.addEventListener('pointerdown',close);return()=>document.removeEventListener('pointerdown',close);},[]);
+ return <div className="rune-search-slot" ref={root} onKeyDown={e=>{if(e.key==='Escape')setOpen(false);if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const items=Array.from(root.current.querySelectorAll('[role=option]'));const index=items.indexOf(document.activeElement);items[(index+(e.key==='ArrowDown'?1:-1)+items.length)%items.length]?.focus();}}} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))setOpen(false);}}><button type="button" className="rune-slot-trigger" aria-label={`Set ${index+1} de ${monster}`} aria-expanded={open} aria-haspopup="listbox" disabled={disabled} onClick={()=>{setOpen(!open);setQuery('');}}><RuneIcon id={selected}/><span>{disabled?'Indisponível':SETS[selected]||'Livre'}</span><small>{selected?`${FOUR.has(selected)?4:2} peças`:'Eficiência'}</small></button>{open&&!disabled&&<div className="rune-set-popover"><input autoFocus aria-label={`Buscar set ${index+1} de ${monster}`} placeholder="Buscar conjunto…" value={query} onChange={e=>setQuery(e.target.value)}/><div role="listbox" aria-label={`Conjuntos do slot ${index+1}`}>{[0,...allowed].filter(id=>`${SETS[id]||'Livre'}`.toLowerCase().includes(query.toLowerCase())).map(id=><button type="button" role="option" aria-selected={selected===id} key={id} onClick={()=>{onChoose(id);setOpen(false);root.current.querySelector('.rune-slot-trigger')?.focus();}}><RuneIcon id={id}/>{SETS[id]||'Livre'}<small>{id?`${FOUR.has(id)?4:2} peças`:'Sem exigência'}</small></button>)}</div></div>}</div>;
+}
+export default function RuneSetSelector({sets,onChange,monster}){
+ const values=sets.filter(Boolean),four=values.some(s=>FOUR.has(s)),ids=Object.keys(SETS).map(Number).filter(id=>id!==25);
+ return <fieldset className="smart-rune-sets"><legend>Conjuntos</legend><div className="rune-slot-grid">{[0,1,2].map(i=><Slot key={i} index={i} monster={monster} selected={values[i]||0} disabled={four&&i===2} allowed={ids.filter(id=>i===0||!four||!FOUR.has(id))} onChoose={id=>onChange(setRuneSlot(values,i,id))}/>)}</div></fieldset>;
+}

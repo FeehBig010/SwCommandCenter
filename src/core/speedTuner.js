@@ -22,18 +22,19 @@ export function combatAttributes(unit,stats,counts={},team={},combat={},effects=
  for(const key of ['cr','res','acc'])total[key]=Math.min(100,total[key]);
  return {...total,rawSpd:raw,master:unit.master};
 }
-export function minimumSpeedForTick(tick,tickPercent=7,initialAtb=0){
- const t=number(tick,1,1,10000,'Tick'),step=number(tickPercent,7,.01,100,'Speed Tick'),atb=number(initialAtb,0,0,100,'Barra inicial');
+// Fixed SW natural gauge increment; callers select integer tick deadlines, never a rate.
+const NATURAL_GAUGE_STEP=7;
+export function minimumSpeedForTick(tick,initialAtb=0){
+ const t=number(tick,1,1,10000,'Tick'),atb=number(initialAtb,0,0,100,'Barra inicial');
  if(!Number.isInteger(t))throw new Error('Tick alvo deve ser inteiro.');
- return Math.max(1,Math.ceil((100-atb)*100/(step*t)-1e-10));
+ return Math.max(1,Math.ceil((100-atb)*100/(NATURAL_GAUGE_STEP*t)-1e-10));
 }
-export function simulateFirstTurns(actors,tickPercent=7){
+export function simulateFirstTurns(actors){
  if(actors.some(a=>!Number.isFinite(a.spd)||a.spd<=0))throw new Error('SPD de combate deve ser positiva e finita.');
  if(!actors.length)return [];
- return simulateCombat(actors,{tickPercent,stopAfterFirst:true}).firstTurns.map(({key,tick,spd,atb})=>({key,tick,spd,atb}));
+ return simulateCombat(actors,{stopAfterFirst:true}).firstTurns.map(({key,tick,spd,atb})=>({key,tick,spd,atb}));
 }
-export function simulateCombat(actors,{tickPercent=7,events=[],stopAfterFirst=false,maxTurns=30}={}){
- const step=number(tickPercent,7,.01,100,'Speed Tick');
+export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=30}={}){
  if(!Array.isArray(actors)||actors.length>20||!actors.length)throw new Error('Use de 1 a 20 unidades.');
  if(events.length>100||!Number.isInteger(maxTurns)||maxTurns<1||maxTurns>100)throw new Error('Cenário excede o limite.');
  const keys=new Set(),state=actors.map((a,index)=>{if(keys.has(a.key))throw new Error('Unidade repetida no cenário.');keys.add(a.key);const c=normalizeCombat(a.combat);return {...a,index,baseSpd:number(a.rawSpd??a.spd,0,.01,100000,'SPD'),spd:number(a.spd,0,.01,100000,'SPD'),atb:number(a.initialAtb,0,0,100,'Barra inicial'),hp:c.hpPercent,combat:c,passive:c.oblivion?null:PASSIVES[a.master],turns:0,dead:c.hpPercent<=0,nemesisRemainder:0};});
@@ -82,7 +83,7 @@ export function simulateCombat(actors,{tickPercent=7,events=[],stopAfterFirst=fa
  for(let tick=1;tick<=10000&&turns.length<(stopAfterFirst?10000:maxTurns);tick++){
   for(const a of alive()){if(a.rawSpd!==undefined)a.spd=runtimeSpeed(a.baseSpd,a.master,a.combat,a.effects||{});}
   const leos=alive().filter(a=>a.passive==='leo');const cap=leos.length?Math.min(...leos.map(a=>a.spd)):Infinity;
-  for(const a of alive())a.atb+=(a.passive==='leo'||a.boss?a.spd:Math.min(cap,a.spd))*step/100;
+  for(const a of alive())a.atb+=(a.passive==='leo'||a.boss?a.spd:Math.min(cap,a.spd))*NATURAL_GAUGE_STEP/100;
   const forcedKey=forced.shift(),actor=forcedKey?alive().find(a=>a.key===forcedKey):alive().filter(a=>a.atb>=100-1e-9).sort(order)[0];
   if(!actor){if(!alive().length)break;continue;}
   const row={key:actor.key,tick,spd:actor.spd,atb:actor.atb,enemy:!!actor.enemy,forced:!!forcedKey,disabled:actor.combat.disabled};if(row.disabled)risks.push(`${actor.name||actor.key}: turno consumido por incapacidade, sem executar ação.`);turns.push(row);if(!seen.has(actor.key)){seen.add(actor.key);firstTurns.push(row);}actor.turns++;actor.atb=0;

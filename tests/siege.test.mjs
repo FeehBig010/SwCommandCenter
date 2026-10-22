@@ -18,3 +18,13 @@ test('unconfigured timing never claims account ready, and fractional deadlines a
 test('all leader stats/scopes are preserved; only applicable SPD bonuses enter combat SPD',()=>{assert.deepEqual(catalogLeader(18311),{stat:'spd',value:28,scope:'guild',element:0});assert.equal(catalogLeader(16111).stat,'cr');assert.equal(catalogLeader(28212).stat,'acc');const a=account(),u=a.units[0],stats={total:{spd:120}};assert.equal(combatSpeed(u,stats,{}, {leader:{stat:'spd',value:24,scope:'element',element:2}}),120);assert.equal(combatSpeed(u,stats,{}, {leader:{stat:'spd',value:24,scope:'element',element:1}}),149);assert.ok(!leaderApplies({scope:'dungeon'},u,'siege'));const c=counter();c.offense.leader=catalogLeader(18311);assert.equal(validateSiegeAccount(c,a,{towerSpd:0}).members[0].spd,154);assert.equal(validateSiegeAccount(c,a,{towerSpd:15}).members[0].spd,172);});
 test('favorite/cloud roundtrips preserve public requirements without private IDs or inventory',()=>{const c=counter();c.offense.leader=catalogLeader(16111);c.offense.configs[0].unitId=999;c.secret='token';const f=makeFavorite(c,'local:1');assert.equal(f.counter.offense.configs[0].unitId,undefined);assert.equal(f.counter.secret,undefined);const round=cleanCloudPayload('counter',f.counter);assert.equal(round.siege.speedTick,7);assert.equal(round.enemyDefense[0].sets[0],13);assert.equal(round.offense.leader.stat,'cr');const copied=copyTeamToOptimizer(round.offense,account());assert.equal(copied.configs[0].combatSpd,100);assert.equal(copied.leader.stat,'cr');assert.equal(new Set(copied.configs.map(c=>c.key)).size,3);});
 test('reaction counts never manufacture wins and zero reports have no win rate',()=>{assert.equal(summarizeFeedback([{reaction:'free_win'}]).winRate,null);assert.deepEqual(summarizeFeedback([{reaction:'rng',outcome:'win'},{reaction:'free_win',outcome:'loss'}]),{counts:{free_win:1,rng:1,high_runes:0},wins:1,losses:1,total:2,winRate:50});});
+
+test('shared legacy counters normalize their rate without changing integer reference ticks',()=>{
+ const original=counter(),expected=requiredTurnPlan(original);
+ for(const legacy of [0,7,10,100]){
+  const restored=cleanSiegeCounter({...original,siege:{...original.siege,speedTick:legacy}});
+  assert.equal(restored.siege.speedTick,7);
+  assert.deepEqual(requiredTurnPlan(restored),expected);
+  assert.ok(requiredTurnPlan(restored).every(t=>Number.isInteger(t.tick)));
+ }
+});

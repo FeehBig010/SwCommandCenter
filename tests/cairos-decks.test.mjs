@@ -19,10 +19,10 @@ test('normalized SWEX contains accountPresets without session/social properties'
  const raw={unit_list:[{unit_id:1,unit_master_id:13413,con:100,runes:[{rune_id:1,slot_no:1,pri_eff:[3,100],sec_eff:[]}]}],runes:[],deck_list:[{deck_name:'Meu deck',monster_ids:[1,0,777],social:'private'}],session_key:'private'};
  const a=normalizeAccount(raw);assert.equal(a.accountPresets[0].name,'Meu deck');assert.deepEqual(a.accountPresets[0].unitIds,[1,null,null]);assert.ok(!JSON.stringify(a).includes('private'));
 });
-test('Speed Tick affects first-turn timing and invalid values fail explicitly',()=>{
- assert.equal(firstTurns([{key:'a',spd:200}],7)[0].tick,8);assert.equal(firstTurns([{key:'a',spd:200}],10)[0].tick,5);
- for(const tick of [0,-1,101,NaN])assert.throws(()=>firstTurns([{key:'a',spd:200}],tick),/Speed Tick/);
- assert.throws(()=>optimize(account,[{configs:[config()]}],{...DEFAULT_OPTIONS,speedTick:0}),/Speed Tick/);
+test('natural gauge timing is fixed and legacy speedTick cannot change integer turn timing',()=>{
+ const actors=[{key:'a',spd:200}];
+ assert.equal(firstTurns(actors)[0].tick,8);
+ for(const legacyRate of [0,7,10,101,NaN])assert.equal(firstTurns(actors,legacyRate)[0].tick,8);
 });
 test('turn preview uses equipped combat SPD, real builds and conservative enemy ties',()=>{
  const c=config(),team={configs:[c],towerSpd:15,leaderSpd:24,enemyCombatSpd:139};
