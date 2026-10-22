@@ -10,7 +10,7 @@ O repositório funciona sem Supabase. **Não há projeto configurado ou banco re
 
 ## 2. Criar as tabelas
 
-Aplique uma vez, em ordem, `supabase/migrations/202610220001_guild_cloud.sql` e `supabase/migrations/202610220002_siege_counters.sql` no SQL Editor do projeto, ou use o CLI autenticado:
+Aplique uma vez, em ordem, `supabase/migrations/202610220001_guild_cloud.sql`, `supabase/migrations/202610220002_siege_counters.sql` e `supabase/migrations/202610220003_admin_rbac.sql` no SQL Editor do projeto, ou use o CLI autenticado:
 
 ```sh
 supabase link --project-ref SEU_PROJECT_REF
@@ -28,9 +28,9 @@ A migration cria `guilds`, `guild_members`, `guild_invites` e `guild_teams`, ín
 
 ## 4. Guildas e composições
 
-- O primeiro líder cria uma guilda no Hub. Isso não reivindica uma guilda existente pelo nome do SWEX.
+- Depois do bootstrap e da atribuição de cargos, um Super Admin ou Guild Leader cria uma guilda no Hub. Membros entram por convite e não podem criar uma guilda para se promover. O nome da guilda no SWEX não concede acesso.
 - A liderança gera um convite aleatório de membro, válido por sete dias. Compartilhe o código só com membros; qualquer conta autenticada com o código poderá entrar. Para revogar antes do prazo, a administração pode excluir o convite no banco.
-- Associar/promover/remover líderes de uma guilda existente é uma ação administrativa no banco. O cliente não pode alterar `guild_members.role` nem se promover via metadados de login.
+- O Super Admin promove/rebaixa pelo painel Administração. Escolher uma guilda ao promover atribui liderança nessa guilda; rebaixar para Member remove as atribuições de liderança da conta. O cliente não altera `profiles.role` ou `guild_members.role` diretamente e metadados de login nunca concedem cargos.
 - “Salvar na nuvem” sincroniza a composição selecionada. Escolha privada (somente dono) ou compartilhada (somente membros da guilda ativa). Apenas líderes podem marcar “Sugestão da liderança”. Confrontos preservam ofensa, defesa inimiga e resultado observado.
 - Para editar uma composição publicada, copie para o otimizador, altere, selecione o time atualizado em “Composição para sincronizar” e use “Atualizar com a composição selecionada” na composição de destino. A atualização verifica `updated_at`; conflitos pedem recarregamento, sem sobrescrever silenciosamente outro dispositivo.
 - A biblioteca atualiza ao voltar à janela e a cada 30 segundos; “Atualizar nuvem” força uma consulta. Não depende de habilitar Realtime/publications.
@@ -61,3 +61,26 @@ Somente com a flag habilitada e o projeto definido, após os testes passarem, o 
 - Favoritos na nuvem são privados e guardam o snapshot real do counter visível. Excluir o original preserva o favorito e remove os votos do original. Membros de outras guildas e usuários anônimos não podem votar, consultar a contagem ou copiar counters sem acesso.
 - A migration adiciona `counter_feedback` à publicação `supabase_realtime` quando ela já existe. Confirme no painel **Database → Replication** que essa tabela está habilitada. O cliente assina Postgres Changes, consulta os agregados após eventos/mutações e mantém atualização a cada 30 segundos e ao voltar à janela. Em projetos sem publicação, configure Realtime antes de afirmar atualização instantânea entre dispositivos.
 - Ainda **não existe projeto Supabase do proprietário**. SQL/RLS e contratos foram validados localmente; autenticação, notificações Realtime entre dispositivos e aplicação das migrations no servidor continuam pendentes da ativação do projeto.
+
+
+## 7. Administração, cargos e primeiro Super Admin
+
+1. Aplique as três migrations em ordem. A terceira cria `profiles` e seus triggers, cargos, RLS, auditoria, eventos de uso, parâmetros do motor e moderação. Contas existentes recebem perfil e líderes de guildas já registrados são preservados como `guild_leader`; novos cadastros recebem **sempre `member`**, ignorando qualquer cargo em metadados do usuário.
+2. Cadastre a conta **felipe.amaral.matos@gmail.com** no site e confirme o e-mail. No **SQL Editor**, como proprietário do projeto, execute `supabase/bootstrap_admin.sql`. Ele chama `bootstrap_super_admin` para essa conta confirmada. Não execute antes do cadastro/confirmacão: a função exige uma única conta confirmada e não substitui outro Super Admin. A função não tem permissão de execução para usuários `anon` ou `authenticated`; não há promoção por e-mail no JavaScript, localStorage, JWT do cliente ou `VITE_*`.
+3. Entre novamente ou use o foco da janela para atualizar o perfil. O ícone **Administração** aparece somente após verificar o cargo no banco. A rota `/#/admin` (e `/admin` em um host com fallback SPA) usa a mesma proteção. Ausência de sessão, cargo desconhecido, erro de verificação ou sessão trocada bloqueiam o painel. O perfil é revisto a cada 30 segundos e ao voltar à janela; o banco verifica cada leitura e operação imediatamente.
+4. Super Admin vê os membros de todo o site e as abas **Gestão da Guilda** / **Permissões & Sistema**. Guild Leader vê somente os membros/counters das guildas em que tem a atribuição `guild_members.role='leader'`, além de `profiles.role='guild_leader'`. Um líder em outra guilda não recebe acesso. Listagens são limitadas a 500 membros e 500 sugestões no escopo selecionado.
+5. O Super Admin só pode atribuir `guild_leader` ou `member` pelo seletor. A própria conta Super Admin não pode ser rebaixada por esse RPC. Promover sem guilda permite criar uma nova guilda; com guilda selecionada, também registra a liderança nela. Alterações de cargo, parâmetros e moderação ficam na auditoria, exclusiva do Super Admin.
+
+### Revisão de counters
+
+Counters compartilhados entram como **pending**. Antes da aprovação, são visíveis ao autor e aos administradores com escopo; outros membros não podem lê-los, votar ou copiá-los da nuvem. Um administrador pode aprovar, editar ou excluir a sugestão compartilhada; composições privadas ficam fora da moderação. Editar o conteúdo (pelo autor ou pelo moderador) devolve a sugestão à revisão. Escritas diretas de um cliente autenticado não conseguem aprovar a própria sugestão. A moderação verifica `updated_at` para rejeitar alterações concorrentes; atualize o painel antes de tentar novamente. Os favoritos privados já salvos continuam preservados como snapshots.
+
+### Status SWEX, métricas, erros e parâmetros
+
+- O status SWEX é a data da última importação bem-sucedida **enquanto autenticado**, registrada pelo relógio do servidor. Não representa upload/armazenamento do arquivo na nuvem, nem prova de equipamento atual em outro dispositivo. Importações offline não são retroativamente marcadas como feitas hoje. Sem importação registrada, mostra **Pendente**.
+- Eventos autenticados registram apenas códigos permitidos (`swex_imported`, `swex_failed`, `optimizer_completed`, `optimizer_failed`) e horário/ID do usuário, com limite de 60 registros por minuto por conta. Não aceitam mensagens de erro livres, tokens ou conteúdo SWEX. Métricas mostram contagens reais desde a ativação, com janela de sete dias para atividade/importações/otimizações/erros; não contam uso offline.
+- Os parâmetros públicos do otimizador principal são `default_speed_tick` (1–100%), `max_teams` (1–10) e `maintenance_mode`. Somente o Super Admin os altera. O tick padrão se aplica a configurações novas, preservando preferências existentes; o limite impede adicionar/copiar times acima dele e executar uma busca com mais times. A manutenção pausa novas buscas do otimizador principal, sem excluir configurações nem cancelar trabalhos em andamento. Outros simuladores mantêm seus controles próprios. Clientes conectados verificam os parâmetros a cada 30 segundos; o botão Salvar já atualiza a sessão atual. Estes limites regulam o motor local, não um serviço de computação remoto.
+- A seção **Chaves do sistema** informa a configuração pública e leva ao console Supabase. Chaves privadas/service-role, senhas e segredos de deploy **não são armazenados em tabelas acessíveis ao navegador, retornados por RPC ou editados pelo frontend**. Gerencie-os nos segredos do Supabase/GitHub/provedor de hospedagem.
+- O tema é fixo e global: madeira, dourado `#d4af37`, emblema e `/Fundo`. A tela Identidade e os seletores de cor/emblema/nome foram removidos; personalizações antigas no armazenamento local são ignoradas. As ações de privacidade/apagar dados locais ficam em **Dados SWEX**.
+
+Sem `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`, o app funciona localmente, sem chamadas ao Supabase e sem painel administrativo. As migrations e o bootstrap ficam preparados para execução posterior. Configuração inválida também mantém o modo local. Com um projeto configurado mas migrations ausentes, o app mostra erro de verificação e não concede cargos por fallback. Nenhuma conta real foi promovida ou banco remoto alterado nesta entrega: o projeto ainda não existe.

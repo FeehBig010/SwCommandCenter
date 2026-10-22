@@ -1,7 +1,8 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
+import {canAdmin,canManageSystem} from '../lib/auth';
 import {supabase} from '../lib/supabase';
 import {listMemberships,listCloudTeams,saveCloudTeam,deleteCloudTeam} from '../lib/guild-cloud';
-export default function useGuildCloud(session){
+export default function useGuildCloud(session,profile){
  const userId=session?.user.id||null;
  const [state,setState]=useState({userId:null,rows:[],memberships:[],guildId:null,loading:false,error:''}),generation=useRef(0),activeUser=useRef(userId);
  activeUser.current=userId;
@@ -20,5 +21,5 @@ export default function useGuildCloud(session){
  async function save(input,previous){const row=await saveCloudTeam(supabase,userId,input,previous);if(activeUser.current===userId)await refresh(visible.guildId);return row;}
  async function remove(row){await deleteCloudTeam(supabase,userId,row);if(activeUser.current===userId)await refresh(visible.guildId);}
  async function rpc(name,args){const {data,error}=await supabase.rpc(name,args);if(error)throw new Error('Não foi possível concluir. Confira sua permissão e os dados informados.');if(activeUser.current===userId)await refresh(name==='create_guild'||name==='join_guild'?data:visible.guildId);return data;}
- return {...visible,enabled:!!supabase&&!!userId,isLeader:visible.memberships.some(m=>m.guild_id===visible.guildId&&m.role==='leader'),refresh:()=>refresh(visible.guildId),selectGuild:id=>refresh(id),save,remove,rpc};
+ return {...visible,enabled:!!supabase&&!!userId,canCreateGuild:canAdmin(profile),isLeader:canAdmin(profile)&&!!visible.guildId&&(canManageSystem(profile)||visible.memberships.some(m=>m.guild_id===visible.guildId&&m.role==='leader')),refresh:()=>refresh(visible.guildId),selectGuild:id=>refresh(id),save,remove,rpc};
 }

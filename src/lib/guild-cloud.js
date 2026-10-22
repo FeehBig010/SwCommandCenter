@@ -1,7 +1,7 @@
 import {cleanCloudPayload} from '../core/hub.js';
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 export function assertUuid(id){if(!UUID.test(id||''))throw new Error('Identificador de nuvem inválido.');return id;}
-const fields='id,owner_id,guild_id,kind,visibility,is_leadership,name,payload,created_at,updated_at';
+const fields='id,owner_id,guild_id,kind,visibility,is_leadership,name,payload,created_at,updated_at,moderation_status';
 function check(response){if(response.error)throw new Error(response.error.message||'Não foi possível sincronizar.');return response.data;}
 export async function listMemberships(client){return check(await client.from('guild_members').select('guild_id,role,guilds(id,name)'));}
 export async function listCloudTeams(client,userId,guildId){
