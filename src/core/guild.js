@@ -1,3 +1,5 @@
+import {normalizeCombat,normalizeScenario} from './speedTuner.js';
+import {normalizeLeader} from './leaders.js';
 import {normalizeDamageSettings} from './damage.js';
 import { blankConfig, SETS, FOUR, STATS } from './data.js';
 
@@ -28,13 +30,13 @@ export function cleanTemplate(input,{newId=false}={}){
    if(!SLOT_MAINS[slot].includes(id))fail(`atributo principal do slot ${slot}.`);
    return [slot,id];
   }));
-  return {masterId:Number(c.masterId),label:text(c.label,80,true),sets,strictSets:true,mains,
+  return {...(c.combat?{combat:normalizeCombat(c.combat)}:{}),...(c.combatSpd!==undefined?{combatSpd:metric(c.combatSpd,10000)||0}:{}),masterId:Number(c.masterId),label:text(c.label,80,true),sets,strictSets:true,mains,
    goals:Object.fromEntries(STATS.map(k=>[k,metric(c.goals?.[k])])),
    basis:c.basis==='bonus'?'bonus':'total',damage:normalizeDamageSettings(c.damage),artifacts:c.artifacts!==false,lockSpeedSync:c.lockSpeedSync===true,
    objective:['balanced','hp','spd','cr','damage'].includes(c.objective)?c.objective:'balanced'};
  });
  return {id:newId?crypto.randomUUID():text(input.id||crypto.randomUUID(),80,true),name:text(input.name,100,true),description:text(input.description||'',1000),
-  team:{towerSpd:metric(input.team.towerSpd,100)||0,leaderSpd:metric(input.team.leaderSpd,100)||0,enemyCombatSpd:metric(input.team.enemyCombatSpd,1000)||0,configs}};
+  team:{...(Object.hasOwn(input.team,'leader')?{leader:normalizeLeader(input.team.leader),leaderIndex:Math.min(2,Math.max(0,Number.isInteger(input.team.leaderIndex)?input.team.leaderIndex:0))}:{}),...(input.team.combatScenario?{combatScenario:normalizeScenario(input.team.combatScenario)}:{}),...(input.team.guildSpd!==undefined?{guildSpd:metric(input.team.guildSpd,100)||0}:{}),towerSpd:metric(input.team.towerSpd,100)||0,leaderSpd:metric(input.team.leaderSpd,100)||0,enemyCombatSpd:metric(input.team.enemyCombatSpd,1000)||0,configs}};
 }
 export function newTemplate(){
  return {id:crypto.randomUUID(),name:'Novo template Siege',description:'',team:{towerSpd:0,leaderSpd:0,enemyCombatSpd:0,configs:Array.from({length:3},()=>({...blankConfig(),masterId:null,basis:'total',strictSets:true}))}};
@@ -55,6 +57,6 @@ export function bindTemplate(template,account){
   const unit=matches[0];if(unit)used.add(unit.id);
   return {...blankConfig(unit,c.label),...c,enabled:true,unitId:unit?.id||null};
  });
- return {id:crypto.randomUUID(),name:clean.name,mode:'defense',gameMode:'siege',priority:1,order:'off',...clean.team,configs};
+ return {id:crypto.randomUUID(),name:clean.name,mode:'defense',gameMode:'siege',priority:1,order:'off',...clean.team,configs,...(clean.team.leader?{leaderKey:configs[clean.team.leaderIndex||0]?.key}:{} )};
 }
 export function templateMissing(team){return team.configs.filter(c=>!c.unitId).map(c=>c.label);}

@@ -6,7 +6,7 @@ export const STAT_NAMES={1:'HP',2:'HP%',3:'ATK',4:'ATK%',5:'DEF',6:'DEF%',8:'SPD
 export const ELEMENTS={1:'Água',2:'Fogo',3:'Vento',4:'Luz',5:'Trevas'};
 export const FOUR=new Set([3,5,8,10,11,13]);
 export const STATS=['hp','def','spd','atk','cr','cd','res','acc'];
-export const LABELS={hp:'HP',def:'DEF',spd:'SPD',atk:'ATK',cr:'TC',cd:'DC',res:'RES',acc:'ACC'};
+export const LABELS={combatSpd:'SPD combate',hp:'HP',def:'DEF',spd:'SPD',atk:'ATK',cr:'TC',cd:'DC',res:'RES',acc:'ACC'};
 export function monsterName(master){return catalog[master]||`${catalog[String(master).slice(0,3)]||'Monstro'} (${ELEMENTS[master%10]||master})`;}
 const number=(x,fallback=0)=>Number.isFinite(Number(x))?Number(x):fallback;
 function effect(e){return Array.isArray(e)?e.slice(0,4).map(x=>number(x)):[];}
@@ -43,9 +43,9 @@ export function initialTeams(account){
   else{c.sets=[13,0];c.mains={2:8,4:2,6:2};c.goals.hp=28001;c.goals.def=700;c.objective=name==='Solveig'?'cr':'balanced';}
   return c;
  });
- return [{id:crypto.randomUUID(),name:'Molly · Vritra · Solveig',mode:'defense',priority:1,order:'soft',configs}];
+ return [{id:crypto.randomUUID(),name:configs.filter(c=>c.masterId).map(c=>c.label).join(' - ')||'Novo time',autoName:true,mode:'defense',priority:1,order:'soft',configs}];
 }
-export function makeTeam(gameMode='siege'){return {id:crypto.randomUUID(),name:'Novo time',gameMode,mode:'defense',priority:1,order:'off',configs:Array.from({length:GAME_MODES[gameMode]?.slots||3},()=>blankConfig())};}
+export function makeTeam(gameMode='siege'){return {id:crypto.randomUUID(),name:'Novo time',autoName:true,gameMode,mode:'defense',priority:1,order:'off',configs:Array.from({length:GAME_MODES[gameMode]?.slots||3},()=>blankConfig())};}
 export const DEFAULT_OPTIONS={equipped:true,respectLocks:false,artifacts:true,depth:'balanced',minLevel:12,maxGrindsGems:false,strictMode:false,speedTick:7};
 
 export const GAME_MODES = {

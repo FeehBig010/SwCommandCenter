@@ -1,10 +1,5 @@
 import {LEADER_STATS,LEADER_SCOPES} from '../core/leaders';
 import { Download, RefreshCw, Save, Skull } from 'lucide-react';
-export function BuilderProgress({account,teams,running,hasResult}){
- const selected=teams.flatMap(t=>t.configs).filter(c=>c.enabled).every(c=>c.unitId||c.masterId);
- const step=hasResult?5:running?4:account&&selected?3:account?2:1;
- return <ol className="builder-progress" aria-label="Etapas do otimizador">{['Setup','Mode','Build Team','Optimize','Results'].map((label,i)=><li key={label} aria-current={step===i+1?'step':undefined} className={step===i+1?'current':step>i+1?'done':''}><span>{i+1}</span><strong>{label}</strong></li>)}</ol>;
-}
 export default function BuilderControls({team,options,onOptions,onRecalc,onSave,onLoad,onClear,disabled=false}){
  const leader=team.configs.find(c=>c.key===team.leaderKey)||team.configs.find(c=>c.enabled);
  return <div className="builder-controls"><span className="leader-badge">Líder: <strong>{leader?.label||'Selecionar'}</strong> · {team.leader?`+${team.leader.value}% ${LEADER_STATS[team.leader.stat]} · ${LEADER_SCOPES[team.leader.scope]}`:`+${team.leaderSpd||0}% SPD`}</span>

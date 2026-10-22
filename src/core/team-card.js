@@ -1,3 +1,4 @@
+import {normalizeLeader} from './leaders.js';
 import { monsterImageSources } from './monsters.js';
 
 // Snapshot only the visible, included composition. No inventory or account identifiers.
@@ -11,11 +12,11 @@ export function createTeamCard(team,account){
   if(unit)used.add(unit.id);
   const master=account?unit?.master:c.masterId;
   if(!master)return null;
-  return {master,name:unit?.name||c.label,sets:[...(c.sets||[])],strictSets:c.strictSets!==false,
+  return {...(Number(c.combatSpd)>0?{combatSpd:Number(c.combatSpd)}:{}),master,name:unit?.name||c.label,sets:[...(c.sets||[])],strictSets:c.strictSets!==false,
    mains:{...c.mains},goals:{...c.goals},basis:c.basis,lockSpeedSync:c.lockSpeedSync===true};
  });
  if(monsters.some(m=>!m))return null;
- return {name:team.name||'Equipe',description:team.description||'',gameMode:team.gameMode||'siege',mode:team.mode,
+ return {...(team.leader?{leader:normalizeLeader(team.leader)}:{}),name:team.name||'Equipe',description:team.description||'',gameMode:team.gameMode||'siege',mode:team.mode,
   towerSpd:Number(team.towerSpd)||0,leaderSpd:Number(team.leaderSpd)||0,enemyCombatSpd:Number(team.enemyCombatSpd)||0,monsters};
 }
 export function cardFileName(name){

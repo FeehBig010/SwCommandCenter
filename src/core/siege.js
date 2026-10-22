@@ -1,3 +1,5 @@
+import {combatAttributes,simulateCombat,scenarioForTeam,missingDefenseConditions} from './speedTuner.js';
+import {artifactEffects} from './artifacts.js';
 import {cleanMatchup,copyTeamToOptimizer} from './hub.js';
 import {normalizeSiegeSpec} from './siege-schema.js';
 import {catalogLeader,leaderForTeam} from './leader-catalog.js';
@@ -32,14 +34,14 @@ export function validateSiegeAccount(raw,account,member={towerSpd:0},options={})
   if(runes.length!==6||new Set(runes.map(r=>r.slot)).size!==6)issues.push(`${unit.name}: equipe seis slots de runas distintos.`);
   if(runes.some(r=>[25,99].includes(r.set)))issues.push(`${unit.name}: set não suportado nesta checagem.`);
   const counts=setCounts(runes),stats=calculateStats(unit,runes,options.artifacts!==false&&c.artifacts!==false?artifactBonus(account,unit):{});
-  const spd=combatSpeed(unit,stats,counts,{...team,gameMode:'siege',towerSpd:tower,leaderSpd:0});stats.combat={spd};
-  for(const g of goalReport(stats,c))if(!g.met)issues.push(`${unit.name}: faltam ${Math.ceil(g.missing).toLocaleString('pt-BR')} ${g.key.toUpperCase()} na ficha.`);
+  const effects=artifactEffects(account,unit,options.artifacts!==false&&c.artifacts!==false);stats.combat=combatAttributes(unit,stats,counts,{...team,gameMode:'siege',towerSpd:tower,guildSpd:Number(member.guildSpd)||0,leaderSpd:0},c.combat,effects);const spd=stats.combat.spd;
+  for(const g of goalReport(stats,c))if(g.key!=='combatSpd'&&!g.met)issues.push(`${unit.name}: faltam ${Math.ceil(g.missing).toLocaleString('pt-BR')} ${g.key.toUpperCase()} na ficha.`);
   const sets=new Map();for(const id of c.sets.filter(Boolean))sets.set(id,(sets.get(id)||0)+1);
   if(c.strictSets!==false)for(const [id,n] of sets)if(Math.floor((counts[id]||0)/(FOUR.has(id)?4:2))<n)issues.push(`${unit.name}: falta ${n}× ${SETS[id]}.`);
   for(const slot of [2,4,6])if(Number(c.mains[slot])&&runes.find(r=>r.slot===slot)?.main[0]!==Number(c.mains[slot]))issues.push(`${unit.name}: ajustar main stat do slot ${slot}.`);
   if(Number(c.combatSpd)>spd)issues.push(`${unit.name}: faltam ${Math.ceil(c.combatSpd-spd)} SPD de combate.`);
   if(!Number(c.combatSpd)&&!Number(c.maxTick)&&!Number(c.goals.spd))issues.push(`${unit.name}: counter sem meta SPD/Tick; complete a recomendação.`);
-  return {key:String(i),unitId:unit.id,masterId:unit.master,name:unit.name,spd,stats,runeIds:runes.map(r=>r.id),counts,issues};
+  return {key:String(i),unitId:unit.id,masterId:unit.master,name:unit.name,spd,rawSpd:stats.combat.rawSpd,combat:c.combat,effects,nemesisSets:Math.floor((counts[14]||0)/2),stats,runeIds:runes.map(r=>r.id),counts,issues};
  }).sort((a,b)=>a.issues.length-b.issues.length||b.spd-a.spd||a.unitId-b.unitId).slice(0,8));
  let best=null;
  function evaluate(members){
@@ -47,17 +49,17 @@ export function validateSiegeAccount(raw,account,member={towerSpd:0},options={})
   if(new Set(ids).size!==ids.length)issues.push('Há runas repetidas entre as unidades equipadas.');
   let turns=[];
   try{
-   const actors=members.map(m=>({key:m.key,spd:m.spd})),enemy=Number(team.enemyCombatSpd)||0;
-   turns=firstTurns([...actors,...(enemy>0?[{key:'enemy',spd:enemy,enemy:true}]:[])],spec.speedTick);
-   const allies=turns.filter(t=>t.key!=='enemy');
+   const actors=members.map(m=>({key:m.key,spd:m.spd,rawSpd:m.rawSpd,combat:m.combat,effects:m.effects,nemesisSets:m.nemesisSets,master:m.masterId})),configured=scenarioForTeam({...team,configs:team.configs.map((c,i)=>({...c,key:String(i)}))},actors),enemy=Number(team.enemyCombatSpd)||0;
+   const simulation=simulateCombat([...configured.actors,...(!configured.actors.some(a=>a.enemy)&&enemy>0?[{key:'enemy',spd:enemy,enemy:true}]:[])],{tickPercent:spec.speedTick,events:configured.events,stopAfterFirst:true});turns=simulation.firstTurns;if(simulation.risks.length)issues.push(...simulation.risks);
+   const allies=turns.filter(t=>!t.enemy);
    if(spec.requireOrder&&allies.some((t,i)=>t.key!==String(i)))issues.push('Ajustar a ordem: os cards devem agir de 1 → 2 → 3.');
    for(const m of members){const tick=turns.find(t=>t.key===m.key)?.tick,target=team.configs[Number(m.key)].maxTick;if(target&&tick>target)issues.push(`${m.name}: age no Tick ${tick}; precisa agir até o Tick ${target}.`);}
-   const ei=turns.findIndex(t=>t.key==='enemy');if(spec.beforeEnemy&&ei>=0&&turns.slice(ei+1).some(t=>t.key!=='enemy'))issues.push('Risco de corte: um aliado age depois do inimigo informado.');
+   const ei=turns.findIndex(t=>t.enemy);if(spec.beforeEnemy&&ei>=0&&turns.slice(ei+1).some(t=>!t.enemy))issues.push('Risco de corte: um aliado age depois do inimigo informado.');
   }catch(e){issues.push(e.message);}
   if(!best||issues.length<best.issues.length)best={status:issues.length?'adjust':'ready',members,issues,turns};
  }
  function visit(members){if(best?.status==='ready')return;if(members.length===3){evaluate(members);return;}for(const m of jobs[members.length])if(!members.some(x=>x.unitId===m.unitId))visit([...members,m]);}
- visit([]);return best||{status:'adjust',members:[],turns:[],issues:['Não foi possível atribuir cópias distintas às três posições.']};
+ visit([]);if(best)best.risks=missingDefenseConditions({...team,enemyDefense:counter.enemyDefense});return best||{status:'adjust',members:[],turns:[],issues:['Não foi possível atribuir cópias distintas às três posições.']};
 }
 export function makeFavorite(counter,key){return {key,counter:cleanSiegeCounter(counter),savedAt:new Date().toISOString()};}
 export function favoriteTeam(counter,account){const clean=cleanSiegeCounter(counter);return {...copyTeamToOptimizer(clean.offense,account),enemyDefense:clean.enemyDefense};}

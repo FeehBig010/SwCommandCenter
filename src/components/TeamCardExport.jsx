@@ -1,3 +1,4 @@
+import {LEADER_STATS,LEADER_SCOPES} from '../core/leaders';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ImageDown, LoaderCircle } from 'lucide-react';
@@ -10,7 +11,7 @@ function VisualTeamCard({card,portraits,cardRef}){
  return <article ref={cardRef} className={`png-team-card png-team-size-${card.monsters.length}`} style={{width:card.monsters.length===1?720:1200}}>
   <header className="png-team-header"><div><p className="png-eyebrow">SW COMMANDCENTER · COMPOSIÇÃO E METAS</p><h1>{card.name}</h1><p className="png-team-mode">{GAME_MODES[card.gameMode]?.label||'Siege / WGB'} · {card.monsters.length} monstro(s){card.mode==='attack'?' · Ataque':card.mode==='defense'?' · Defesa':''}</p></div><span className="png-team-seal">SW</span></header>
   {card.description&&<p className="png-team-description">{card.description}</p>}
-  <div className="png-combat-bonuses"><span>Torre SPD <b>{card.towerSpd}%</b></span><span>Líder SPD <b>{card.leaderSpd}%</b></span>{card.enemyCombatSpd>0&&<span>Inimigo · SPD de combate <b>{card.enemyCombatSpd}</b></span>}</div>
+  <div className="png-combat-bonuses"><span>Torre SPD <b>{card.towerSpd}%</b></span><span>{card.leader?`Líder ${LEADER_STATS[card.leader.stat]} · ${LEADER_SCOPES[card.leader.scope]}`:'Líder SPD'} <b>{card.leader?.value??card.leaderSpd}%</b></span>{card.enemyCombatSpd>0&&<span>Inimigo · SPD de combate <b>{card.enemyCombatSpd}</b></span>}</div>
   <div className="png-monster-grid">{card.monsters.map((monster,index)=>{
    const counts=monster.sets.filter(Boolean).reduce((all,id)=>({...all,[id]:(all[id]||0)+1}),{});
    return <section className="png-monster" key={index}>
@@ -20,7 +21,7 @@ function VisualTeamCard({card,portraits,cardRef}){
     <div className="png-main-stats">{[2,4,6].map(slot=><div key={slot}><small>SLOT {slot}</small><strong>{STAT_NAMES[monster.mains[slot]]||'Livre'}</strong></div>)}</div>
     <p className="png-section-label">METAS {monster.basis==='bonus'?'ADICIONAIS (+)':'TOTAIS'} · SPD DE FICHA</p>
     <div className="png-targets">{STATS.map(key=><div key={key}><span>{LABELS[key]}{['cr','cd','res','acc'].includes(key)?' %':''}</span><strong>{Number(monster.goals[key])>0?fmt(monster.goals[key]):'Livre'}</strong></div>)}</div>
-    <div className={`png-sync-badge ${monster.lockSpeedSync?'png-sync-locked':''}`}>{monster.lockSpeedSync?'SPD SYNC · VINCULADO':'SPD LIVRE'}</div>
+    <p className="png-section-label">{monster.combatSpd?`SPD COMBATE ≥ ${monster.combatSpd}`:''}</p><div className={`png-sync-badge ${monster.lockSpeedSync?'png-sync-locked':''}`}>{monster.lockSpeedSync?'SPD SYNC · VINCULADO':'SPD LIVRE'}</div>
    </section>;
   })}</div>
   <footer className="png-team-footer"><p>{chain.length?`Ordem de SPD de combate: ${chain.join(' → ')}`:'Sem vínculo obrigatório de ordem de SPD.'}</p><span>Plano de metas · atributos atuais e disponibilidade devem ser verificados no JSON.</span><span>TC / DC / RES / ACC sempre totais. Exportado com SW CommandCenter.</span></footer>

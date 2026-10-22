@@ -1,4 +1,4 @@
-import {speedLeaderBonus} from './leaders.js';
+import {combatAttributes,simulateFirstTurns,simulateCombat,scenarioForTeam,missingDefenseConditions} from './speedTuner.js';
 import {artifactEffects,normalizeArtifactSubstats} from './artifacts.js';
 import {estimateRealDamage,normalizeDamageSettings} from './damage.js';
 export {artifactEffects,normalizeArtifactSubstats,estimateRealDamage};
@@ -34,29 +34,8 @@ export function runeVariants(r,simulate=false){
  return variants;
 }
 function variantKey(r){return `${r.id}:${JSON.stringify(r.subs)}`;}
-export function combatSpeed(unit,stats,counts={},bonuses={}){
- const swift=25*completed(counts,3);
- // Recombine fractional base bonuses before rounding; sheet Swift was rounded already.
- return Math.ceil(stats.total.spd-Math.ceil(unit.base.spd*swift/100)
-  +unit.base.spd*(swift+Number(bonuses.towerSpd||0)+speedLeaderBonus(unit,bonuses))/100-1e-10);
-}
-export function firstTurns(actors,tickPercent=7){
- if(!Number.isFinite(Number(tickPercent))||Number(tickPercent)<=0||Number(tickPercent)>100)throw new Error('Speed Tick deve estar entre 0 e 100%.');
- if(actors.some(a=>!Number.isFinite(a.spd)||a.spd<=0))throw new Error('SPD de combate deve ser positiva e finita.');
- const state=actors.map((a,i)=>({...a,index:i,atb:0})),seen=new Set(),turns=[];
- // Each action advances a tick. ATB overflow is retained until that actor moves.
- for(let tick=1;tick<=10000&&seen.size<state.length;tick++){
-  for(const a of state)a.atb+=a.spd*Number(tickPercent); // integer hundredths of ATB: 100% = 10000
-  const ready=state.filter(a=>a.atb>=10000).sort((a,b)=>b.atb-a.atb||b.spd-a.spd
-   ||Number(b.enemy||false)-Number(a.enemy||false)||a.index-b.index);
-  if(!ready.length)continue;
-  const actor=ready[0];
-  if(!seen.has(actor.key)){seen.add(actor.key);turns.push({key:actor.key,tick,spd:actor.spd,atb:actor.atb/100});}
-  actor.atb=0;
- }
- if(seen.size!==state.length)throw new Error('Simulação de turnos excedeu o limite.');
- return turns;
-}
+export function combatSpeed(unit,stats,counts={},bonuses={},combat={},effects={}){return combatAttributes(unit,stats,counts,bonuses,combat,effects).spd;}
+export const firstTurns=simulateFirstTurns;
 function add(a,b){return a.map((n,i)=>n+b[i]);}
 export function setCounts(runes){const counts={};for(const r of runes)counts[r.set]=(counts[r.set]||0)+1;return counts;}
 function completed(counts,set){return Math.floor((counts[set]||0)/(FOUR.has(set)?4:2));}
@@ -68,22 +47,22 @@ export function statsFromVector(unit,v,counts,artifactFlat={}){
 export function calculateStats(unit,runes,artifactFlat={}){return statsFromVector(unit,runes.reduce((v,r)=>add(v,runeVector(r)),zero()),setCounts(runes),artifactFlat);}
 export function artifactBonus(account,unit){const out={hp:0,atk:0,def:0};for(const a of account.artifacts)if(unit.artifactIds.includes(a.id)){const key={100:'hp',101:'atk',102:'def'}[a.main[0]];if(key)out[key]+=a.main[1];}return out;}
 export function goalValue(stats,config,key){return stats[config.basis==='total'||['cr','cd','res','acc'].includes(key)?'total':'bonus'][key];}
-export function goalReport(stats,config){return STATS.filter(k=>Number(config.goals[k])>0).map(key=>{const target=Number(config.goals[key]);const actual=goalValue(stats,config,key);return {key,target,actual,missing:Math.max(0,target-actual),met:actual>=target};});}
+export function goalReport(stats,config){const rows=STATS.filter(k=>Number(config.goals[k])>0).map(key=>{const target=Number(config.goals[key]);const actual=goalValue(stats,config,key);return {key,target,actual,missing:Math.max(0,target-actual),met:actual>=target};});if(Number(config.combatSpd)>0){const target=Number(config.combatSpd),actual=stats.combat?.spd??stats.total.spd;rows.push({key:'combatSpd',target,actual,missing:Math.max(0,target-actual),met:actual>=target});}return rows;}
 function setRequirements(c){const req={};for(const id of c.sets.filter(Boolean))req[id]=(req[id]||0)+(FOUR.has(id)?4:2);return req;}
 function setsValid(counts,req){return Object.entries(req).every(([id,n])=>(counts[id]||0)>=n);}
 function objective(stats,c){const s=stats.total;switch(c.objective){case 'cr':return Math.min(s.cr,100)/100;case 'spd':return Math.min(s.spd/400,1.5);case 'hp':return Math.min(s.hp/70000,1.5);case 'damage':if(stats.damage)return stats.damage.total/100000;return Math.min((s.atk*(1+Math.min(100,s.cr)/100*s.cd/100))/10000,1.5);default:return Math.min(s.hp/60000+s.def/2500+s.spd/350,3)/3;}}
-function evaluate(stats,c,counts,progress=1){let deficit=0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0){const desired=target*progress;const actual=goalValue(stats,c,k);deficit+=Math.max(0,desired-actual)/Math.max(target,1);}}
+function evaluate(stats,c,counts,progress=1){let deficit=Number(c.combatSpd)>0?Math.max(0,c.combatSpd*progress-stats.combat.spd)/c.combatSpd:0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0){const desired=target*progress;const actual=goalValue(stats,c,k);deficit+=Math.max(0,desired-actual)/Math.max(target,1);}}
  let preference=0;if(!c.strictSets){const req=setRequirements(c);preference=Object.entries(req).reduce((s,[id,n])=>s+Math.min((counts[id]||0)/n,1),0)*0.03;}
  return {deficit,utility:objective(stats,c)+preference};
 }
 function compare(a,b){return a.deficit-b.deficit||b.utility-a.utility;}
-function rankRune(r,unit,c){const s=statsFromVector(unit,r.vector,{},{}),v=s.bonus;let n=0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0)n+=v[k]/target;}return n+objective(s,c)*0.35;}
+function rankRune(r,unit,c){const s=statsFromVector(unit,r.vector,{},{}),v=s.bonus;let n=0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0)n+=v[k]/target;}return n+(Number(c.combatSpd)>0?v.spd/c.combatSpd:0)+objective(s,c)*0.35;}
 function pickPool(pool,unit,c,depth){
  const score=r=>rankRune(r,unit,c);const sorted=pool.slice().sort((a,b)=>score(b)-score(a));const chosen=new Map();
  const take=rs=>rs.forEach(r=>chosen.set(variantKey(r),r));take(sorted.slice(0,depth));
  for(const id of c.sets.filter(Boolean))take(sorted.filter(r=>r.set===id).slice(0,depth));
  // Keep distinct stat extremes, so a balanced scalar ranking does not erase useful trades.
- for(const k of STATS.filter(k=>Number(c.goals[k])>0||k===c.objective||(c.objective==='damage'&&c.damage?.enabled)))take(pool.slice().sort((a,b)=>statsFromVector(unit,b.vector,{},{}).bonus[k]-statsFromVector(unit,a.vector,{},{}).bonus[k]).slice(0,Math.ceil(depth/2)));
+ for(const k of STATS.filter(k=>Number(c.goals[k])>0||k==='spd'&&Number(c.combatSpd)>0||k===c.objective||(c.objective==='damage'&&c.damage?.enabled)))take(pool.slice().sort((a,b)=>statsFromVector(unit,b.vector,{},{}).bonus[k]-statsFromVector(unit,a.vector,{},{}).bonus[k]).slice(0,Math.ceil(depth/2)));
  return [...chosen.values()];
 }
 export function generateCandidates(account,unit,c,options,reserved=new Set(),progress=()=>{}){
@@ -96,7 +75,7 @@ export function generateCandidates(account,unit,c,options,reserved=new Set(),pro
  const flat=options.artifacts&&c.artifacts!==false?artifactBonus(account,unit):{};
  const damageSettings=normalizeDamageSettings(c.damage),effects=artifactEffects(account,unit,options.artifacts&&c.artifacts!==false);
  const originalById=new Map(account.runes.map(r=>[r.id,r]));
- const finishStats=(v,counts)=>{const stats=statsFromVector(unit,v,counts,flat);stats.combat={spd:combatSpeed(unit,stats,counts,options.combat)};if(damageSettings.enabled)stats.damage={total:estimateRealDamage(unit,stats,damageSettings,effects).total};return stats;};
+ const finishStats=(v,counts)=>{const stats=statsFromVector(unit,v,counts,flat);stats.combat={...combatAttributes(unit,stats,counts,options.combat,c.combat,effects),effects:effects.totals};if(damageSettings.enabled)stats.damage={total:estimateRealDamage(unit,stats,damageSettings,effects).total};return stats;};
  const upgrades=runes=>options.maxGrindsGems?runes.filter(r=>JSON.stringify(r.subs)!==JSON.stringify(originalById.get(r.id).subs)).map(r=>({runeId:r.id,subs:r.subs})):[];
  const frequency=new Map(),all=new Map();
  for(let pass=0;pass<setting.passes;pass++){
@@ -127,22 +106,21 @@ export function generateCandidates(account,unit,c,options,reserved=new Set(),pro
 }
 export function speedSyncValid(assignments,teams,tickPercent=7){
  for(const team of teams){
-  const chain=team.configs.filter(c=>c.enabled&&c.lockSpeedSync===true);
-  // Compare every assigned pair, even if a middle slot has not been assigned yet.
-  for(let i=0;i<chain.length;i++)for(let j=i+1;j<chain.length;j++){
-   const a=assignments[chain[i].key],b=assignments[chain[j].key];
-   if(a&&b){
-    const sa=a.stats.combat?.spd??a.stats.total.spd,sb=b.stats.combat?.spd??b.stats.total.spd;
-    // Equal combat SPD uses visual slot order; legacy sheet-only calls stay strict.
-    if(sa<sb||(sa===sb&&(!a.stats.combat||!b.stats.combat)))return false;
-   }
+  const active=team.configs.filter(c=>c.enabled),chain=active.filter(c=>c.lockSpeedSync===true);
+  const eventDriven=!!team.combatScenario?.events?.length||active.some(c=>Number(c.masterId)===16613);
+  if(!eventDriven)for(let i=0;i<chain.length;i++)for(let j=i+1;j<chain.length;j++){
+   const a=assignments[chain[i].key],b=assignments[chain[j].key];if(!a||!b)continue;
+   const sa=a.stats.combat?.spd??a.stats.total.spd,sb=b.stats.combat?.spd??b.stats.total.spd;
+   if(sa<sb||sa===sb&&(!a.stats.combat||!b.stats.combat))return false;
   }
-  const active=team.configs.filter(c=>c.enabled);
-  if(Number(team.enemyCombatSpd)>0&&chain.length&&active.every(c=>assignments[c.key])){
-   const actors=active.map(c=>({key:c.key,spd:assignments[c.key].stats.combat?.spd??assignments[c.key].stats.total.spd}));
-   const turns=firstTurns([...actors,{key:'enemy',spd:Number(team.enemyCombatSpd),enemy:true}],tickPercent);
-   const enemyIndex=turns.findIndex(t=>t.key==='enemy');
-   if(chain.some(c=>turns.findIndex(t=>t.key===c.key)>enemyIndex))return false;
+  if(active.length&&active.every(c=>assignments[c.key])&&(chain.length||active.some(c=>Number(c.maxTick)>0))){
+   const actors=active.map(c=>{const a=assignments[c.key];return {key:c.key,master:a.stats.combat?.master??c.masterId,spd:a.stats.combat?.spd??a.stats.total.spd,rawSpd:a.stats.combat?.rawSpd,combat:c.combat,effects:a.stats.combat?.effects,nemesisSets:Math.floor((a.counts?.[14]||0)/2)};});
+   const configured=scenarioForTeam(team,actors),foes=configured.actors.some(a=>a.enemy),enemy=Number(team.enemyCombatSpd)||0;
+   const report=simulateCombat([...configured.actors,...(!foes&&enemy>0?[{key:'__enemy__',spd:enemy,enemy:true}]:[])],{tickPercent,events:configured.events,stopAfterFirst:true});
+   const positions=chain.map(c=>report.firstTurns.findIndex(t=>t.key===c.key));
+   if(positions.some((p,i)=>p<0||report.firstTurns[p]?.disabled||i>0&&p<positions[i-1]))return false;
+   const enemyIndex=report.firstTurns.findIndex(t=>t.enemy);if(enemyIndex>=0&&positions.some(p=>p>enemyIndex))return false;
+   for(const c of active)if(Number(c.maxTick)>0){const turn=report.firstTurns.find(t=>t.key===c.key);if(!turn||turn.disabled||turn.tick>Number(c.maxTick))return false;}
   }
  }
  return true;
@@ -165,7 +143,7 @@ export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[])
  if(!Number.isFinite(Number(options.speedTick??7))||Number(options.speedTick??7)<=0||Number(options.speedTick??7)>100)throw new Error('Speed Tick inválido.');
  const started=Date.now(),reserved=new Set(reservedIds),jobs=[];const seen=new Set();
  for(const team of teams){
-  for(const field of ['towerSpd','leaderSpd','enemyCombatSpd'])if(!Number.isFinite(Number(team[field]??0))||Number(team[field]??0)<0||Number(team[field]??0)>(field==='enemyCombatSpd'?1000:100))throw new Error('Bônus de SPD ou SPD inimiga inválidos.');
+  for(const field of ['towerSpd','guildSpd','leaderSpd','enemyCombatSpd'])if(!Number.isFinite(Number(team[field]??0))||Number(team[field]??0)<0||Number(team[field]??0)>(field==='enemyCombatSpd'?1000:100))throw new Error('Bônus de SPD ou SPD inimiga inválidos.');
  }
  for(const team of teams)for(const config of team.configs.filter(c=>c.enabled)){
   const unit=account.units.find(u=>u.id===config.unitId);if(!unit)throw new Error(`${config.label}: não encontrado no JSON. Escolha outro monstro ou desmarque “Incluir”.`);
@@ -222,20 +200,17 @@ export function teamTurnPreview(account,team,options={},builds=null){
   const unit=account?.units.find(u=>u.id===config.unitId);
   const build=builds?.find(b=>b.key===config.key&&b.unitId===config.unitId);
   if(!unit){missing.push(config.label);continue;}
-  let spd=build?.stats.combat?.spd;
-  if(spd===undefined){
-   const runes=unit.runeIds.map(id=>account.runes.find(r=>r.id===id)).filter(Boolean);
-   if(runes.length!==6||new Set(runes.map(r=>r.slot)).size!==6){missing.push(unit.name);continue;}
-   const stats=calculateStats(unit,runes);
-   spd=combatSpeed(unit,stats,setCounts(runes),team);
-  }
-  actors.push({key:config.key,unitId:unit.id,master:unit.master,name:unit.name,spd});
+  let stats=build?.stats,counts=build?.counts;
+  if(stats?.combat&&!stats.total){actors.push({key:config.key,unitId:unit.id,master:unit.master,name:unit.name,spd:stats.combat.spd,attributes:stats.combat,combat:config.combat});continue;}
+  if(!stats){const runes=unit.runeIds.map(id=>account.runes.find(r=>r.id===id)).filter(Boolean);if(runes.length!==6||new Set(runes.map(r=>r.slot)).size!==6){missing.push(unit.name);continue;}stats=calculateStats(unit,runes,options.artifacts!==false&&config.artifacts!==false?artifactBonus(account,unit):{});counts=setCounts(runes);}
+  const effects=artifactEffects(account,unit,options.artifacts!==false&&config.artifacts!==false),combat=combatAttributes(unit,stats,counts,team,config.combat,effects);
+  actors.push({key:config.key,unitId:unit.id,master:unit.master,name:unit.name,spd:combat.spd,rawSpd:combat.rawSpd,attributes:combat,combat:config.combat,effects,nemesisSets:Math.floor((counts?.[14]||0)/2)});
  }
  if(missing.length||!actors.length)return {complete:false,actors,missing,turns:[],cut:null,source:builds?'builds':'equipped'};
  const enemy=Number(team.enemyCombatSpd)||0;
- const turns=firstTurns([...actors,...(enemy>0?[{key:'__enemy__',name:'Inimigo',spd:enemy,enemy:true}]:[])],options.speedTick??7);
- const index=turns.findIndex(t=>t.key==='__enemy__');
- return {complete:true,actors,missing:[],turns,cut:enemy>0?turns.some((t,i)=>t.key!=='__enemy__'&&i>index):null,source:builds?'builds':'equipped'};
+ const configured=scenarioForTeam(team,actors),hasEnemies=configured.actors.some(a=>a.enemy);
+ const scenario=simulateCombat([...configured.actors,...(!hasEnemies&&enemy>0?[{key:'__enemy__',name:'Inimigo',spd:enemy,enemy:true}]:[])],{tickPercent:options.speedTick??7,events:configured.events,stopAfterFirst:true});scenario.risks.push(...missingDefenseConditions(team));const turns=scenario.firstTurns;
+ return {complete:true,actors,missing:[],turns,scenario,cut:scenario.cut,source:builds?'builds':'equipped'};
 }
 export function validateWaveClear(unit,stats,skill,enemies,settings={}){
  const value=(key,fallback,min=0,max=1000000)=>{const n=Number(settings[key]??fallback);if(!Number.isFinite(n)||n<min||n>max)throw new Error(`Parâmetro de dano inválido: ${key}`);return n;};
