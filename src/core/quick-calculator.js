@@ -31,6 +31,10 @@ export function quickLeader(master){return catalogLeader(master);}
 export function autoTuneQuickTeam(team){
  if(team.configs.some(c=>!c.masterId))return team;
  let working={...team,towerSpd:15,guildSpd:team.gameMode==='siege'?5:0,configs:team.configs.map(c=>({...c,manual:{...c.manual,sheet:{...c.manual.sheet}}}))};
+ // Seed all boosted followers together before testing any prefix: stale fast
+ // followers must not invalidate the first follower's search during a drag.
+ const floors=openerRequirements(working);
+ if(floors)working.configs=working.configs.map((c,i)=>{const floor=floors.members.find(m=>m.key===c.key);return i&&floor&&c.autoSpeed!==false?{...c,manual:{...c.manual,sheet:{...c.manual.sheet,spd:floor.sheetExact}}}:c;});
  let opener;try{opener=quickPreview(working).turns.find(t=>t.key===working.configs[0].key);}catch{return working;}if(!opener)return working;
  for(let index=1;index<working.configs.length;index++){
   const config=working.configs[index];if(config.autoSpeed===false)continue;
@@ -42,4 +46,11 @@ export function autoTuneQuickTeam(team){
   working.configs[index]={...config,syncMinimum:found,...(found!==null?{manual:{...config.manual,sheet:{...config.manual.sheet,spd:found}}}:{})};
  }
  return working;
+}
+
+// One atomic transition shared by the number input and range control.
+export function updateQuickSheetSpeed(team,key,value,tune=true){
+ const master=team.configs[0]?.key===key;
+ const next={...team,configs:team.configs.map(c=>c.key===key?{...c,autoSpeed:false,manual:{...c.manual,sheet:{...c.manual.sheet,spd:value}}}:master?{...c,autoSpeed:true}:c)};
+ return tune?autoTuneQuickTeam(next):next;
 }

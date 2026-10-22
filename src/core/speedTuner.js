@@ -3,6 +3,14 @@ import passiveNotices from './passive-notices.json' with {type:'json'};
 import {leaderApplies,speedLeaderBonus} from './leaders.js';
 export const PASSIVES={20615:'amduat',25311:'miles',23512:'masha',23612:'masha_dismounted',26113:'sonia',21214:'tian_lang',16615:'ragdoll',22211:'abellio',22311:'abellio_beast',16312:'antares',16613:'leo',21314:'tablo'};
 const number=(v,fallback,min,max,label)=>{const n=Number(v??fallback);if(!Number.isFinite(n)||n<min||n>max)throw new Error(`${label} inválido.`);return n;};
+// Conservative requested 30-ATB floor, separate from the discrete scenario proof.
+// This coefficient is a policy, not a universal SWOP identity across tick brackets.
+export function boostedFollowerMinimum(combatSpd,boost=30){
+ const speed=number(combatSpd,0,1,10000000,'SPD do abridor');
+ const amount=number(boost,30,0,100,'Boost');
+ if(amount!==30)throw new Error('Piso de sincronização disponível apenas para boost de 30.');
+ return Math.ceil(speed*8475/10000-1e-10);
+}
 export function normalizeCombat(raw={}){const result={speedBuff:raw.speedBuff===true,slow:raw.slow===true,disabled:raw.disabled===true,oblivion:raw.oblivion===true,hpPercent:number(raw.hpPercent,100,0,100,'HP'),buffCount:number(raw.buffCount,0,0,100,'Buffs'),mashaStacks:number(raw.mashaStacks,0,0,5,'Stacks Masha'),targetTick:number(raw.targetTick,0,0,10000,'Tick alvo')};if(![result.targetTick,result.buffCount,result.mashaStacks].every(Number.isInteger))throw new Error('Buffs, stacks e ticks devem ser inteiros.');return result;}
 export function runtimeSpeed(raw,master,combat={},effects={}){
  const c=normalizeCombat(combat),p=c.oblivion?null:PASSIVES[master],a=effects.totals||effects;

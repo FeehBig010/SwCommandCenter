@@ -74,3 +74,26 @@ A SPD inimiga automática é um **preset de planejamento**, calculado com base m
 `monsterDatabase.js` centralizes leader/opener lookup. The manual calculator recognizes Tiana's first-slot S3, adds one first-turn modeled cleanse/strip plus 30% allied ATB action and respects an explicitly configured first-turn boost override. The proportional follower floor is `ceil(raw opener combat SPD × 0.70 − follower base bonuses)`; no premature rounding of raw opener speed. The manual sheet already includes Swift. The equipped-account engine retains its earlier Swift rounding rules. Guild SPD still applies only to Guild/Siege context, not Arena. Adriana / Water Pure Vanilla are explicitly Arena ATK 44%, SPD 0%.
 
 The proportion badge is named `100% Sincronizado · regra 70%` and deliberately scoped to that formula. Integer ticks remain the separate anti-cut check; a proportional pass can coexist with a red cut from a faster defense. Sorting/reordering preserves leader and event identities. Read docs/PVE-UX.md for the numerical and browser-validation scope.
+
+## Calculadora Livre — piso de boost e slider mestre
+
+O piso antigo de 70% foi removido. Para os abridores catalogados Tiana e Kabilla,
+`boostedFollowerMinimum` usa o piso conservador solicitado
+`ceil(CombatSPD * 8475 / 10000)`: 400 resulta exatamente em 339.
+Esse coeficiente é uma política solicitada, não uma implementação comprovada de
+um algoritmo SWOP universal: o mínimo exato depende do tick de abertura,
+overflow, inimigos e eventos. A simulação discreta existente continua validando
+ordem/prazos e pode exigir velocidade maior ou retornar mínimo impossível.
+O badge indica somente cumprimento do piso; não garante imunidade a cortes.
+
+A conversão para ficha subtrai os bônus de base aplicáveis de Glória/Guilda/líder
+uma vez, com arredondamento final para cima. Guilda continua restrita a Siege.
+Alterar a SPD de ficha do slot 1, por input ou range, reativa AUTO em todos os
+seguidores e recalcula seus valores em uma única atualização de estado React.
+Editar diretamente um seguidor ainda permite override até a próxima mudança
+do mestre. Todos os seguidores com boost são inicializados juntos no piso antes
+da busca por ticks, evitando interferência de valores antigos durante o arraste.
+
+Validação: 199 testes; build Vite; Playwright (Browser plugin indisponível),
+input numérico e evento de teclado no range mestre atualizando os três pares
+input/range, 1440 e 390 px sem overflow ou erros de execução.
