@@ -1,3 +1,4 @@
+import {normalizeCrafts} from './rune-crafts.js';
 import {skillLevels} from './skill-levels.js';
 import {extractTowers} from './towers.js';
 import {normalizeArtifactSubstats} from './artifacts.js';
@@ -40,7 +41,7 @@ export function normalizeAccount(raw){
  }
  const existing=new Set(presets.map(p=>JSON.stringify([p.gameMode,p.dungeon,p.unitIds])));
  for(const preset of supplemental){const key=JSON.stringify([preset.gameMode,preset.dungeon,preset.unitIds]);if(!existing.has(key)){existing.add(key);presets.push({...preset,id:`source-${preset.id}`});}}
- return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege,accountPresets:presets,towers:extractTowers(raw)};
+ return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege,accountPresets:presets,towers:extractTowers(raw),crafts:normalizeCrafts(raw.rune_craft_item_list)};
 }
 export function blankConfig(unit=null,name='Escolher monstro'){
  return {key:crypto.randomUUID(),unitId:unit?.id||null,masterId:unit?.master||null,label:unit?.name||name,enabled:true,lockSpeedSync:false,artifacts:true,sets:[0,0],strictSets:true,mains:{2:0,4:0,6:0},goals:{hp:'',def:'',spd:'',atk:'',cr:'',cd:'',res:'',acc:''},basis:'bonus',objective:'balanced'};

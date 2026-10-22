@@ -1,3 +1,4 @@
+import {normalizeCrafts} from './rune-crafts.js';
 import {cleanTowers} from './towers.js';
 import {normalizeAccount,STATS} from './data.js';
 const fail=()=>{throw new Error('Backup de conta inválido ou incompatível.');};
@@ -16,6 +17,7 @@ export function accountSnapshot(input){
  const known=new Set(result.units.map(u=>u.id));
  result.accountPresets=(input.accountPresets||[]).map(p=>({id:String(p.id).slice(0,200),name:String(p.name||'Deck').slice(0,100),gameMode:['siege','arena','cairos'].includes(p.gameMode)?p.gameMode:null,dungeon:['gb12','db12','nb12','gbah','dbah','nbah','sf10','pc10'].includes(p.dungeon)?p.dungeon:null,unitIds:(p.unitIds||[]).slice(0,5).map(i=>known.has(i)?i:null),missingIds:(p.missingIds||[]).map(id)}));
  result.siege=(input.siege||[]).map(s=>({name:String(s.name||'Defesa').slice(0,100),unitIds:(s.unitIds||[]).map(id).filter(i=>known.has(i))}));
+ result.crafts=normalizeCrafts((input.crafts||[]).map(c=>({craft_item_id:c.id,craft_type:c.ancient?(c.kind==='gem'?5:6):(c.kind==='gem'?1:2),craft_type_id:c.set*10000+c.stat*100+c.grade,quantity:c.quantity})));
  if(input.towers)result.towers=cleanTowers(input.towers);
  return result;
 }

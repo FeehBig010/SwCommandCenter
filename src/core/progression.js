@@ -1,0 +1,8 @@
+import {runeEfficiency} from './accountDiagnostic.js';
+export function progressionSnapshot(account,now=new Date().toISOString()){
+ const efficiency=account.runes.map(runeEfficiency).filter(n=>n!==null),speeds=account.runes.map(r=>{const s=r.subs.find(e=>e[0]===8);return s?s[1]+(s[3]||0):0;});
+ return {accountId:String(account.id),capturedAt:now,units:account.units.length,runes:account.runes.length,artifacts:account.artifacts.length,meanEfficiency:efficiency.length?Math.round(efficiency.reduce((a,b)=>a+b,0)/efficiency.length*10)/10:0,fastRunes:speeds.filter(s=>s>=18).length};
+}
+export function appendProgression(history,snapshot){const week=date=>{const d=new Date(date);d.setUTCHours(0,0,0,0);d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));return d.toISOString().slice(0,10);};return [...(history||[]).filter(s=>s.accountId!==snapshot.accountId||week(s.capturedAt)!==week(snapshot.capturedAt)),snapshot].sort((a,b)=>Date.parse(a.capturedAt)-Date.parse(b.capturedAt)).slice(-520);}
+export function progressionForAccount(history,accountId){return (history||[]).filter(s=>s.accountId===String(accountId)).sort((a,b)=>Date.parse(a.capturedAt)-Date.parse(b.capturedAt));}
+export function normalizeProgression(s){if(!s||typeof s.accountId!=='string'||s.accountId.length>100||!Number.isFinite(Date.parse(s.capturedAt)))throw new Error('Snapshot inválido.');const row={accountId:s.accountId,capturedAt:new Date(s.capturedAt).toISOString()};for(const key of ['units','runes','artifacts','meanEfficiency','fastRunes']){if(!Number.isFinite(s[key])||s[key]<0||s[key]>1000000)throw new Error('Snapshot inválido.');row[key]=s[key];}return row;}

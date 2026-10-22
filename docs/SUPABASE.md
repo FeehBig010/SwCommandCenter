@@ -90,3 +90,7 @@ Sem `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`, o app funciona localmente, s
 O Portal permite calculadora sem arquivo ou importação completa do SWEX. Depois do login, “Salvar backup privado” envia apenas o inventário normalizado e validado, nunca o JSON bruto, credenciais ou dados sociais. “Carregar minha conta da nuvem” revalida o backup antes de instalar. A tabela `account_snapshots` mantém um snapshot por usuário; RLS permite acesso exclusivamente ao dono, inclusive excluindo líderes e administradores de outras contas. Não há upload automático. Sem variáveis ou login, os fluxos locais continuam funcionando.
 
 A quarta migration deve ser aplicada antes desses botões serem utilizados no projeto real. Os testes executam essa política em PostgreSQL/PGlite; o fluxo do SDK também foi exercitado com HTTP simulado. Cadastro, login e armazenamento no serviço real ainda dependem da configuração do projeto.
+
+## Progressão semanal e pedras de melhoria
+
+Aplique também `supabase/migrations/202610220005_progression_and_crafts.sql`, depois da 004. Ela permite a lista normalizada `crafts` no backup e cria `account_progression`, com PK `(user_id, account_id, week)` e RLS exclusiva do dono. O histórico registra métricas agregadas, não cópias extras do inventário; a semana começa segunda-feira em UTC. Importações e o botão de registro atualizam o snapshot local da semana. Salvar/carregar progressão na nuvem exige ação explícita e login; o backup de inventário continua separado. Apagar dados locais limpa o histórico local, sem excluir registros remotos.

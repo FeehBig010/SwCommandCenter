@@ -36,7 +36,7 @@ export function MonsterEditor({config,index,slotCount,account,onChange,onMove,ca
  const candidates=useMemo(()=>(useCatalog?MONSTER_CATALOG:account.units).slice().sort((a,b)=>a.name.localeCompare(b.name)||(b.level||0)-(a.level||0)).map(u=>({value:useCatalog?`catalog:${u.master}`:`unit:${u.id}`,name:u.name,master:u.master,element:u.element,unitId:useCatalog?null:u.id,detail:useCatalog?'Catálogo':`Nv.${u.level} · #${String(u.id).slice(-5)}`})),[useCatalog,account]);
  const update=(key,value)=>onChange({...config,[key]:value});
  async function toggleLeader(checked){if(!onLeader)return;setLeaderNotice('');if(!checked){onLeader(null);return;}setLeaderBusy(true);try{const leader=catalogLeader(master);onLeader(leader);if(!leader)setLeaderNotice('Esta unidade não possui habilidade de líder.');}catch{setLeaderNotice('Não foi possível consultar a habilidade.');}finally{setLeaderBusy(false);}}
- return <section className={`monster-editor ${!catalogMode&&!config.enabled?'muted-editor':''}`} aria-label={`Configuração de ${config.label}`}>
+ return <section className={`monster-editor ${!catalogMode&&!config.enabled?'muted-editor':''}`} data-element={monster.element} aria-label={`Configuração de ${config.label}`}>
   <div className="monster-heading">
    <MonsterPortrait master={master} name={monster.name} element={monster.element}/>
    <div className="monster-title"><h3>{monster.name}</h3><small>{unit?`${ELEMENTS[unit.element]||''} · Nv. ${unit.level}`:useCatalog?'Catálogo de monstros':'Escolha uma unidade da conta'}</small></div>

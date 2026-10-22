@@ -1,3 +1,4 @@
+import {farmGuide} from './farm-guide.js';
 import {cairosChecklist,cairosAccuracyTarget} from './cairos-checklist.js';
 import {arenaContest} from './arena.js';
 import {optimize,equippedTeamBuilds,teamTurnPreview,speedSyncValid,goalReport} from './optimizer.js';
@@ -5,7 +6,7 @@ import {DEFAULT_OPTIONS,STATS,FOUR} from './data.js';
 import {diagnosticSignature} from './loadouts.js';
 export function diagnoseTeam(account,team,options={},reservedIds=[]){
  const signature=diagnosticSignature(account,team,options,reservedIds),current=equippedTeamBuilds(account,team,options),active=team.configs.filter(c=>c.enabled!==false);
- const result={signature,current,improvement:null,scope:'bounded-current-and-unequipped-runes',warnings:[]};
+ const result={signature,current,improvement:null,scope:'bounded-current-and-unequipped-runes',farmGuide:farmGuide(team,current),warnings:[]};
  if(team.active===false)return {...result,status:'pending',message:'Time fora da distribuição ativa.'};
  if(current.length!==active.length||!active.length)return {...result,status:'pending',message:'Complete o time e as seis runas de cada monstro.'};
  const preview=teamTurnPreview(account,team,options,current),assignments=Object.fromEntries(current.map(b=>[b.key,b]));

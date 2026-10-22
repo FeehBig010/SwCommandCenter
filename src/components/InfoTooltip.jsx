@@ -1,0 +1,2 @@
+import {useId,useState} from 'react';
+export default function InfoTooltip({label,children}){const id=useId(),[open,setOpen]=useState(false);return <span className="technical-help"><button type="button" aria-label={label} aria-describedby={id} aria-expanded={open} onClick={()=>setOpen(!open)} onKeyDown={e=>{if(e.key==='Escape'){setOpen(false);e.currentTarget.blur();}}}>i</button><span id={id} role="tooltip" className={open?'is-open':''}>{children}</span></span>;}
