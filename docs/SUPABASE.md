@@ -10,7 +10,7 @@ O repositório funciona sem Supabase. **Não há projeto configurado ou banco re
 
 ## 2. Criar as tabelas
 
-Aplique uma vez, em ordem, `supabase/migrations/202610220001_guild_cloud.sql`, `supabase/migrations/202610220002_siege_counters.sql` e `supabase/migrations/202610220003_admin_rbac.sql` no SQL Editor do projeto, ou use o CLI autenticado:
+Aplique uma vez, em ordem, `supabase/migrations/202610220001_guild_cloud.sql`, `supabase/migrations/202610220002_siege_counters.sql`, `supabase/migrations/202610220003_admin_rbac.sql` e `supabase/migrations/202610220004_account_snapshots.sql` no SQL Editor do projeto, ou use o CLI autenticado:
 
 ```sh
 supabase link --project-ref SEU_PROJECT_REF
@@ -84,3 +84,9 @@ Counters compartilhados entram como **pending**. Antes da aprovação, são vis�
 - O tema é fixo e global: madeira, dourado `#d4af37`, emblema e `/Fundo`. A tela Identidade e os seletores de cor/emblema/nome foram removidos; personalizações antigas no armazenamento local são ignoradas. As ações de privacidade/apagar dados locais ficam em **Dados SWEX**.
 
 Sem `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`, o app funciona localmente, sem chamadas ao Supabase e sem painel administrativo. As migrations e o bootstrap ficam preparados para execução posterior. Configuração inválida também mantém o modo local. Com um projeto configurado mas migrations ausentes, o app mostra erro de verificação e não concede cargos por fallback. Nenhuma conta real foi promovida ou banco remoto alterado nesta entrega: o projeto ainda não existe.
+
+## Backup privado opcional da conta
+
+O Portal permite calculadora sem arquivo ou importação completa do SWEX. Depois do login, “Salvar backup privado” envia apenas o inventário normalizado e validado, nunca o JSON bruto, credenciais ou dados sociais. “Carregar minha conta da nuvem” revalida o backup antes de instalar. A tabela `account_snapshots` mantém um snapshot por usuário; RLS permite acesso exclusivamente ao dono, inclusive excluindo líderes e administradores de outras contas. Não há upload automático. Sem variáveis ou login, os fluxos locais continuam funcionando.
+
+A quarta migration deve ser aplicada antes desses botões serem utilizados no projeto real. Os testes executam essa política em PostgreSQL/PGlite; o fluxo do SDK também foi exercitado com HTTP simulado. Cadastro, login e armazenamento no serviço real ainda dependem da configuração do projeto.

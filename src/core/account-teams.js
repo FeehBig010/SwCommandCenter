@@ -1,8 +1,9 @@
+import {assertPresetArea} from './deckManager.js';
 import {blankConfig,makeTeam,FOUR} from './data.js';
 import {catalogLeader} from './leader-catalog.js';
 import {automaticTeamName} from './team-ux.js';
 export function teamFromGameDeck(preset,account,previous){
- const mode=preset.gameMode||previous?.gameMode||'siege',slots=mode==='cairos'?5:mode==='arena'?4:3;
+ const mode=preset.gameMode||previous?.gameMode||'siege';assertPresetArea(preset,mode,preset.dungeon);if(previous&&(previous.gameMode||'siege')!==mode)throw new Error('Não é possível carregar um deck de outra área.');const slots=mode==='cairos'?5:mode==='arena'?4:3;
  const oldByUnit=new Map((previous?.configs||[]).map(c=>[c.unitId,c]));
  const configs=Array.from({length:slots},(_,i)=>{
   const unit=account.units.find(u=>u.id===preset.unitIds[i]),old=unit&&oldByUnit.get(unit.id);
@@ -13,7 +14,7 @@ export function teamFromGameDeck(preset,account,previous){
   return {...c,sets,strictSets:false,basis:'total',lockSpeedSync:mode==='cairos',mains:Object.fromEntries([2,4,6].map(s=>[s,account.runes.find(r=>unit?.runeIds.includes(r.id)&&r.slot===s)?.main[0]||0]))};
  });
  const leader=catalogLeader(configs[0]?.masterId);
- const next={...makeTeam(mode),...previous,gameMode:mode,configs,inactiveConfigs:[],leader,leaderIndex:0,leaderKey:leader?configs[0]?.key:null,leaderSpd:0,sourceDeckId:preset.id,sourceAccountId:account.id,sourceDungeon:preset.dungeon||null,dungeon:preset.dungeon||previous?.dungeon||null,sourceDeckName:preset.name,sourceImportedAt:account.importedAt};
+ const next={...makeTeam(mode),...previous,gameMode:mode,configs,inactiveConfigs:[],leader,leaderIndex:0,leaderKey:leader?configs[0]?.key:null,leaderSpd:0,towerSpd:previous?.towerSpd??account.towers?.glorySpd??0,guildSpd:previous?.guildSpd??account.towers?.guildSpd??0,sourceDeckId:preset.id,sourceAccountId:account.id,sourceDungeon:preset.dungeon||null,dungeon:preset.dungeon||previous?.dungeon||null,sourceDeckName:preset.name,sourceImportedAt:account.importedAt};
  delete next.plannedRunes;
  return {...next,autoName:previous?.autoName!==false,name:previous?.autoName===false?previous.name:automaticTeamName(configs)};
 }

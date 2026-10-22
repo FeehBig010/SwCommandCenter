@@ -1,3 +1,5 @@
+import {skillLevels} from './skill-levels.js';
+import {extractTowers} from './towers.js';
 import {normalizeArtifactSubstats} from './artifacts.js';
 import { extractAccountPresets } from './decks.js';
 import catalog from './catalog.json' with { type: 'json' };
@@ -22,7 +24,7 @@ export function normalizeAccount(raw){
  raw.runes.forEach(r=>addRune(r));(raw.artifacts||[]).forEach(a=>addArtifact(a));
  const units=raw.unit_list.filter(u=>u.unit_id&&u.unit_master_id&&u.con>0).map(u=>{
   (u.runes||[]).forEach(r=>addRune(r,u.unit_id));(u.artifacts||[]).forEach(a=>addArtifact(a,u.unit_id));
-  return {id:u.unit_id,master:u.unit_master_id,name:monsterName(u.unit_master_id),level:number(u.unit_level),stars:number(u.class),element:number(u.attribute,u.unit_master_id%10),base:{hp:number(u.con)*15,atk:number(u.atk),def:number(u.def),spd:number(u.spd),cr:number(u.critical_rate),cd:number(u.critical_damage),res:number(u.resist),acc:number(u.accuracy)},runeIds:(u.runes||[]).map(r=>r.rune_id),artifactIds:(u.artifacts||[]).map(a=>a.rid??a.artifact_id)};
+  return {id:u.unit_id,master:u.unit_master_id,name:monsterName(u.unit_master_id),level:number(u.unit_level),stars:number(u.class),element:number(u.attribute,u.unit_master_id%10),base:{hp:number(u.con)*15,atk:number(u.atk),def:number(u.def),spd:number(u.spd),cr:number(u.critical_rate),cd:number(u.critical_damage),res:number(u.resist),acc:number(u.accuracy)},...(skillLevels(u.skills??u.skill_list).length?{skillLevels:skillLevels(u.skills??u.skill_list)}:{}),runeIds:(u.runes||[]).map(r=>r.rune_id),artifactIds:(u.artifacts||[]).map(a=>a.rid??a.artifact_id)};
  });
  const artifactsByOwner=new Map();
  for(const a of artifactMap.values()){if(!artifactsByOwner.has(a.owner))artifactsByOwner.set(a.owner,[]);artifactsByOwner.get(a.owner).push(a.id);}
@@ -38,7 +40,7 @@ export function normalizeAccount(raw){
  }
  const existing=new Set(presets.map(p=>JSON.stringify([p.gameMode,p.dungeon,p.unitIds])));
  for(const preset of supplemental){const key=JSON.stringify([preset.gameMode,preset.dungeon,preset.unitIds]);if(!existing.has(key)){existing.add(key);presets.push({...preset,id:`source-${preset.id}`});}}
- return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege,accountPresets:presets};
+ return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege,accountPresets:presets,towers:extractTowers(raw)};
 }
 export function blankConfig(unit=null,name='Escolher monstro'){
  return {key:crypto.randomUUID(),unitId:unit?.id||null,masterId:unit?.master||null,label:unit?.name||name,enabled:true,lockSpeedSync:false,artifacts:true,sets:[0,0],strictSets:true,mains:{2:0,4:0,6:0},goals:{hp:'',def:'',spd:'',atk:'',cr:'',cd:'',res:'',acc:''},basis:'bonus',objective:'balanced'};

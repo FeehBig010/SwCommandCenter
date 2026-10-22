@@ -1,0 +1,1 @@
+export function skillLevels(rows){return [...new Map((Array.isArray(rows)?rows:[]).slice(0,8).flatMap((s,i)=>{const level=Number(typeof s==='number'?s:s?.level??s?.skill_level),slot=Number(s?.slot??i+1);return Number.isInteger(level)&&level>=1&&level<=50&&Number.isInteger(slot)&&slot>=1&&slot<=8?[[slot,{slot,level}]]:[];})).values()].sort((a,b)=>a.slot-b.slot);}

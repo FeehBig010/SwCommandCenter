@@ -1,3 +1,4 @@
+import {normalizeFocuses} from './team-ux.js';
 import {normalizeCombat,normalizeScenario} from './speedTuner.js';
 import {normalizeLeader} from './leaders.js';
 import {normalizeDamageSettings} from './damage.js';
@@ -30,7 +31,7 @@ export function cleanTemplate(input,{newId=false}={}){
    if(!SLOT_MAINS[slot].includes(id))fail(`atributo principal do slot ${slot}.`);
    return [slot,id];
   }));
-  return {...(c.combat?{combat:normalizeCombat(c.combat)}:{}),...(c.combatSpd!==undefined?{combatSpd:metric(c.combatSpd,10000)||0}:{}),masterId:Number(c.masterId),label:text(c.label,80,true),sets,strictSets:true,mains,
+  return {...(c.focuses?{focuses:normalizeFocuses(c.focuses)}:{}),...(c.combat?{combat:normalizeCombat(c.combat)}:{}),...(c.combatSpd!==undefined?{combatSpd:metric(c.combatSpd,10000)||0}:{}),masterId:Number(c.masterId),label:text(c.label,80,true),sets,strictSets:true,mains,
    goals:Object.fromEntries(STATS.map(k=>[k,metric(c.goals?.[k])])),
    basis:c.basis==='bonus'?'bonus':'total',damage:normalizeDamageSettings(c.damage),artifacts:c.artifacts!==false,lockSpeedSync:c.lockSpeedSync===true,
    objective:['balanced','hp','spd','cr','damage'].includes(c.objective)?c.objective:'balanced'};

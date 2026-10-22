@@ -1,3 +1,4 @@
+import {GOAL_PRESETS,normalizeFocuses} from './team-ux.js';
 import {currentRuneIds} from './loadouts.js';
 import {allocationScore,compareAllocation,isPriority} from './allocation.js';
 import {combatAttributes,simulateFirstTurns,simulateCombat,scenarioForTeam,missingDefenseConditions} from './speedTuner.js';
@@ -52,7 +53,7 @@ export function goalValue(stats,config,key){return stats[config.basis==='total'|
 export function goalReport(stats,config){const rows=STATS.filter(k=>Number(config.goals[k])>0).map(key=>{const target=Number(config.goals[key]);const actual=goalValue(stats,config,key);return {key,target,actual,missing:Math.max(0,target-actual),met:actual>=target};});if(Number(config.combatSpd)>0){const target=Number(config.combatSpd),actual=stats.combat?.spd??stats.total.spd;rows.push({key:'combatSpd',target,actual,missing:Math.max(0,target-actual),met:actual>=target});}return rows;}
 function setRequirements(c){const req={};for(const id of c.sets.filter(Boolean))req[id]=(req[id]||0)+(FOUR.has(id)?4:2);return req;}
 function setsValid(counts,req){return Object.entries(req).every(([id,n])=>(counts[id]||0)>=n);}
-function objective(stats,c){const s=stats.total;switch(c.objective){case 'cr':return Math.min(s.cr,100)/100;case 'spd':return Math.min(s.spd/400,1.5);case 'hp':return Math.min(s.hp/70000,1.5);case 'damage':if(stats.damage)return stats.damage.total/100000;return Math.min((s.atk*(1+Math.min(100,s.cr)/100*s.cd/100))/10000,1.5);default:return Math.min(s.hp/60000+s.def/2500+s.spd/350,3)/3;}}
+function objective(stats,c){const focuses=c.focuses?normalizeFocuses(c.focuses):[];if(focuses.length)return focuses.reduce((n,key)=>n+objective(stats,{...c,focuses:[],objective:GOAL_PRESETS[key].objective}),0)/focuses.length;const s=stats.total;switch(c.objective){case 'cr':return Math.min(s.cr,100)/100;case 'spd':return Math.min(s.spd/400,1.5);case 'hp':return Math.min(s.hp/70000,1.5);case 'damage':if(stats.damage)return stats.damage.total/100000;return Math.min((s.atk*(1+Math.min(100,s.cr)/100*s.cd/100))/10000,1.5);default:return Math.min(s.hp/60000+s.def/2500+s.spd/350,3)/3;}}
 function evaluate(stats,c,counts,progress=1){let deficit=Number(c.combatSpd)>0?Math.max(0,c.combatSpd*progress-stats.combat.spd)/c.combatSpd:0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0){const desired=target*progress;const actual=goalValue(stats,c,k);deficit+=Math.max(0,desired-actual)/Math.max(target,1);}}
  let preference=0;if(!c.strictSets){const req=setRequirements(c);preference=Object.entries(req).reduce((s,[id,n])=>s+Math.min((counts[id]||0)/n,1),0)*0.03;}
  return {deficit,utility:objective(stats,c)+preference};

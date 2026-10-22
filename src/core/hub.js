@@ -1,3 +1,4 @@
+import {normalizeFocuses} from './team-ux.js';
 import {normalizeCombat,normalizeScenario} from './speedTuner.js';
 import {normalizeLeader} from './leaders.js';
 import {normalizeSiegeSpec} from './siege-schema.js';
@@ -15,7 +16,7 @@ export function portableTeam(input,account){
   const sets=(c.sets||[]).map(Number).filter(Boolean);
   if(sets.some(s=>!SETS[s]||s===25)||sets.reduce((n,s)=>n+(FOUR.has(s)?4:2),0)>6)throw new Error('Sets incompatíveis com seis runas.');
   const mains=Object.fromEntries([2,4,6].map(s=>{const v=Number(c.mains?.[s]||0);if(!SLOT_MAINS[s].includes(v))throw new Error('Main stat inválido.');return [s,v];}));
-  return {...(c.combat?{combat:normalizeCombat(c.combat)}:{}),masterId,label:text(unit?.name||c.label,80),sets,strictSets:c.strictSets!==false,mains,goals:Object.fromEntries(STATS.map(k=>[k,numeric(c.goals?.[k])])),basis:c.basis==='bonus'?'bonus':'total',artifacts:c.artifacts!==false,lockSpeedSync:c.lockSpeedSync===true,objective:['balanced','hp','spd','cr','damage'].includes(c.objective)?c.objective:'balanced',damage:normalizeDamageSettings(c.damage),...(c.combatSpd!==undefined?{combatSpd:numeric(c.combatSpd,10000)||0}:{}),...(c.maxTick!==undefined?{maxTick:numeric(c.maxTick,10000)||0}:{})};
+  return {...(c.focuses?{focuses:normalizeFocuses(c.focuses)}:{}),...(c.combat?{combat:normalizeCombat(c.combat)}:{}),masterId,label:text(unit?.name||c.label,80),sets,strictSets:c.strictSets!==false,mains,goals:Object.fromEntries(STATS.map(k=>[k,numeric(c.goals?.[k])])),basis:c.basis==='bonus'?'bonus':'total',artifacts:c.artifacts!==false,lockSpeedSync:c.lockSpeedSync===true,objective:['balanced','hp','spd','cr','damage'].includes(c.objective)?c.objective:'balanced',damage:normalizeDamageSettings(c.damage),...(c.combatSpd!==undefined?{combatSpd:numeric(c.combatSpd,10000)||0}:{}),...(c.maxTick!==undefined?{maxTick:numeric(c.maxTick,10000)||0}:{})};
  });
  return {...(Object.hasOwn(input,'leader')?{leader:normalizeLeader(input.leader)}:{}),name:text(input.name||'Composição'),...(input.combatScenario?{combatScenario:normalizeScenario(input.combatScenario)}:{}),...(input.autoName!==undefined?{autoName:input.autoName===true}:{}),...(input.guildSpd!==undefined?{guildSpd:numeric(input.guildSpd,100)||0}:{}),gameMode,mode:input.mode==='attack'?'attack':'defense',towerSpd:numeric(input.towerSpd,100)||0,leaderSpd:numeric(input.leaderSpd,100)||0,enemyCombatSpd:numeric(input.enemyCombatSpd,1000)||0,leaderIndex:Math.min(configs.length-1,Math.max(0,Number.isInteger(input.leaderIndex)?input.leaderIndex:input.configs.findIndex(c=>c.key===input.leaderKey))),configs};
 }

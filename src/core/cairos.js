@@ -1,3 +1,4 @@
+import {presetsForArea} from './deckManager.js';
 import {teamFromGameDeck} from './account-teams.js';
 import waves from './cairos-waves.json' with {type:'json'};
 import {blankConfig,makeTeam} from './data.js';
@@ -18,10 +19,10 @@ export const ALL_CAIROS_PROFILES=[...CAIROS_PROFILES,...LEGACY_CAIROS_PROFILES];
 export const WAVE_SKILLS={13413:{name:'Amputation Magic · Lushen',multiplier:.68,hits:3,ignoreDefense:true,maxSkillUps:30},13911:{name:'Thousand Shots · Julie (HP cheio)',multiplier:1.2,hits:6,ignoreDefense:false,maxSkillUps:15}};
 export function makeCairosTeam(profile,account){
  if(!profile)throw new Error('Masmorra inválida.');
- const preset=account?.accountPresets?.find(p=>p.dungeon===profile.id);
+ const preset=presetsForArea(account?.accountPresets,'cairos',profile.id)[0];
  if(preset)return teamFromGameDeck(preset,account);
  const used=new Set();
- return {...makeTeam('cairos'),dungeon:profile.id,name:profile.name,configs:profile.members.map((name,i)=>{
+ return {...makeTeam('cairos'),towerSpd:account?.towers?.glorySpd||0,dungeon:profile.id,name:profile.name,configs:profile.members.map((name,i)=>{
   const master=MONSTER_CATALOG.find(m=>m.name===name)?.master;
   const unit=account?.units.filter(u=>u.name===name&&!used.has(u.id)).sort((a,b)=>b.level-a.level||b.master-a.master)[0];
   if(unit)used.add(unit.id);

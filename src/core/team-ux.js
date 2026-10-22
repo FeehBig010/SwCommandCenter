@@ -16,3 +16,13 @@ export function reorderTeam(team,from,to){
  const ref=k=>{if(!k.startsWith('ally:'))return k;const old=team.configs[Number(k.split(':')[1])];return `ally:${configs.findIndex(c=>c.key===old?.key)}`;};
  return updateAutomaticName(team,{...team,configs,leaderIndex:Math.max(0,configs.findIndex(c=>c.key===team.leaderKey)),...(team.combatScenario?{combatScenario:{...team.combatScenario,events:team.combatScenario.events.map(e=>({...e,afterKey:ref(e.afterKey),targets:e.targets.map(ref)}))}}:{})});
 }
+
+export function normalizeFocuses(values){return [...new Set(Array.isArray(values)?values:[])].filter(key=>Object.hasOwn(GOAL_PRESETS,key));}
+export function toggleGoalFocus(config,key,base={}){
+ if(!GOAL_PRESETS[key])throw new Error('Foco inválido.');
+ const selected=normalizeFocuses(config.focuses),removing=selected.includes(key),focuses=removing?selected.filter(v=>v!==key):[...selected,key];
+ if(removing)return {...config,focuses};
+ const goals=Object.fromEntries(Object.entries(config.goals).map(([stat,value])=>[stat,value===''?'':Number(value)+(config.basis==='bonus'&&['hp','atk','def','spd'].includes(stat)?Number(base[stat]||0):0)]));
+ for(const focus of focuses)for(const [stat,target] of Object.entries(GOAL_PRESETS[focus].goals))goals[stat]=Math.max(Number(goals[stat])||0,target);
+ return {...config,focuses,basis:'total',goals};
+}

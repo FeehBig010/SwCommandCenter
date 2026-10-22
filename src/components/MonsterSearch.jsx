@@ -1,27 +1,24 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Search, X } from 'lucide-react';
+import {useDeferredValue,useEffect,useId,useMemo,useRef,useState} from 'react';
+import {ChevronDown,Search,X} from 'lucide-react';
 import MonsterPortrait from './MonsterPortrait';
-import { ELEMENTS } from '../core/data';
-const ELEMENT_FILES={1:'water',2:'fire',3:'wind',4:'light',5:'dark'};
-const normalize=text=>String(text).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase();
-export default function MonsterSearch({label,options,value,onChange,placeholder='Buscar monstro…',disabled=false}){
- const [open,setOpen]=useState(false),[query,setQuery]=useState(''),[active,setActive]=useState(0);
- const root=useRef(),input=useRef(),id=useId();
+import {ELEMENTS} from '../core/data';
+import {monsterSearchText,normalizeSearch} from '../core/monster-search';
+const ELEMENT_FILES={1:'water',2:'fire',3:'wind',4:'light',5:'dark'},ROW=72,HEIGHT=280;
+export default function MonsterSearch({label,options,value,onChange,placeholder='Buscar nome ou família…',disabled=false}){
+ const [open,setOpen]=useState(false),[query,setQuery]=useState(''),[active,setActive]=useState(0),[scroll,setScroll]=useState(0);
+ const root=useRef(),input=useRef(),list=useRef(),id=useId(),deferred=useDeferredValue(query);
  const selected=options.find(o=>o.value===value);
- const filtered=useMemo(()=>options.filter(o=>normalize(`${o.name} ${o.detail||''} ${ELEMENTS[o.element]||''}`).includes(normalize(query))),[options,query]);
- const visible=filtered.slice(0,40);
+ const indexed=useMemo(()=>options.map(option=>({option,text:monsterSearchText(option)+' '+normalizeSearch(ELEMENTS[option.element])})),[options]);
+ const filtered=useMemo(()=>{const tokens=normalizeSearch(deferred).trim().split(/\s+/).filter(Boolean);return indexed.filter(({text})=>tokens.every(t=>text.includes(t))).map(x=>x.option);},[indexed,deferred]);
+ // Window the DOM, never the results: scrolling/End reaches every matching option.
+ const start=Math.max(0,Math.floor(scroll/ROW)-3),end=Math.min(filtered.length,start+Math.ceil(HEIGHT/ROW)+7),visible=filtered.slice(start,end);
  useEffect(()=>{const close=e=>{if(!root.current?.contains(e.target))setOpen(false);};document.addEventListener('pointerdown',close);return()=>document.removeEventListener('pointerdown',close);},[]);
- useEffect(()=>{if(open)root.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({block:'nearest'});},[active,open]);
+ useEffect(()=>{if(!open||!list.current)return;const top=active*ROW,bottom=top+ROW;if(top<list.current.scrollTop)list.current.scrollTop=top;else if(bottom>list.current.scrollTop+HEIGHT)list.current.scrollTop=bottom-HEIGHT;},[active,open]);
+ useEffect(()=>{setActive(0);setScroll(0);if(list.current)list.current.scrollTop=0;},[deferred]);
  function choose(option){onChange(option);setOpen(false);setQuery('');input.current?.focus();}
- return <div className="monster-combobox" ref={root}>
-  <label htmlFor={id}>{label}</label><div className="combobox-input"><Search size={14}/><input ref={input} id={id} role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded={open&&!disabled} aria-controls={`${id}-list`} aria-activedescendant={open&&visible[active]?`${id}-option-${active}`:undefined} disabled={disabled} placeholder={placeholder} value={open?query:selected?.name||''} onFocus={()=>{setOpen(true);setQuery('');setActive(0);}} onChange={e=>{setQuery(e.target.value);setActive(0);setOpen(true);}} onKeyDown={e=>{
-   if(e.key==='Escape'){setOpen(false);return;}
-   if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();setOpen(true);setActive(i=>Math.max(0,Math.min(visible.length-1,i+(e.key==='ArrowDown'?1:-1))));}
-   if(e.key==='Enter'&&open){e.preventDefault();if(visible[active])choose(visible[active]);}
-   if(e.key==='Tab')setOpen(false);
-  }}/><ChevronDown size={14}/></div>
-  {open&&!disabled&&<div className="combobox-popover"><div role="listbox" id={`${id}-list`} aria-label={label}>{visible.map((option,index)=><button type="button" role="option" tabIndex={-1} id={`${id}-option-${index}`} aria-selected={index===active} key={option.value} onPointerDown={e=>e.preventDefault()} onPointerMove={()=>setActive(index)} onClick={()=>choose(option)}>
-   <MonsterPortrait master={option.master} name={option.name} element={option.element}/><img className="element-icon" src={`/game-icons/elements/${ELEMENT_FILES[option.element]||"light"}.png`} alt={ELEMENTS[option.element]||"Elemento desconhecido"} title={ELEMENTS[option.element]}/><span className="combo-option-name"><strong>{option.name}</strong>{option.detail&&<small>{option.detail}</small>}</span>
-  </button>)}</div>{!visible.length&&<p className="combo-empty">Nenhum monstro encontrado.</p>}<div className="combobox-footer"><small>{filtered.length>40?`40 de ${filtered.length} · refine a busca`:`${filtered.length} opção(ões)`}</small><button type="button" disabled={disabled} onPointerDown={e=>e.preventDefault()} onClick={()=>choose(null)}><X size={12}/>Limpar seleção</button></div></div>}
- </div>;
+ return <div className="monster-combobox" ref={root}><label htmlFor={id}>{label}</label><div className="combobox-input"><Search size={14}/><input ref={input} id={id} role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded={open&&!disabled} aria-controls={`${id}-list`} aria-activedescendant={open&&filtered[active]?`${id}-option-${active}`:undefined} disabled={disabled} placeholder={placeholder} value={open?query:selected?.name||''} onFocus={()=>{setOpen(true);setQuery('');setActive(0);setScroll(0);}} onChange={e=>{setQuery(e.target.value);setActive(0);setOpen(true);}} onKeyDown={e=>{
+ if(e.key==='Escape'){setOpen(false);return;}
+ if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();setOpen(true);setActive(i=>Math.max(0,Math.min(filtered.length-1,e.key==='Home'?0:e.key==='End'?filtered.length-1:i+(e.key==='ArrowDown'?1:-1))));}
+ if(e.key==='Enter'&&open){e.preventDefault();if(filtered[active])choose(filtered[active]);}if(e.key==='Tab')setOpen(false);
+ }}/><ChevronDown size={14}/></div>{open&&!disabled&&<div className="combobox-popover"><div ref={list} role="listbox" id={`${id}-list`} aria-label={label} aria-busy={deferred!==query} className="monster-virtual-list" style={{height:Math.min(HEIGHT,filtered.length*ROW)||ROW}} onScroll={e=>setScroll(e.currentTarget.scrollTop)}><div style={{height:filtered.length*ROW,position:'relative'}}>{visible.map((option,offset)=>{const index=start+offset;return <button type="button" role="option" tabIndex={-1} id={`${id}-option-${index}`} aria-setsize={filtered.length} aria-posinset={index+1} aria-selected={index===active} key={option.value} style={{position:'absolute',top:index*ROW,height:ROW,left:0,right:0}} onPointerDown={e=>e.preventDefault()} onPointerMove={()=>setActive(index)} onClick={()=>choose(option)}><MonsterPortrait master={option.master} name={option.name} element={option.element}/>{ELEMENT_FILES[option.element]&&<img className="element-icon" src={`/game-icons/elements/${ELEMENT_FILES[option.element]}.png`} alt={ELEMENTS[option.element]} title={ELEMENTS[option.element]}/>}<span className="combo-option-name"><strong>{option.name}</strong>{option.detail&&<small>{option.detail}</small>}</span></button>;})}</div>{!filtered.length&&<p className="combo-empty">Nenhum monstro encontrado.</p>}</div><div className="combobox-footer"><small>{filtered.length} resultado(s)</small><button type="button" disabled={disabled} onPointerDown={e=>e.preventDefault()} onClick={()=>choose(null)}><X size={12}/>Limpar seleção</button></div></div>}</div>;
 }

@@ -1,5 +1,28 @@
+import {skillLevels} from './skill-levels.js';
+import {equippedBuild,calculateStats,artifactBonus} from './optimizer.js';
+import {STATS,FOUR} from './data.js';
 import {normalizeLeader} from './leaders.js';
 import { monsterImageSources } from './monsters.js';
+
+const DUNGEONS={db12:"Dragon's Lair B12",gb12:"Giant's Keep B12",nb12:'Necropolis B12',dbah:"Dragon's Lair · Abyss Hard",gbah:"Giant's Keep · Abyss Hard",nbah:'Necropolis · Abyss Hard',sf10:'Steel Fortress B10',pc10:"Punisher's Crypt B10"};
+export function teamCardHeading(team){
+ const pve=['cairos','dimensional','pve','rift','raid','toa','labyrinth'].includes(team.gameMode)||team.exportContext?.kind==='pve';
+ const explicit=String(team.exportContext?.title||team.objectiveName||'').trim().slice(0,200);
+ if(explicit)return {kind:pve?'pve':'pvp',title:explicit};
+ if(pve){const target=[team.bossName,team.stageName].filter(Boolean).join(' - ');return {kind:'pve',title:target||DUNGEONS[team.sourceDungeon||team.dungeon]||team.dungeonTitle||team.name||'Objetivo PvE'};}
+ const enemies=(team.enemyDefense||[]).map(m=>m.label||m.name).filter(Boolean);
+ return {kind:'pvp',title:enemies.length?`Counter · ${enemies.join(' / ')}`:team.mode==='defense'?`Defesa · ${team.gameMode==='arena'?'Arena':'Siege / GvG'}`:team.gameMode==='arena'?'Counter · Arena':'Counter Meta Siege Defense'};
+}
+function technicalSnapshot(team,c,unit,account){
+ if(c.manual?.base&&c.manual?.sheet){const base={...c.manual.base},total={...c.manual.sheet};return {source:'manual',base,total,bonus:Object.fromEntries(STATS.map(k=>[k,Number(total[k])-Number(base[k])])),grinds:null};}
+ if(!unit?.base)return null;
+ const base={...unit.base};
+ if(!Array.isArray(unit.runeIds)||!Array.isArray(account?.runes))return {source:'swex',base,total:null};
+ const build=equippedBuild(account,team,c),runes=build?.runeIds.map(id=>account.runes.find(r=>r.id===id));
+ if(!build||!runes)return {source:'swex',base,total:null};
+ const flat=artifactBonus(account,unit),without=calculateStats(unit,runes.map(r=>({...r,subs:r.subs.map(e=>e.map((v,i)=>i===3?0:v))})),flat),total={...build.stats.total};
+ return {source:team.plannedRunes?'local-plan':'swex',base,total,bonus:{...build.stats.bonus},grinds:Object.fromEntries(STATS.map(k=>[k,total[k]-without.total[k]])),sets:Object.entries(build.counts).flatMap(([id,n])=>Array(Math.floor(n/(FOUR.has(Number(id))?4:2))).fill(Number(id))),mains:Object.fromEntries(runes.filter(r=>[2,4,6].includes(r.slot)).map(r=>[r.slot,r.main[0]]))};
+}
 
 // Snapshot only the visible, included composition. No inventory or account identifiers.
 export function createTeamCard(team,account){
@@ -12,12 +35,14 @@ export function createTeamCard(team,account){
   if(unit)used.add(unit.id);
   const master=account?unit?.master:c.masterId;
   if(!master)return null;
-  return {...(Number(c.combatSpd)>0?{combatSpd:Number(c.combatSpd)}:{}),master,name:unit?.name||c.label,sets:[...(c.sets||[])],strictSets:c.strictSets!==false,
+  const technical=technicalSnapshot(team,c,unit,account),skills=unit?.skillLevels||skillLevels(c.skillLevels);
+  const leaderActive=!!team.leader&&(team.leaderKey?team.leaderKey===c.key:(team.configs||[]).findIndex(x=>x.key===c.key)===(team.leaderIndex||0));
+  return {isLeader:leaderActive,technical,skillLevels:skills.map(s=>({...s})),...(Number(c.combatSpd)>0?{combatSpd:Number(c.combatSpd)}:{}),master,name:unit?.name||c.label,sets:[...(c.sets||[])],strictSets:c.strictSets!==false,
    mains:{...c.mains},goals:{...c.goals},basis:c.basis,lockSpeedSync:c.lockSpeedSync===true};
  });
  if(monsters.some(m=>!m))return null;
- return {...(team.leader?{leader:normalizeLeader(team.leader)}:{}),name:team.name||'Equipe',description:team.description||'',gameMode:team.gameMode||'siege',mode:team.mode,
-  towerSpd:Number(team.towerSpd)||0,leaderSpd:Number(team.leaderSpd)||0,enemyCombatSpd:Number(team.enemyCombatSpd)||0,monsters};
+ return {...(team.leader?{leader:normalizeLeader(team.leader)}:{}),heading:teamCardHeading(team),name:team.name||'Equipe',description:team.description||'',gameMode:team.gameMode||'siege',mode:team.mode,
+  towerSpd:Number(team.towerSpd)||0,guildSpd:Number(team.guildSpd)||0,leaderSpd:Number(team.leaderSpd)||0,enemyCombatSpd:Number(team.enemyCombatSpd)||0,monsters};
 }
 export function cardFileName(name){
  const safe=String(name||'Equipe').replace(/[\x00-\x1f\x7f<>:"/\\|?*]/g,'-').trim().replace(/[. ]+$/g,'').slice(0,120)||'Equipe';

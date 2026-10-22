@@ -1,0 +1,4 @@
+import {accountSnapshot} from '../core/account-snapshot.js';
+function requireUser(client,userId){if(!client||!userId)throw new Error('Entre na sua conta para usar o backup privado.');}
+export async function saveAccountCloud(client,userId,account){requireUser(client,userId);const payload=accountSnapshot(account);const {error}=await client.from('account_snapshots').upsert({user_id:userId,payload},{onConflict:'user_id'});if(error)throw new Error('Não foi possível salvar a conta. Confira a conexão e a migration de backup privado.');}
+export async function loadAccountCloud(client,userId){requireUser(client,userId);const {data,error}=await client.from('account_snapshots').select('payload,updated_at').eq('user_id',userId).maybeSingle();if(error)throw new Error('Não foi possível carregar a conta da nuvem. Confira a conexão e a migration de backup privado.');if(!data)throw new Error('Você ainda não tem um backup de conta na nuvem.');return accountSnapshot(data.payload);}
