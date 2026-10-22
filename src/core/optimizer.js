@@ -1,3 +1,4 @@
+import {speedLeaderBonus} from './leaders.js';
 import {artifactEffects,normalizeArtifactSubstats} from './artifacts.js';
 import {estimateRealDamage,normalizeDamageSettings} from './damage.js';
 export {artifactEffects,normalizeArtifactSubstats,estimateRealDamage};
@@ -37,7 +38,7 @@ export function combatSpeed(unit,stats,counts={},bonuses={}){
  const swift=25*completed(counts,3);
  // Recombine fractional base bonuses before rounding; sheet Swift was rounded already.
  return Math.ceil(stats.total.spd-Math.ceil(unit.base.spd*swift/100)
-  +unit.base.spd*(swift+Number(bonuses.towerSpd||0)+Number(bonuses.leaderSpd||0))/100-1e-10);
+  +unit.base.spd*(swift+Number(bonuses.towerSpd||0)+speedLeaderBonus(unit,bonuses))/100-1e-10);
 }
 export function firstTurns(actors,tickPercent=7){
  if(!Number.isFinite(Number(tickPercent))||Number(tickPercent)<=0||Number(tickPercent)>100)throw new Error('Speed Tick deve estar entre 0 e 100%.');

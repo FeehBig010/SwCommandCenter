@@ -10,7 +10,7 @@ O repositório funciona sem Supabase. **Não há projeto configurado ou banco re
 
 ## 2. Criar as tabelas
 
-Aplique uma vez `supabase/migrations/202610220001_guild_cloud.sql` no SQL Editor do projeto, ou use o CLI autenticado:
+Aplique uma vez, em ordem, `supabase/migrations/202610220001_guild_cloud.sql` e `supabase/migrations/202610220002_siege_counters.sql` no SQL Editor do projeto, ou use o CLI autenticado:
 
 ```sh
 supabase link --project-ref SEU_PROJECT_REF
@@ -49,3 +49,15 @@ Depois de criar/configurar o projeto, no GitHub:
 - Configure as proteções desse ambiente de acordo com seu processo.
 
 Somente com a flag habilitada e o projeto definido, após os testes passarem, o job `migrate-supabase` executa `supabase db push`. Enquanto não houver projeto, o job de banco fica desativado. Não existe deploy remoto verificado nesta entrega.
+
+
+## 6. Banco de Counters de Siege
+
+- Acesse **Siege · Counters** na Sidebar ou pelo atalho no Hub do Clã. Cadastre três monstros de defesa e três de ofensa, sets, main stats, metas, habilidade de líder, SPD de combate mínimo, prazo em ticks e dica de execução. A busca aceita uma defesa parcial, em qualquer ordem, respeitando unidades repetidas.
+- Sem nuvem, os cadastros ficam no armazenamento local existente; favoritos, torre SPD e votos são separados pela sessão autenticada (ou pelo dispositivo sem login). “Apagar dados locais” também limpa esses dados. Eles não são uma contagem coletiva da guilda.
+- “Copiar para Mim” salva um snapshot em **Meus Teams Favoritos** e confere as unidades exatas e suas runas equipadas no SWEX local. Não envia o inventário ao servidor. Informe sua própria torre SPD; não presumimos que você possui a torre do autor. A checagem respeita cópias distintas, sets, main stats, metas de ficha, SPD de combate, ordem, prazo em ticks e corte por um inimigo de SPD conhecido. Sem equipamento completo ou meta de velocidade, nunca mostra pronto.
+- O badge verde indica cumprimento das metas desse modelo; não simula uma batalha completa ou garante vitória. Os ticks seguem o motor existente: instantes globais inteiros, uma ação por tick, empate inimigo conservador. Buffs, passivas e procs não são simulados. Todos os tipos/escopos de líder são exibidos; apenas SPD aplicável entra no cálculo de SPD. Metas de outros atributos usam a ficha.
+- Com sessão e guilda ativa, marque **Compartilhar com a guilda ativa** no cadastro. A segunda migration cria `counter_feedback` e `counter_favorites`, RLS e RPCs. Um membro tem uma reação e um resultado por counter e pode alterá-los ou removê-los. A taxa de vitória usa apenas relatos explícitos de vitória/derrota, nunca votos “Free Win”. O autor é obtido da conta autenticada; nomes informados no payload não substituem a autoria na nuvem.
+- Favoritos na nuvem são privados e guardam o snapshot real do counter visível. Excluir o original preserva o favorito e remove os votos do original. Membros de outras guildas e usuários anônimos não podem votar, consultar a contagem ou copiar counters sem acesso.
+- A migration adiciona `counter_feedback` à publicação `supabase_realtime` quando ela já existe. Confirme no painel **Database → Replication** que essa tabela está habilitada. O cliente assina Postgres Changes, consulta os agregados após eventos/mutações e mantém atualização a cada 30 segundos e ao voltar à janela. Em projetos sem publicação, configure Realtime antes de afirmar atualização instantânea entre dispositivos.
+- Ainda **não existe projeto Supabase do proprietário**. SQL/RLS e contratos foram validados localmente; autenticação, notificações Realtime entre dispositivos e aplicação das migrations no servidor continuam pendentes da ativação do projeto.

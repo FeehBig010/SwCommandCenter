@@ -13,7 +13,7 @@ import { downloadJSON } from '../core/storage';
 import { bindTemplate, cleanTemplate, newTemplate, parseTemplateFile, templateDraft, templateFile, templateMissing } from '../core/guild';
 
 const fmt=n=>Number(n).toLocaleString('pt-BR');
-export default function GuildHub({templates,onChange,account,options,reservedIds=[],teams=[],onCopy=()=>{},matchups=[],onMatchupsChange=()=>{},cloud,session,onAuth=()=>{}}){
+export default function GuildHub({templates,onChange,account,options,reservedIds=[],teams=[],onCopy=()=>{},matchups=[],onMatchupsChange=()=>{},cloud,session,onAuth=()=>{},onOpenSiege=()=>{}}){
  const [counterDraft,setCounterDraft]=useState(null),[draft,setDraft]=useState(null),[notice,setNotice]=useState(''),[active,setActive]=useState(null);
  const [result,setResult]=useState(null),[progress,setProgress]=useState(null),[running,setRunning]=useState(false);
  const fileRef=useRef(),workerRef=useRef();
@@ -65,7 +65,7 @@ export default function GuildHub({templates,onChange,account,options,reservedIds
   try{downloadJSON(templateFile(items),'d8stino-templates.json');setNotice('Arquivo exportado. Compartilhe pelo Discord ou WhatsApp.');}
   catch(error){setNotice(error.message);}
  }
- return <div className="guild-hub">
+ return <div className="guild-hub"><button type="button" className="button" onClick={onOpenSiege}>⚔️ Abrir Banco de Counters de Siege</button>
   <div className="page-intro"><h1>Estratégias da guilda.</h1><p>Composições da liderança, testadas nas suas runas.</p></div>
   {cloud&&<GuildCloudPanel key={`${session?.user.id||'guest'}-${cloud.guildId||'none'}`} cloud={cloud} session={session} onAuth={onAuth} teams={teams} account={account} onCopy={onCopy} localTemplates={templates}/>}
   <section className="local-matchups"><div className="section-toolbar"><h2>Meus confrontos · Ofensa × Defesa</h2><button type="button" className="button primary small" disabled={matchups.length>=100} onClick={()=>setCounterDraft({})}>Registrar confronto</button></div>{counterDraft&&<CounterComposer key={counterDraft.id||'new'} teams={teams} account={account} initial={counterDraft.id?counterDraft:null} onCancel={()=>setCounterDraft(null)} onSave={payload=>{const row={...payload,id:counterDraft.id||crypto.randomUUID()};onMatchupsChange(counterDraft.id?matchups.map(m=>m.id===row.id?row:m):[row,...matchups]);setCounterDraft(null);setNotice('Confronto salvo neste navegador.');}}/>}{matchups.map(m=><MatchupCard key={m.id} matchup={m}><button type="button" className="button primary small" onClick={()=>onCopy(m.offense,m.enemyDefense)}>Copiar para o Meu Hub</button><button type="button" className="button small" onClick={()=>setCounterDraft(m)}>Editar confronto</button><button type="button" className="button small" disabled={!cloud?.enabled||!cloud.guildId||running} onClick={async()=>{try{await cloud.save({name:m.name,kind:'counter',visibility:'guild',guild_id:cloud.guildId,is_leadership:false,payload:m});setNotice('Confronto compartilhado com a guilda.');}catch(e){setNotice(e.message);}}}>Compartilhar na guilda</button><button type="button" className="button small" onClick={()=>onMatchupsChange(matchups.filter(row=>row.id!==m.id))}>Excluir confronto local</button></MatchupCard>)}</section>

@@ -1,5 +1,5 @@
-import { Anchor, Castle, Compass, Database, Package, Palette, PanelLeftClose, PanelLeftOpen, Users, LogIn, LogOut } from 'lucide-react';
-export const NAV_ITEMS=[{key:'optimizer',label:'Otimizador',icon:Compass},{key:'guild',label:'Hub do Clã',icon:Users},{key:'saved',label:'Builds Salvas',icon:Anchor},{key:'cairos',label:'Cairos Abissal',icon:Castle},{key:'swex',label:'Dados SWEX',icon:Database},{key:'inventory',label:'Inventário',icon:Package},{key:'identity',label:'Identidade',icon:Palette}];
+import { Anchor, Swords, Castle, Compass, Database, Package, Palette, PanelLeftClose, PanelLeftOpen, Users, LogIn, LogOut } from 'lucide-react';
+export const NAV_ITEMS=[{key:'optimizer',label:'Otimizador',icon:Compass},{key:'guild',label:'Hub do Clã',icon:Users},{key:'siege',label:'Siege · Counters',icon:Swords},{key:'saved',label:'Builds Salvas',icon:Anchor},{key:'cairos',label:'Cairos Abissal',icon:Castle},{key:'swex',label:'Dados SWEX',icon:Database},{key:'inventory',label:'Inventário',icon:Package},{key:'identity',label:'Identidade',icon:Palette}];
 export default function Sidebar({page,onNavigate,brand,collapsed,onCollapse,mobileOpen,onClose,savedCount,session,authLoading,onAuth,onSignOut}){
  return <><aside className={`sidebar ${collapsed?'is-collapsed':''} ${mobileOpen?'is-open':''}`} aria-label="Menu principal">
   <div className="brand"><img src={brand.logo||'/guild-crest.png'} alt="Emblema da guilda"/><strong>{brand.name}</strong><span>CENTRAL DE COMANDO</span></div>
