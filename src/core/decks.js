@@ -1,7 +1,8 @@
 // SWEX deck layouts vary by exporter/game version. Unrecognized numeric types stay unclassified.
 const fold=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 export function classifyDeck(node={},path='',slots=0){
- const context=fold([path,node.area,node.mode,node.game_mode,node.content_name].join(' '));
+ const context=fold([path,node.area,node.mode,node.game_mode,node.content_name,node.deck_type].join(' '));
+ if(/(?:^|[^a-z])rta(?:$|[^a-z])|world.?arena|arena.?world/.test(context))return {gameMode:'rta',dungeon:null};
  if(/arena/.test(context))return {gameMode:'arena',dungeon:null};
  if(/siege|gvg|guild|cerco/.test(context))return {gameMode:'siege',dungeon:null};
  const dungeonIds={6001:'nb12',6011:'nbah',8001:'gb12',8011:'gbah',9001:'db12',9011:'dbah',9501:'sf10',9502:'pc10'};
@@ -12,8 +13,8 @@ export function classifyDeck(node={},path='',slots=0){
  if(dungeon)return {gameMode:'cairos',dungeon};
  if(/arena/.test(label))return {gameMode:'arena',dungeon:null};
  if(/siege|gvg|guild|cerco/.test(label))return {gameMode:'siege',dungeon:null};
- // Slot counts can distinguish PvP modes, but never identify a particular five-unit dungeon.
- return {gameMode:slots===3?'siege':slots===4?'arena':null,dungeon:null};
+ // Unknown metadata must not make a four-unit RTA deck appear as Arena.
+ return {gameMode:null,dungeon:null};
 }
 export function extractAccountPresets(deckList,units){
  const known=new Map(units.map(u=>[Number(u.id),u.id])),out=[],seen=new Set(),idsSeen=new Map();

@@ -31,11 +31,11 @@ export default function EquipmentWheel({build,account}){
    <HelmArt/>
    {Array.from({length:6},(_,i)=>{
     const slot=i+1,rune=runes.find(r=>r.slot===slot),angle=i*Math.PI/3;
-    return <button type="button" key={slot} className={`helm-rune ${current?.slot===slot?'selected':''}`} aria-label={`Slot ${slot}${rune?` · ${SETS[rune.set]||rune.set} +${rune.level}`:' · Indisponível'}`} aria-pressed={current?.slot===slot} disabled={!rune} onClick={()=>setSelected(slot)} style={{left:`${50+38*Math.sin(angle)}%`,top:`${50-38*Math.cos(angle)}%`}}><span className="helm-slot">{slot}</span><Gem size={20}/><strong>{rune?SETS[rune.set]||rune.set:'Ausente'}</strong><small>{rune?`+${rune.level}`:'—'}</small></button>;
+    return <button type="button" key={slot} className={`helm-rune ${current?.slot===slot?'selected':''}`} aria-label={`Slot ${slot}${rune?` · ${SETS[rune.set]||rune.set} +${rune.level}`:' · Indisponível'}`} aria-pressed={current?.slot===slot} disabled={!rune} onClick={()=>setSelected(slot)} style={{left:`${50+38*Math.sin(angle)}%`,top:`${50-38*Math.cos(angle)}%`}}><span className="helm-slot">{slot}</span><span>{rune&&SETS[rune.set]?<img className="rune-set-icon" src={`/game-icons/runes/${SETS[rune.set].toLowerCase()}.png`} alt={SETS[rune.set]}/>:<Gem size={20}/>}</span><small>{rune?`+${rune.level}`:'—'}</small></button>;
    })}
   </div>
   <div className="rune-log" aria-live="polite"><h4>Detalhes da runa selecionada</h4>{current?<article className="rune-detail" key={current.id}>
-   <div className="rune-heading"><span className="slot-number">{current.slot}</span><strong>{SETS[current.set]||current.set}</strong><small>+{current.level}</small></div>
+   <div className="rune-heading"><span className="slot-number">{current.slot}</span><strong>{SETS[current.set]?<img className="rune-set-icon" src={`/game-icons/runes/${SETS[current.set].toLowerCase()}.png`} alt={SETS[current.set]} title={SETS[current.set]}/>:current.set}</strong><small>+{current.level}</small></div>
    <p className="main-stat"><Effect effect={current.main}/></p>{current.innate?.[0]>0&&<small className="innate">Inato: <Effect effect={current.innate}/></small>}
    <ul>{current.subs.map((effect,i)=><li key={i}><Effect effect={effect}/></li>)}</ul>
    <footer>{account.units.find(u=>u.id===current.owner)?.name||'No inventário'}<br/><span>Runa #{current.id}</span></footer>

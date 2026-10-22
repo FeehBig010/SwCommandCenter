@@ -36,7 +36,7 @@ export function createTeamCard(team,account){
   const master=account?unit?.master:c.masterId;
   if(!master)return null;
   const technical=technicalSnapshot(team,c,unit,account),skills=unit?.skillLevels||skillLevels(c.skillLevels);
-  const leaderActive=!!team.leader&&(team.leaderKey?team.leaderKey===c.key:(team.configs||[]).findIndex(x=>x.key===c.key)===(team.leaderIndex||0));
+  const leaderActive=!!team.leader&&(team.leaderKey?team.leaderKey===c.key:(team.configs||[]).indexOf(c)===(team.leaderIndex||0));
   return {isLeader:leaderActive,technical,skillLevels:skills.map(s=>({...s})),...(Number(c.combatSpd)>0?{combatSpd:Number(c.combatSpd)}:{}),master,name:unit?.name||c.label,sets:[...(c.sets||[])],strictSets:c.strictSets!==false,
    mains:{...c.mains},goals:{...c.goals},basis:c.basis,lockSpeedSync:c.lockSpeedSync===true};
  });

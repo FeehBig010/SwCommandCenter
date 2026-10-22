@@ -94,3 +94,7 @@ A quarta migration deve ser aplicada antes desses botões serem utilizados no pr
 ## Progressão semanal e pedras de melhoria
 
 Aplique também `supabase/migrations/202610220005_progression_and_crafts.sql`, depois da 004. Ela permite a lista normalizada `crafts` no backup e cria `account_progression`, com PK `(user_id, account_id, week)` e RLS exclusiva do dono. O histórico registra métricas agregadas, não cópias extras do inventário; a semana começa segunda-feira em UTC. Importações e o botão de registro atualizam o snapshot local da semana. Salvar/carregar progressão na nuvem exige ação explícita e login; o backup de inventário continua separado. Apagar dados locais limpa o histórico local, sem excluir registros remotos.
+
+## Equipamento principal e RTA
+
+Aplique `supabase/migrations/202610220006_equipment_pool_backup.sql` após a 005 para permitir `equipmentPools` no backup normalizado. RLS continua exclusiva do proprietário. Os itens físicos de runa são compartilhados pelo jogo, mas as atribuições de equipamento RTA reconhecidas no SWEX ficam separadas em `equipmentPools.rta`; não sobrescrevem `unit.runeIds` principal. Os builders atuais recusam uma busca RTA, em vez de reaproveitar silenciosamente a configuração principal. Travas locais ficam por conta neste dispositivo e não são publicadas nos links/QRs.

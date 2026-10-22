@@ -1,3 +1,5 @@
+import {assertMainPool} from './equipment-pools.js';
+import {lockContext} from './locks.js';
 import {GOAL_PRESETS,normalizeFocuses} from './team-ux.js';
 import {currentRuneIds} from './loadouts.js';
 import {allocationScore,compareAllocation,isPriority} from './allocation.js';
@@ -71,8 +73,16 @@ function pickPool(pool,unit,c,depth){
 export function generateCandidates(account,unit,c,options,reserved=new Set(),progress=()=>{}){
  if(options.strictMode)c={...c,strictSets:true};
  const req=setRequirements(c);if(c.strictSets&&Object.values(req).reduce((a,b)=>a+b,0)>6)return {candidates:[],reason:'Os sets exigidos precisam de mais de seis runas.'};
+ const locks=lockContext(account,options);
+ if(locks.units.has(unit.id)){
+  const build=equippedBuild(account,{...options.combat,plannedRunes:null},c,options);
+  if(!build||build.runeIds.some(id=>reserved.has(id)))return {candidates:[],reason:'Monstro travado sem seis runas livres do SWEX.'};
+  if(c.strictSets&&!setsValid(build.counts,req)||build.runeIds.some(id=>{const r=account.runes.find(r=>r.id===id);return Number(c.mains[r.slot])&&r.main[0]!==Number(c.mains[r.slot]);})||options.strictMode&&build.goals.some(g=>!g.met))return {candidates:[],reason:'A build travada não atende aos requisitos; ajuste metas ou libere a trava.'};
+  return {candidates:[{...build,upgrades:[]}],reason:''};
+ }
+ const forced=new Map(account.runes.filter(r=>locks.runes.has(r.id)&&(r.owner===unit.id||unit.runeIds.includes(r.id))).map(r=>[r.slot,r.id]));
  const setting={fast:{width:90,depth:9,passes:2},balanced:{width:180,depth:15,passes:3},deep:{width:350,depth:23,passes:4}}[options.depth]||{width:180,depth:15,passes:3};
- const allowed=account.runes.filter(r=>r.set!==25&&r.set!==99&&r.level>=options.minLevel&&!reserved.has(r.id)&&(!options.respectLocks||!r.locked)&&(options.equipped||!r.owner||r.owner===unit.id)).flatMap(r=>runeVariants(r,options.maxGrindsGems)).map(r=>({...r,vector:runeVector(r)}));
+ const allowed=account.runes.filter(r=>(!locks.runes.has(r.id)||r.owner===unit.id||unit.runeIds.includes(r.id))&&(!forced.has(r.slot)||forced.get(r.slot)===r.id)&&r.pool!=='rta'&&r.set!==25&&r.set!==99&&r.level>=options.minLevel&&!reserved.has(r.id)&&(!options.respectLocks||!r.locked)&&(options.equipped||!r.owner||r.owner===unit.id)).flatMap(r=>runeVariants(r,options.maxGrindsGems&&!locks.runes.has(r.id))).map(r=>({...r,vector:runeVector(r)}));
  const pools=Array.from({length:6},(_,i)=>{const slot=i+1;return pickPool(allowed.filter(r=>r.slot===slot&&(!Number(c.mains[slot])||r.main[0]===Number(c.mains[slot]))),unit,c,setting.depth);});
  const empty=pools.findIndex(p=>p.length===0);if(empty>=0)return {candidates:[],reason:`Nenhuma runa disponível para o slot ${empty+1} com esses filtros.`};
  const flat=options.artifacts&&c.artifacts!==false?artifactBonus(account,unit):{};
@@ -142,7 +152,8 @@ function orderCost(assignments,teams){
  }
  return cost;
 }
-export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[]){
+export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[],candidateCache=null){
+ assertMainPool(teams,options);
  teams=teams.filter(t=>t.active!==false);
  const started=Date.now(),reserved=new Set(reservedIds),jobs=[];const seen=new Set();
  for(const team of teams){
@@ -158,8 +169,10 @@ export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[])
  const failures=[];
  for(let i=0;i<jobs.length;i++){
   const job=jobs[i];onProgress({percent:Math.round(i/jobs.length*75),message:`Buscando combinações para ${job.unit.name}…`});
-  const result=generateCandidates(account,job.unit,job.config,{...options,combat:job.team},reserved,(pass,total)=>onProgress({percent:Math.round((i+pass/total)/jobs.length*75),message:`Buscando combinações para ${job.unit.name}…`}));
-  job.candidates=result.candidates;if(!result.candidates.length)failures.push({key:job.config.key,name:job.unit.name,reason:result.reason});
+  const cacheKey=candidateCache?JSON.stringify([job.team,job.config,job.unit.id,options,[...reserved]]):null;
+  const result=candidateCache?.get(cacheKey)||generateCandidates(account,job.unit,job.config,{...options,combat:job.team},reserved,(pass,total)=>onProgress({percent:Math.round((i+pass/total)/jobs.length*75),message:`Buscando combinações para ${job.unit.name}…`}));
+  if(candidateCache&&!candidateCache.has(cacheKey))candidateCache.set(cacheKey,result);
+  job.candidates=result.candidates.slice();if(!result.candidates.length)failures.push({key:job.config.key,name:job.unit.name,reason:result.reason});
  }
  if(failures.length)return {status:'no_assignment',failures,builds:[],elapsed:Date.now()-started,checked:jobs.reduce((s,j)=>s+j.candidates.length,0)};
  onProgress({percent:80,message:'Distribuindo runas entre todos os times…'});
