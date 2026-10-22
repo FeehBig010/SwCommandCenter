@@ -3,6 +3,7 @@ import { Download, Upload, Plus, Pencil, Skull, Play, Square, Users } from 'luci
 import { MonsterEditor } from './TeamEditor';
 import MonsterPortrait from './MonsterPortrait';
 import TeamCardExport from './TeamCardExport';
+import MonsterCombobox from './MonsterCombobox';
 import Results from './Results';
 import { LABELS, SETS, STAT_NAMES } from '../core/data';
 import { downloadJSON } from '../core/storage';
@@ -36,7 +37,7 @@ export default function GuildHub({templates,onChange,account,options,reservedIds
   };
   worker.onerror=()=>{if(workerRef.current!==worker)return;cancel();setNotice('Não foi possível concluir o teste. Tente reduzir a profundidade da busca.');};
   // A matching report describes the member's current equipment, never hypothetical gems.
-  worker.postMessage({account,teams:[team],options:{...options,maxGrindsGems:false},reservedIds});
+  worker.postMessage({account,teams:[team],options:{...options,maxGrindsGems:false,strictMode:false},reservedIds});
  }
  function saveDraft(event){
   event.preventDefault();
@@ -95,8 +96,8 @@ export default function GuildHub({templates,onChange,account,options,reservedIds
    </div>
   </article>)}</div>
   {active&&<section className="template-match" aria-label="Teste de template">
-   <h2>Comparação · {active.template.name}</h2><p className="fineprint">Runas atuais, sem projeção de gems/grinds. Filtros da busca e reservas de builds salvas são respeitados. A seleção inicial usa a cópia de maior nível; confira as instâncias.</p>
-   {account&&<><fieldset className="match-units" disabled={running}>{active.team.configs.map((c,index)=><label className="field" key={c.key}><span>{index+1}. {c.label} · cópia da conta</span><select aria-label={`Cópia de ${c.label} na posição ${index+1}`} value={c.unitId||''} onChange={e=>{setResult(null);setNotice('');setActive({...active,team:{...active.team,configs:active.team.configs.map((old,i)=>i===index?{...old,unitId:Number(e.target.value)||null}:old)}});}}><option value="">Ausente / selecionar</option>{account.units.filter(u=>u.master===c.masterId).map(u=><option value={u.id} key={u.id}>{u.name} · Nv.{u.level} · #{String(u.id).slice(-5)}</option>)}</select></label>)}</fieldset>
+   <h2>Comparação · {active.template.name}</h2><p className="fineprint">Runas atuais, sem projeção de gems/grinds. Filtros de runas e reservas de builds salvas são respeitados; metas numéricas retornam déficits mesmo com Strict Mode ativo. A seleção inicial usa a cópia de maior nível; confira as instâncias.</p>
+   {account&&<><fieldset className="match-units" disabled={running}>{active.team.configs.map((c,index)=><div className="field" key={c.key}><span>{index+1}. {c.label} · cópia da conta</span><MonsterCombobox label={`Cópia de ${c.label} na posição ${index+1}`} disabled={running} options={account.units.filter(u=>u.master===c.masterId).map(u=>({value:`unit:${u.id}`,name:u.name,master:u.master,element:u.element,unitId:u.id,detail:`Nv.${u.level} · #${String(u.id).slice(-5)}`}))} value={c.unitId?`unit:${c.unitId}`:''} onChange={u=>{setResult(null);setNotice('');setActive({...active,team:{...active.team,configs:active.team.configs.map((old,i)=>i===index?{...old,unitId:u?.unitId||null}:old)}});}}/></div>)}</fieldset>
     <button className="button small" onClick={()=>running?cancel():run(active.template,active.team)}>{running?<><Square size={15}/>Cancelar teste</>:<><Play size={15}/>Testar cópias selecionadas</>}</button></>}
    {progress&&<div className="progress-panel" role="status"><span>{progress.message}</span><progress max="100" value={progress.percent}/></div>}
    {result&&account&&<div className="guild-deficits" aria-live="polite">

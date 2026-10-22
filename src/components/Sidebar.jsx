@@ -1,0 +1,10 @@
+import { Anchor, Castle, Compass, Database, Package, Palette, PanelLeftClose, PanelLeftOpen, Users } from 'lucide-react';
+export const NAV_ITEMS=[{key:'optimizer',label:'Otimizador',icon:Compass},{key:'guild',label:'Hub do Clã',icon:Users},{key:'saved',label:'Builds Salvas',icon:Anchor},{key:'cairos',label:'Cairos Abissal',icon:Castle},{key:'swex',label:'Dados SWEX',icon:Database},{key:'inventory',label:'Inventário',icon:Package},{key:'identity',label:'Identidade',icon:Palette}];
+export default function Sidebar({page,onNavigate,brand,collapsed,onCollapse,mobileOpen,onClose,savedCount}){
+ return <><aside className={`sidebar ${collapsed?'is-collapsed':''} ${mobileOpen?'is-open':''}`} aria-label="Menu principal">
+  <div className="brand"><img src={brand.logo||'/guild-crest.png'} alt="Emblema da guilda"/><strong>{brand.name}</strong><span>CENTRAL DE COMANDO</span></div>
+  <button type="button" className="sidebar-collapse icon-button" aria-label={collapsed?'Expandir navegação':'Recolher navegação'} aria-expanded={!collapsed} onClick={onCollapse}>{collapsed?<PanelLeftOpen size={19}/>:<PanelLeftClose size={19}/>}</button>
+  <nav aria-label="Navegação principal">{NAV_ITEMS.map(({key,label,icon:Icon})=><button key={key} type="button" className={page===key?'active':''} aria-current={page===key?'page':undefined} aria-label={label} data-tooltip={label} onClick={()=>{onNavigate(key);onClose();}}><Icon size={20}/><span className="nav-label">{label}</span>{key==='saved'&&savedCount>0&&<span className="nav-count">{savedCount}</span>}</button>)}</nav>
+  <div className="sidebar-bottom"><span className="online-dot"/><div>Dados neste navegador<p>Seu SWEX permanece local.</p></div></div>
+ </aside>{mobileOpen&&<button className="menu-backdrop" aria-label="Fechar menu" onClick={onClose}/>}</>;
+}

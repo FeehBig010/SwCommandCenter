@@ -1,3 +1,4 @@
+export { extractAccountPresets } from './decks.js';
 import { FOUR, STATS } from './data.js';
 const zero=()=>Array(13).fill(0);
 export function runeVector(r){const v=zero();for(const e of [r.main,r.innate,...r.subs])if(e?.[0]>0&&e[0]<13)v[e[0]]+=(e[1]||0)+(e.length>3?(e[3]||0):0);return v;}
@@ -35,12 +36,13 @@ export function combatSpeed(unit,stats,counts={},bonuses={}){
  return Math.ceil(stats.total.spd-Math.ceil(unit.base.spd*swift/100)
   +unit.base.spd*(swift+Number(bonuses.towerSpd||0)+Number(bonuses.leaderSpd||0))/100-1e-10);
 }
-export function firstTurns(actors){
+export function firstTurns(actors,tickPercent=7){
+ if(!Number.isFinite(Number(tickPercent))||Number(tickPercent)<=0||Number(tickPercent)>100)throw new Error('Speed Tick deve estar entre 0 e 100%.');
  if(actors.some(a=>!Number.isFinite(a.spd)||a.spd<=0))throw new Error('SPD de combate deve ser positiva e finita.');
  const state=actors.map((a,i)=>({...a,index:i,atb:0})),seen=new Set(),turns=[];
  // Each action advances a tick. ATB overflow is retained until that actor moves.
  for(let tick=1;tick<=10000&&seen.size<state.length;tick++){
-  for(const a of state)a.atb+=a.spd*7; // integer hundredths of ATB: 100% = 10000
+  for(const a of state)a.atb+=a.spd*Number(tickPercent); // integer hundredths of ATB: 100% = 10000
   const ready=state.filter(a=>a.atb>=10000).sort((a,b)=>b.atb-a.atb||b.spd-a.spd
    ||Number(b.enemy||false)-Number(a.enemy||false)||a.index-b.index);
   if(!ready.length)continue;
@@ -81,12 +83,13 @@ function pickPool(pool,unit,c,depth){
  return [...chosen.values()];
 }
 export function generateCandidates(account,unit,c,options,reserved=new Set(),progress=()=>{}){
+ if(options.strictMode)c={...c,strictSets:true};
  const req=setRequirements(c);if(c.strictSets&&Object.values(req).reduce((a,b)=>a+b,0)>6)return {candidates:[],reason:'Os sets exigidos precisam de mais de seis runas.'};
  const setting={fast:{width:90,depth:9,passes:2},balanced:{width:180,depth:15,passes:3},deep:{width:350,depth:23,passes:4}}[options.depth]||{width:180,depth:15,passes:3};
  const allowed=account.runes.filter(r=>r.set!==25&&r.set!==99&&r.level>=options.minLevel&&!reserved.has(r.id)&&(!options.respectLocks||!r.locked)&&(options.equipped||!r.owner||r.owner===unit.id)).flatMap(r=>runeVariants(r,options.maxGrindsGems)).map(r=>({...r,vector:runeVector(r)}));
  const pools=Array.from({length:6},(_,i)=>{const slot=i+1;return pickPool(allowed.filter(r=>r.slot===slot&&(!Number(c.mains[slot])||r.main[0]===Number(c.mains[slot]))),unit,c,setting.depth);});
  const empty=pools.findIndex(p=>p.length===0);if(empty>=0)return {candidates:[],reason:`Nenhuma runa disponível para o slot ${empty+1} com esses filtros.`};
- const flat=options.artifacts?artifactBonus(account,unit):{};
+ const flat=options.artifacts&&c.artifacts!==false?artifactBonus(account,unit):{};
  const originalById=new Map(account.runes.map(r=>[r.id,r]));
  const finishStats=(v,counts)=>{const stats=statsFromVector(unit,v,counts,flat);return {...stats,combat:{spd:combatSpeed(unit,stats,counts,options.combat)}};};
  const upgrades=runes=>options.maxGrindsGems?runes.filter(r=>JSON.stringify(r.subs)!==JSON.stringify(originalById.get(r.id).subs)).map(r=>({runeId:r.id,subs:r.subs})):[];
@@ -114,9 +117,10 @@ export function generateCandidates(account,unit,c,options,reserved=new Set(),pro
  // Preserve the currently equipped combination as another genuine alternative.
  const equipped=unit.runeIds.map(id=>allowed.find(r=>r.id===id));
  if(equipped.length===6&&equipped.every(Boolean)&&new Set(equipped.map(r=>r.slot)).size===6&&equipped.every(r=>!Number(c.mains[r.slot])||r.main[0]===Number(c.mains[r.slot]))){const counts=setCounts(equipped);if(!c.strictSets||setsValid(counts,req)){const stats=finishStats(equipped.reduce((v,r)=>add(v,r.vector),zero()),counts);all.set('equipped',{runeIds:equipped.map(r=>r.id),upgrades:upgrades(equipped),stats,counts,...evaluate(stats,c,counts)});}}
- return {candidates:[...all.values()].sort(compare),reason:all.size?'':'Nenhuma combinação encontrada com os sets e slots exigidos nesta busca.'};
+ const candidates=[...all.values()].filter(candidate=>!options.strictMode||candidate.deficit<=1e-9).sort(compare);
+ return {candidates,reason:candidates.length?'':options.strictMode?'Nenhuma combinação atinge todas as metas no Strict Mode.':'Nenhuma combinação encontrada com os sets e slots exigidos nesta busca.'};
 }
-export function speedSyncValid(assignments,teams){
+export function speedSyncValid(assignments,teams,tickPercent=7){
  for(const team of teams){
   const chain=team.configs.filter(c=>c.enabled&&c.lockSpeedSync===true);
   // Compare every assigned pair, even if a middle slot has not been assigned yet.
@@ -131,7 +135,7 @@ export function speedSyncValid(assignments,teams){
   const active=team.configs.filter(c=>c.enabled);
   if(Number(team.enemyCombatSpd)>0&&chain.length&&active.every(c=>assignments[c.key])){
    const actors=active.map(c=>({key:c.key,spd:assignments[c.key].stats.combat?.spd??assignments[c.key].stats.total.spd}));
-   const turns=firstTurns([...actors,{key:'enemy',spd:Number(team.enemyCombatSpd),enemy:true}]);
+   const turns=firstTurns([...actors,{key:'enemy',spd:Number(team.enemyCombatSpd),enemy:true}],tickPercent);
    const enemyIndex=turns.findIndex(t=>t.key==='enemy');
    if(chain.some(c=>turns.findIndex(t=>t.key===c.key)>enemyIndex))return false;
   }
@@ -153,6 +157,7 @@ function orderCost(assignments,teams){
  return cost;
 }
 export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[]){
+ if(!Number.isFinite(Number(options.speedTick??7))||Number(options.speedTick??7)<=0||Number(options.speedTick??7)>100)throw new Error('Speed Tick inválido.');
  const started=Date.now(),reserved=new Set(reservedIds),jobs=[];const seen=new Set();
  for(const team of teams){
   for(const field of ['towerSpd','leaderSpd','enemyCombatSpd'])if(!Number.isFinite(Number(team[field]??0))||Number(team[field]??0)<0||Number(team[field]??0)>(field==='enemyCombatSpd'?1000:100))throw new Error('Bônus de SPD ou SPD inimiga inválidos.');
@@ -182,7 +187,7 @@ export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[])
   let regenerated=0;
   for(const state of beam){let accepted=0;
    for(const c of job.candidates){if(c.runeIds.some(id=>state.used.has(id)))continue;
-    const assignments={...state.assignments,[job.config.key]:c};if(!speedSyncValid(assignments,teams))continue;const used=new Set([...state.used,...c.runeIds]);
+    const assignments={...state.assignments,[job.config.key]:c};if(!speedSyncValid(assignments,teams,options.speedTick??7))continue;const used=new Set([...state.used,...c.runeIds]);
     next.push({used,assignments,deficit:state.deficit+c.deficit*weight,utility:state.utility+c.utility*weight});
     if(++accepted>=35)break;
    }
@@ -194,13 +199,55 @@ export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[])
     const expanded=generateCandidates(account,job.unit,job.config,{...options,combat:job.team},blocked).candidates;
     const candidateKey=c=>JSON.stringify([c.runeIds,c.upgrades]);const existing=new Set(job.candidates.map(candidateKey));
     for(const c of expanded)if(!existing.has(candidateKey(c))){job.candidates.push(c);existing.add(candidateKey(c));}
-    for(const c of expanded.filter(c=>speedSyncValid({...state.assignments,[job.config.key]:c},teams)).slice(0,35))next.push({used:new Set([...state.used,...c.runeIds]),assignments:{...state.assignments,[job.config.key]:c},deficit:state.deficit+c.deficit*weight,utility:state.utility+c.utility*weight});
+    for(const c of expanded.filter(c=>speedSyncValid({...state.assignments,[job.config.key]:c},teams,options.speedTick??7)).slice(0,35))next.push({used:new Set([...state.used,...c.runeIds]),assignments:{...state.assignments,[job.config.key]:c},deficit:state.deficit+c.deficit*weight,utility:state.utility+c.utility*weight});
    }
   }
   if(!next.length)return {status:'conflict',failures:[{name:job.unit.name,reason:'Nenhuma distribuição encontrada sem repetir runas e respeitando os vínculos de SPD. Amplie a busca, libere reservas ou ajuste as metas e a ordem dos cards.'}],builds:[],elapsed:Date.now()-started,checked:jobs.reduce((s,j)=>s+j.candidates.length,0)};
   next.sort((a,b)=>a.deficit-b.deficit||(b.utility-orderCost(b.assignments,teams))-(a.utility-orderCost(a.assignments,teams)));
   beam=next.slice(0,breadth);onProgress({percent:80+Math.round((i+1)/ordered.length*19),message:'Comparando distribuições sem repetir runas…'});
  }
- const best=beam[0];const builds=jobs.map(job=>{const c=best.assignments[job.config.key];return {key:job.config.key,unitId:job.unit.id,name:job.unit.name,teamId:job.team.id,teamName:job.team.name,...c,goals:goalReport(c.stats,job.config),artifactIds:options.artifacts?job.unit.artifactIds:[]};});
+ const best=beam[0];const builds=jobs.map(job=>{const c=best.assignments[job.config.key];return {key:job.config.key,unitId:job.unit.id,name:job.unit.name,teamId:job.team.id,teamName:job.team.name,...c,goals:goalReport(c.stats,job.config),artifactIds:options.artifacts&&job.config.artifacts!==false?job.unit.artifactIds:[]};});
  return {status:builds.every(b=>b.goals.every(g=>g.met))?'met':'approximate',builds,failures:[],elapsed:Date.now()-started,checked:jobs.reduce((s,j)=>s+j.candidates.length,0),completedAt:new Date().toISOString(),scope:options.maxGrindsGems?'simulated-max-regular-stones':'current-runes-combat-spd',options};
+}
+
+// First-rotation preview: prefer current optimized builds; otherwise use complete equipped sets.
+export function teamTurnPreview(account,team,options={},builds=null){
+ const active=team.configs.filter(c=>c.enabled),actors=[],missing=[];
+ for(const config of active){
+  const unit=account?.units.find(u=>u.id===config.unitId);
+  const build=builds?.find(b=>b.key===config.key&&b.unitId===config.unitId);
+  if(!unit){missing.push(config.label);continue;}
+  let spd=build?.stats.combat?.spd;
+  if(spd===undefined){
+   const runes=unit.runeIds.map(id=>account.runes.find(r=>r.id===id)).filter(Boolean);
+   if(runes.length!==6||new Set(runes.map(r=>r.slot)).size!==6){missing.push(unit.name);continue;}
+   const stats=calculateStats(unit,runes);
+   spd=combatSpeed(unit,stats,setCounts(runes),team);
+  }
+  actors.push({key:config.key,unitId:unit.id,master:unit.master,name:unit.name,spd});
+ }
+ if(missing.length||!actors.length)return {complete:false,actors,missing,turns:[],cut:null,source:builds?'builds':'equipped'};
+ const enemy=Number(team.enemyCombatSpd)||0;
+ const turns=firstTurns([...actors,...(enemy>0?[{key:'__enemy__',name:'Inimigo',spd:enemy,enemy:true}]:[])],options.speedTick??7);
+ const index=turns.findIndex(t=>t.key==='__enemy__');
+ return {complete:true,actors,missing:[],turns,cut:enemy>0?turns.some((t,i)=>t.key!=='__enemy__'&&i>index):null,source:builds?'builds':'equipped'};
+}
+export function validateWaveClear(unit,stats,skill,enemies,settings={}){
+ const value=(key,fallback,min=0,max=1000000)=>{const n=Number(settings[key]??fallback);if(!Number.isFinite(n)||n<min||n>max)throw new Error(`Parâmetro de dano inválido: ${key}`);return n;};
+ const towerAtk=value('towerAtk',0,0,100),leaderAtk=value('leaderAtk',0,0,100),towerCd=value('towerCd',0,0,100);
+ const skillUps=value('skillUps',0,0,100),attackBuff=value('attackBuff',0,0,100),variance=value('variance',.9,.1,1);
+ if(!skill||!Number.isFinite(skill.multiplier)||skill.multiplier<=0||!Number.isInteger(skill.hits)||skill.hits<=0||skill.hits>20)throw new Error('Habilidade não suportada.');
+ if(![unit?.base?.atk,stats?.total?.atk,stats?.total?.cr,stats?.total?.cd].every(n=>Number.isFinite(n)&&n>=0))throw new Error('Atributos do atacante inválidos.');
+ const atk=(stats.total.atk+unit.base.atk*(towerAtk+leaderAtk)/100)*(1+attackBuff/100);
+ return enemies.map(enemy=>{
+  if(!Number.isFinite(enemy.hp)||enemy.hp<=0||!Number.isFinite(enemy.def)||enemy.def<0)throw new Error('HP/DEF de wave inválidos.');
+  const advantage=({1:2,2:3,3:1})[unit.element]===enemy.element,disadvantage=({1:2,2:3,3:1})[enemy.element]===unit.element;
+  const guaranteedCrit=!disadvantage&&stats.total.cr+(advantage?15:0)>=100;
+  const critical=guaranteedCrit?1+Math.max(0,stats.total.cd+towerCd-(enemy.critReduction||0))/100:1;
+  const defense=skill.ignoreDefense?0:enemy.def;
+  const perHit=Math.floor(atk*skill.multiplier*(1+skillUps/100)*critical*1000/(1140+3.5*defense)*variance*(disadvantage?.7:1));
+  const damage=perHit*skill.hits;
+  return {...enemy,damage,missing:Math.max(0,enemy.hp-damage),guaranteedCrit,disadvantage,
+   clearInOneTurn:settings.skillReady===true&&damage>=enemy.hp};
+ });
 }

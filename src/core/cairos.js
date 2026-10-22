@@ -1,0 +1,34 @@
+import waves from './cairos-waves.json' with {type:'json'};
+import {blankConfig,makeTeam} from './data.js';
+import {MONSTER_CATALOG} from './monsters.js';
+import {validateWaveClear} from './optimizer.js';
+
+// Starting compositions, not a guarantee of dungeon success or fastest clear time.
+export const CAIROS_PROFILES=[
+ {id:'gbah',name:'GBAH',title:'Gigante Abissal',members:['Prilea','Teshar','Konamiya','Luna','Homunculus - Attack (Wind)'],accuracySlots:[0],speed:[205,180,170,160,150]},
+ {id:'dbah',name:'DBAH',title:'Dragão Abissal',members:['Julie','Shaina','Kyle','Liam','Konamiya'],accuracySlots:[1],speed:[205,195,185,170,160]},
+ {id:'nbah',name:'NBAH',title:'Necro Abissal',members:['Abigail','Icaru','Raoq','Astar','Shamann'],accuracySlots:[0,1,2],speed:[180,170,160,150,140]},
+ {id:'sf10',name:'SF10',title:'Fortaleza de Aço 10',members:['Loren','Zinc','Kro','Raoq','Fran'],accuracySlots:[0,1,2,3],speed:[210,200,180,170,220]},
+ {id:'pc10',name:'PC10',title:'Cripta do Justiceiro 10',members:['Verdehile','Icaru','Icaru','Icaru','Lushen'],accuracySlots:[1,2,3],speed:[180,170,165,160,150]},
+].map(profile=>({...profile,...waves[profile.id]}));
+export const WAVE_SKILLS={13413:{name:'Amputation Magic · Lushen',multiplier:.68,hits:3,ignoreDefense:true,maxSkillUps:30},13911:{name:'Thousand Shots · Julie (HP cheio)',multiplier:1.2,hits:6,ignoreDefense:false,maxSkillUps:15}};
+export function makeCairosTeam(profile,account){
+ if(!profile)throw new Error('Masmorra inválida.');
+ const used=new Set();
+ return {...makeTeam('cairos'),name:profile.name,configs:profile.members.map((name,i)=>{
+  const master=MONSTER_CATALOG.find(m=>m.name===name)?.master;
+  const unit=account?.units.filter(u=>u.name===name&&!used.has(u.id)).sort((a,b)=>b.level-a.level||b.master-a.master)[0];
+  if(unit)used.add(unit.id);
+  const c=blankConfig(unit,name);
+  return {...c,label:name,masterId:unit?.master||master,sets:[],mains:{2:0,4:0,6:0},basis:'total',goals:{...c.goals,spd:profile.speed[i],acc:profile.accuracySlots.includes(i)?profile.accuracy:''}};
+ })};
+}
+export function cairosWaveReport(account,builds,attackerKey,profile,settings={}){
+ const build=builds.find(b=>b.key===attackerKey),unit=account.units.find(u=>u.id===build?.unitId);
+ if(!build||!unit)throw new Error('Selecione um atacante presente na distribuição otimizada.');
+ const skill=WAVE_SKILLS[unit.master];
+ if(!skill)throw new Error('Wave Clear disponível para Lushen e Julie. As metas de SPD/ACC continuam disponíveis para os demais.');
+ if(Number(settings.skillUps||0)>skill.maxSkillUps)throw new Error(`Skill-ups de dano: máximo ${skill.maxSkillUps}% para esta habilidade.`);
+ if(unit.master===13911&&settings.fullHp!==true)throw new Error('O modelo de Julie exige HP cheio para os seis ataques.');
+ return {attacker:unit.name,skill:skill.name,waves:[1,3].map(number=>({number,enemies:validateWaveClear(unit,build.stats,skill,profile.waves[number],settings)}))};
+}

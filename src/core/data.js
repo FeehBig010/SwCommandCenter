@@ -1,3 +1,4 @@
+import { extractAccountPresets } from './decks.js';
 import catalog from './catalog.json' with { type: 'json' };
 export const SETS={1:'Energy',2:'Guard',3:'Swift',4:'Blade',5:'Rage',6:'Focus',7:'Endure',8:'Fatal',10:'Despair',11:'Vampire',13:'Violent',14:'Nemesis',15:'Will',16:'Shield',17:'Revenge',18:'Destroy',19:'Fight',20:'Determination',21:'Enhance',22:'Accuracy',23:'Tolerance',24:'Seal',25:'Intangible'};
 export const STAT_NAMES={1:'HP',2:'HP%',3:'ATK',4:'ATK%',5:'DEF',6:'DEF%',8:'SPD',9:'TC%',10:'DC%',11:'RES%',12:'ACC%'};
@@ -25,10 +26,10 @@ export function normalizeAccount(raw){
  const unitIds=new Set(units.map(u=>u.id));
  const siege=(raw.guildsiege_defense_deck_unit_list||[]).map((d,i)=>({name:`Defesa ${i+1}`,unitIds:(d.unit_id_list||[]).filter(id=>unitIds.has(id)),equipment:raw.guildsiege_defense_deck_equip_list?.[d.deck_id]?.equip?.map(e=>({unitId:e.unit_id,runeIds:e.rune_id_list||[],artifactIds:e.artifact_id_list||[]}))||[]}));
  if(!units.length||!runeMap.size)throw new Error('Não há monstros e runas válidos neste arquivo.');
- return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege};
+ return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege,accountPresets:extractAccountPresets(raw.deck_list,units)};
 }
 export function blankConfig(unit=null,name='Escolher monstro'){
- return {key:crypto.randomUUID(),unitId:unit?.id||null,masterId:unit?.master||null,label:unit?.name||name,enabled:true,lockSpeedSync:false,sets:[0,0],strictSets:true,mains:{2:0,4:0,6:0},goals:{hp:'',def:'',spd:'',atk:'',cr:'',cd:'',res:'',acc:''},basis:'bonus',objective:'balanced'};
+ return {key:crypto.randomUUID(),unitId:unit?.id||null,masterId:unit?.master||null,label:unit?.name||name,enabled:true,lockSpeedSync:false,artifacts:true,sets:[0,0],strictSets:true,mains:{2:0,4:0,6:0},goals:{hp:'',def:'',spd:'',atk:'',cr:'',cd:'',res:'',acc:''},basis:'bonus',objective:'balanced'};
 }
 export function initialTeams(account){
  const configs=['Molly','Vritra','Solveig'].map(name=>{
@@ -41,7 +42,7 @@ export function initialTeams(account){
  return [{id:crypto.randomUUID(),name:'Molly · Vritra · Solveig',mode:'defense',priority:1,order:'soft',configs}];
 }
 export function makeTeam(gameMode='siege'){return {id:crypto.randomUUID(),name:'Novo time',gameMode,mode:'defense',priority:1,order:'off',configs:Array.from({length:GAME_MODES[gameMode]?.slots||3},()=>blankConfig())};}
-export const DEFAULT_OPTIONS={equipped:true,respectLocks:false,artifacts:true,depth:'balanced',minLevel:12,maxGrindsGems:false};
+export const DEFAULT_OPTIONS={equipped:true,respectLocks:false,artifacts:true,depth:'balanced',minLevel:12,maxGrindsGems:false,strictMode:false,speedTick:7};
 
 export const GAME_MODES = {
  solo: {label:'1 Slot (Solo)', slots:1},
@@ -59,4 +60,9 @@ export function changeGameMode(team, gameMode) {
 // Legacy three-slot plans default to Siege. Stored hidden slots never enter a search.
 export function restoreTeam(team) {
  return changeGameMode(team, GAME_MODES[team.gameMode]?team.gameMode:'siege');
+}
+
+export function teamFromPreset(preset,account,team=makeTeam('siege')){
+ const base=changeGameMode(team,'siege');
+ return {...base,name:preset.name,configs:Array.from({length:3},(_,i)=>blankConfig(account.units.find(u=>u.id===preset.unitIds[i]))),inactiveConfigs:[],leaderKey:null};
 }

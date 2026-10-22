@@ -1,0 +1,452 @@
+{
+  "gbah": {
+    "waves": {
+      "1": [
+        {
+          "name": "Medium Crystal",
+          "hp": 44625,
+          "def": 660,
+          "spd": 108,
+          "res": 50,
+          "critReduction": 0,
+          "element": 0
+        },
+        {
+          "name": "Golem",
+          "hp": 49455,
+          "def": 1224,
+          "spd": 119,
+          "res": 50,
+          "critReduction": 0,
+          "element": 1
+        },
+        {
+          "name": "Golem",
+          "hp": 49455,
+          "def": 1224,
+          "spd": 119,
+          "res": 50,
+          "critReduction": 0,
+          "element": 1
+        },
+        {
+          "name": "Medium Crystal",
+          "hp": 44625,
+          "def": 660,
+          "spd": 108,
+          "res": 50,
+          "critReduction": 0,
+          "element": 0
+        }
+      ],
+      "3": [
+        {
+          "name": "Medium Crystal",
+          "hp": 44730,
+          "def": 665,
+          "spd": 108,
+          "res": 50,
+          "critReduction": 0,
+          "element": 0
+        },
+        {
+          "name": "Golem",
+          "hp": 49365,
+          "def": 1231,
+          "spd": 119,
+          "res": 50,
+          "critReduction": 0,
+          "element": 1
+        },
+        {
+          "name": "Golem",
+          "hp": 49365,
+          "def": 1231,
+          "spd": 119,
+          "res": 50,
+          "critReduction": 0,
+          "element": 1
+        },
+        {
+          "name": "Golem",
+          "hp": 49365,
+          "def": 1231,
+          "spd": 119,
+          "res": 50,
+          "critReduction": 0,
+          "element": 1
+        },
+        {
+          "name": "Medium Crystal",
+          "hp": 44730,
+          "def": 665,
+          "spd": 108,
+          "res": 50,
+          "critReduction": 0,
+          "element": 0
+        }
+      ]
+    },
+    "accuracy": 35
+  },
+  "dbah": {
+    "waves": {
+      "1": [
+        {
+          "name": "Small Crystal",
+          "hp": 34260,
+          "def": 1214,
+          "spd": 109,
+          "res": 30,
+          "critReduction": 0,
+          "element": 0
+        },
+        {
+          "name": "Medium Crystal",
+          "hp": 47280,
+          "def": 1326,
+          "spd": 118,
+          "res": 30,
+          "critReduction": 0,
+          "element": 0
+        },
+        {
+          "name": "Medium Crystal",
+          "hp": 47280,
+          "def": 1326,
+          "spd": 118,
+          "res": 30,
+          "critReduction": 0,
+          "element": 0
+        },
+        {
+          "name": "Small Crystal",
+          "hp": 34260,
+          "def": 1214,
+          "spd": 109,
+          "res": 30,
+          "critReduction": 0,
+          "element": 0
+        }
+      ],
+      "3": [
+        {
+          "name": "Small Crystal",
+          "hp": 34335,
+          "def": 1224,
+          "spd": 109,
+          "res": 30,
+          "critReduction": 0,
+          "element": 0
+        },
+        {
+          "name": "Medium Crystal",
+          "hp": 47445,
+          "def": 1337,
+          "spd": 118,
+          "res": 30,
+          "critReduction": 0,
+          "element": 0
+        },
+        {
+          "name": "Medium Crystal",
+          "hp": 47445,
+          "def": 1337,
+          "spd": 118,
+          "res": 30,
+          "critReduction": 0,
+          "element": 0
+        },
+        {
+          "name": "Medium Crystal",
+          "hp": 47445,
+          "def": 1337,
+          "spd": 118,
+          "res": 30,
+          "critReduction": 0,
+          "element": 0
+        },
+        {
+          "name": "Small Crystal",
+          "hp": 34335,
+          "def": 1224,
+          "spd": 109,
+          "res": 30,
+          "critReduction": 0,
+          "element": 0
+        }
+      ]
+    },
+    "accuracy": 65
+  },
+  "nbah": {
+    "waves": {
+      "1": [
+        {
+          "name": "가드_보라(중)_심연층",
+          "hp": 19065,
+          "def": 1448,
+          "spd": 109,
+          "res": 30,
+          "critReduction": 0,
+          "element": 0
+        },
+        {
+          "name": "Golem",
+          "hp": 23685,
+          "def": 2179,
+          "spd": 118,
+          "res": 30,
+          "critReduction": 0,
+          "element": 5
+        },
+        {
+          "name": "Golem",
+          "hp": 23685,
+          "def": 2179,
+          "spd": 118,
+          "res": 30,
+          "critReduction": 0,
+          "element": 5
+        },
+        {
+          "name": "가드_보라(중)_심연층",
+          "hp": 19065,
+          "def": 1448,
+          "spd": 109,
+          "res": 30,
+          "critReduction": 0,
+          "element": 0
+        }
+      ],
+      "3": [
+        {
+          "name": "가드_보라(중)_심연층",
+          "hp": 19095,
+          "def": 1452,
+          "spd": 109,
+          "res": 30,
+          "critReduction": 0,
+          "element": 0
+        },
+        {
+          "name": "Golem",
+          "hp": 23760,
+          "def": 2179,
+          "spd": 118,
+          "res": 30,
+          "critReduction": 0,
+          "element": 5
+        },
+        {
+          "name": "Golem",
+          "hp": 23760,
+          "def": 2179,
+          "spd": 118,
+          "res": 30,
+          "critReduction": 0,
+          "element": 5
+        },
+        {
+          "name": "Golem",
+          "hp": 23760,
+          "def": 2179,
+          "spd": 118,
+          "res": 30,
+          "critReduction": 0,
+          "element": 5
+        },
+        {
+          "name": "가드_보라(중)_심연층",
+          "hp": 19095,
+          "def": 1452,
+          "spd": 109,
+          "res": 30,
+          "critReduction": 0,
+          "element": 0
+        }
+      ]
+    },
+    "accuracy": 35
+  },
+  "sf10": {
+    "waves": {
+      "1": [
+        {
+          "name": "Medium Crystal",
+          "hp": 15705,
+          "def": 1307,
+          "spd": 140,
+          "res": 34,
+          "critReduction": 0,
+          "element": 3
+        },
+        {
+          "name": "Small Crystal",
+          "hp": 21615,
+          "def": 1426,
+          "spd": 135,
+          "res": 34,
+          "critReduction": 0,
+          "element": 3
+        },
+        {
+          "name": "Small Crystal",
+          "hp": 21615,
+          "def": 1426,
+          "spd": 135,
+          "res": 34,
+          "critReduction": 0,
+          "element": 3
+        },
+        {
+          "name": "Medium Crystal",
+          "hp": 15705,
+          "def": 1307,
+          "spd": 140,
+          "res": 34,
+          "critReduction": 0,
+          "element": 3
+        }
+      ],
+      "3": [
+        {
+          "name": "Medium Crystal",
+          "hp": 15675,
+          "def": 1309,
+          "spd": 140,
+          "res": 34,
+          "critReduction": 0,
+          "element": 3
+        },
+        {
+          "name": "Small Crystal",
+          "hp": 21645,
+          "def": 1425,
+          "spd": 135,
+          "res": 34,
+          "critReduction": 0,
+          "element": 3
+        },
+        {
+          "name": "Small Crystal",
+          "hp": 21645,
+          "def": 1425,
+          "spd": 135,
+          "res": 34,
+          "critReduction": 0,
+          "element": 3
+        },
+        {
+          "name": "Small Crystal",
+          "hp": 21645,
+          "def": 1425,
+          "spd": 135,
+          "res": 34,
+          "critReduction": 0,
+          "element": 3
+        },
+        {
+          "name": "Medium Crystal",
+          "hp": 15675,
+          "def": 1309,
+          "spd": 140,
+          "res": 34,
+          "critReduction": 0,
+          "element": 3
+        }
+      ]
+    },
+    "accuracy": 25
+  },
+  "pc10": {
+    "waves": {
+      "1": [
+        {
+          "name": "Medium Crystal",
+          "hp": 17415,
+          "def": 1250,
+          "spd": 155,
+          "res": 49,
+          "critReduction": 0,
+          "element": 4
+        },
+        {
+          "name": "Small Crystal",
+          "hp": 24045,
+          "def": 1402,
+          "spd": 160,
+          "res": 49,
+          "critReduction": 0,
+          "element": 4
+        },
+        {
+          "name": "Small Crystal",
+          "hp": 24045,
+          "def": 1402,
+          "spd": 160,
+          "res": 49,
+          "critReduction": 0,
+          "element": 4
+        },
+        {
+          "name": "Medium Crystal",
+          "hp": 17415,
+          "def": 1250,
+          "spd": 155,
+          "res": 49,
+          "critReduction": 0,
+          "element": 4
+        }
+      ],
+      "3": [
+        {
+          "name": "Medium Crystal",
+          "hp": 17370,
+          "def": 1252,
+          "spd": 155,
+          "res": 49,
+          "critReduction": 0,
+          "element": 4
+        },
+        {
+          "name": "Small Crystal",
+          "hp": 24060,
+          "def": 1400,
+          "spd": 160,
+          "res": 49,
+          "critReduction": 0,
+          "element": 4
+        },
+        {
+          "name": "Small Crystal",
+          "hp": 24060,
+          "def": 1400,
+          "spd": 160,
+          "res": 49,
+          "critReduction": 0,
+          "element": 4
+        },
+        {
+          "name": "Small Crystal",
+          "hp": 24060,
+          "def": 1400,
+          "spd": 160,
+          "res": 49,
+          "critReduction": 0,
+          "element": 4
+        },
+        {
+          "name": "Medium Crystal",
+          "hp": 17370,
+          "def": 1252,
+          "spd": 155,
+          "res": 49,
+          "critReduction": 0,
+          "element": 4
+        }
+      ]
+    },
+    "accuracy": 39
+  }
+}
