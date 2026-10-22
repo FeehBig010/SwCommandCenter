@@ -34,7 +34,7 @@ test('combined focuses actually average the optimizer objectives after targets',
 });
 test('manual calculator uses sheet/base/sets and scoped bonuses without account or fake inventory',()=>{
  const team=quickTeam('siege');team.configs=team.configs.map((c,i)=>selectQuickMonster(c,{master:[18311,16111,28212][i],name:['Mihyang','Anavel','Solveig'][i]}));team.towerSpd=15;team.leader={stat:'spd',scope:'guild',value:28,element:0};team.configs.forEach((c,i)=>{c.manual.base.spd=100;c.manual.sheet.spd=200-i*10;});
- const preview=quickPreview(team);assert.equal(preview.complete,true);assert.deepEqual(preview.actors.map(a=>a.spd),[243,233,223]);assert.ok(preview.turns.every(t=>Number.isInteger(t.tick)));team.enemyCombatSpd=300;assert.equal(quickPreview(team).cut,true);
+ const preview=quickPreview(team);assert.equal(preview.complete,true);assert.deepEqual(preview.actors.map(a=>a.spd),[248,238,228]);assert.ok(preview.turns.every(t=>Number.isInteger(t.tick)));team.enemyCombatSpd=300;assert.equal(quickPreview(team).cut,true);
  team.gameMode='arena';assert.equal(quickPreview(team).actors[0].spd,215);team.configs[0].sets=[3,15];assert.equal(quickPreview(team).actors[0].spd,215);team.configs[0].manual.sheet.spd='bad';assert.throws(()=>quickPreview(team),/inválido/);assert.equal(quickTeam('arena').configs.length,4);assert.equal(quickTeam('cairos').configs.length,5);
 });
 test('normalized private backups strip extras while retaining gear, grinds, skills, towers and decks',()=>{

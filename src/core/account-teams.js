@@ -13,8 +13,8 @@ export function teamFromGameDeck(preset,account,previous){
   const sets=Object.entries(counts).flatMap(([id,n])=>Array(Math.floor(n/(FOUR.has(Number(id))?4:2))).fill(Number(id))).filter(id=>id!==25&&id!==99);
   return {...c,sets,strictSets:false,basis:'total',lockSpeedSync:mode==='cairos',mains:Object.fromEntries([2,4,6].map(s=>[s,account.runes.find(r=>unit?.runeIds.includes(r.id)&&r.slot===s)?.main[0]||0]))};
  });
- const leader=catalogLeader(configs[0]?.masterId);
- const next={...makeTeam(mode),...previous,gameMode:mode,configs,inactiveConfigs:[],leader,leaderIndex:0,leaderKey:leader?configs[0]?.key:null,leaderSpd:0,towerSpd:previous?.towerSpd??account.towers?.glorySpd??0,guildSpd:previous?.guildSpd??account.towers?.guildSpd??0,sourceDeckId:preset.id,sourceAccountId:account.id,sourceDungeon:preset.dungeon||null,dungeon:preset.dungeon||previous?.dungeon||null,sourceDeckName:preset.name,sourceImportedAt:account.importedAt};
+ const leaderIndex=Math.max(0,Math.min(slots-1,Number(preset.leaderIndex)||0)),leader=catalogLeader(configs[leaderIndex]?.masterId);
+ const next={...makeTeam(mode),...previous,gameMode:mode,mode:preset.mode||previous?.mode||'defense',configs,inactiveConfigs:[],leader,leaderIndex,leaderKey:leader?configs[leaderIndex]?.key:null,leaderSpd:0,towerSpd:previous?.towerSpd??account.towers?.glorySpd??0,guildSpd:previous?.guildSpd??account.towers?.guildSpd??0,sourceDeckId:preset.id,sourceAccountId:account.id,sourceDungeon:preset.dungeon||null,dungeon:preset.dungeon||previous?.dungeon||null,sourceDeckName:preset.name,sourceImportedAt:account.importedAt};
  delete next.plannedRunes;
  return {...next,autoName:previous?.autoName!==false,name:previous?.autoName===false?previous.name:automaticTeamName(configs)};
 }

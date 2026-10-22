@@ -36,13 +36,13 @@ export function normalizeAccount(raw){
  const siege=(raw.guildsiege_defense_deck_unit_list||[]).map((d,i)=>({name:`Defesa ${i+1}`,unitIds:(d.unit_id_list||[]).filter(id=>unitIds.has(id)),equipment:raw.guildsiege_defense_deck_equip_list?.[d.deck_id]?.equip?.map(e=>({unitId:e.unit_id,runeIds:e.rune_id_list||[],artifactIds:e.artifact_id_list||[]}))||[]}));
  if(!units.length||!runeMap.size)throw new Error('Não há monstros e runas válidos neste arquivo.');
  const presets=extractAccountPresets(raw.deck_list,units);
- const supplemental=extractAccountPresets({siege:raw.guildsiege_defense_deck_unit_list},units);
+ const supplemental=[...extractAccountPresets({defense:raw.defense_deck_list},units),...extractAccountPresets({siege_defense:raw.guildsiege_defense_deck_unit_list},units)];
  if(Array.isArray(raw.defense_unit_list)&&raw.defense_unit_list.length===4&&raw.defense_unit_list.every(u=>Number.isSafeInteger(Number(u.unit_id)))){
   const ordered=raw.defense_unit_list.slice().sort((a,b)=>Number(a.pos_id??0)-Number(b.pos_id??0));
-  supplemental.push(...extractAccountPresets({arena:{deck_name:'Defesa Arena',unit_id_list:ordered.map(u=>Number(u.unit_id))}},units));
+  supplemental.push(...extractAccountPresets({arena_defense:{deck_name:'Defesa Arena',unit_id_list:ordered.map(u=>Number(u.unit_id))}},units));
  }
- const existing=new Set(presets.map(p=>JSON.stringify([p.gameMode,p.dungeon,p.unitIds])));
- for(const preset of supplemental){const key=JSON.stringify([preset.gameMode,preset.dungeon,preset.unitIds]);if(!existing.has(key)){existing.add(key);presets.push({...preset,id:`source-${preset.id}`});}}
+ const existing=new Set(presets.map(p=>JSON.stringify([p.gameMode,p.mode,p.dungeon,p.unitIds])));
+ for(const preset of supplemental){const key=JSON.stringify([preset.gameMode,preset.mode,preset.dungeon,preset.unitIds]);if(!existing.has(key)){existing.add(key);presets.push({...preset,id:`source-${preset.id}`});}}
  return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege,accountPresets:presets,towers:extractTowers(raw),crafts:normalizeCrafts(raw.rune_craft_item_list),equipmentPools:equipmentPools(raw,units,[...runeMap.values()])};
 }
 export function blankConfig(unit=null,name='Escolher monstro'){

@@ -127,7 +127,7 @@ export function speedSyncValid(assignments,teams){
    if(sa<sb||sa===sb&&(!a.stats.combat||!b.stats.combat))return false;
   }
   if(active.length&&active.every(c=>assignments[c.key])&&(chain.length||active.some(c=>Number(c.maxTick)>0))){
-   const actors=active.map(c=>{const a=assignments[c.key];return {key:c.key,master:a.stats.combat?.master??c.masterId,spd:a.stats.combat?.spd??a.stats.total.spd,rawSpd:a.stats.combat?.rawSpd,combat:c.combat,effects:a.stats.combat?.effects,nemesisSets:Math.floor((a.counts?.[14]||0)/2)};});
+   const actors=active.map(c=>{const a=assignments[c.key];return {key:c.key,master:a.stats.combat?.master??c.masterId,spd:a.stats.combat?.spd??a.stats.total.spd,rawSpd:a.stats.combat?.rawSpd,combat:c.combat,effects:a.stats.combat?.effects,will:(a.counts?.[15]||0)>=2,nemesisSets:Math.floor((a.counts?.[14]||0)/2)};});
    const configured=scenarioForTeam(team,actors),foes=configured.actors.some(a=>a.enemy),enemy=Number(team.enemyCombatSpd)||0;
    const report=simulateCombat([...configured.actors,...(!foes&&enemy>0?[{key:'__enemy__',spd:enemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true});
    const positions=chain.map(c=>report.firstTurns.findIndex(t=>t.key===c.key));

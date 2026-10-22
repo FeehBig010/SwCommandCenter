@@ -1,0 +1,4 @@
+import {useMemo} from 'react';
+import {automaticCairosReport} from '../core/cairos-auto';
+import InfoTooltip from './InfoTooltip';
+export default function AutomaticCairosReport({account,team,profile,builds,options}){const report=useMemo(()=>automaticCairosReport(account,team,profile,builds,options),[account,team,profile,builds,options]);return <section className="automatic-cairos-report"><h3>Validação automática <InfoTooltip label="Limites da validação de Cairos">Dados fixos das waves do snapshot SWARFARM; Glória SPD 15%, ATK 20%, DC 25% e Guilda SPD 5%. Dano conservador sem skill-ups, buffs ou quebra de defesa. Dano suficiente não comprova IA, recargas ou HP cheio nas waves 1 e 3. Sobrevivência contra mecânicas do chefe ainda não é validada; nenhum selo de segurança é emitido sem esse cálculo.</InfoTooltip></h3>{report.badges.map((b,i)=><span key={i} className={`cairos-auto-badge ${b.kind}`} role="status">{b.text}</span>)}</section>;}

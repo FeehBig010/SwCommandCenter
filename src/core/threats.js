@@ -1,0 +1,5 @@
+import {monsterBase} from './monster-search.js';
+// Explicit planning preset, not an assertion about an unknown opponent's gear.
+export function enemyMetaSpeed(master,area='siege'){const b=monsterBase(master);return b?Math.ceil(b.spd*(1+.25+.15+(area==='siege'?.05:0))+150):0;}
+const threats={16613:['Leo','Limita SPD; o alvo do primeiro ataque é uma hipótese. Will bloqueia a redução enquanto ativo.'],21214:['Tian Lang','Reduz ganhos de ATB e reage a boosts no cenário.'],20615:['Amduat','Ganha 25% de ATB ao fim de cada turno inimigo.'],23114:['Lucifer','O ganho de ATB depende do dano real; informe ganhos resolvidos nos eventos.'],16615:['Ragdoll','Críticos podem alimentar ATB; exige o ramo de dano resolvido.'],22211:['Abellio','Dano e HP podem disparar cura/boost; exige eventos de dano.'],22311:['Abellio','A forma fera reage ao dano; exige eventos resolvidos.']};
+export function scanEnemyThreats(team){return (team.combatScenario?.enemies||[]).flatMap((e,index)=>{const info=threats[e.master];return info&&!e.combat?.oblivion?[{master:e.master,index,name:info[0],description:info[1],conditional:e.master!==20615}]:[];});}

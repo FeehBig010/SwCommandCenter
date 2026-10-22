@@ -27,7 +27,8 @@ export function extractAccountPresets(deckList,units){
    if(!ids.length||!ids.some(id=>Number.isSafeInteger(id)&&id>0))return;
    const area=classifyDeck({...context,...node},path,ids.length);
    const base=`deck-${String(node.deck_id??node.id??path).slice(0,80)}-${path.replace(/\/\d+(?=\/|$)/g,'').slice(0,80)}`,occurrence=idsSeen.get(base)||0;idsSeen.set(base,occurrence+1);
-   out.push({id:`${base}-${occurrence}`,name:String(node.name??node.deck_name??`Deck ${out.length+1}`).slice(0,100),...area,unitIds:ids.map(id=>known.get(id)??null),missingIds:ids.filter(id=>id>0&&!known.has(id))});return;
+   const leaderId=Number(node.leader_unit_id??0),leaderIndex=leaderId>0?Math.max(0,ids.indexOf(leaderId)):Math.max(0,Math.min(ids.length-1,Math.floor(Number(node.leader_index)||0)));
+   out.push({mode:/defen|defesa/.test(fold([path,node.mode,node.name,node.deck_name].join(' ')))?'defense':'attack',leaderIndex,id:`${base}-${occurrence}`,name:String(node.name??node.deck_name??`Deck ${out.length+1}`).slice(0,100),...area,unitIds:ids.map(id=>known.get(id)??null),missingIds:ids.filter(id=>id>0&&!known.has(id))});return;
   }
   for(const [key,value] of Object.entries(node))if(value&&typeof value==='object')walk(value,`${path}/${key}`,depth+1,context);
  }

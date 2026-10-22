@@ -1,0 +1,2 @@
+const labels=['Setup','Modo','Selecionar Time','Build','Resultados'];
+export default function WizardProgress({step=1,onSelect}){return <nav className="wizard-ruler" aria-label="Progresso do time">{labels.map((label,i)=><button type="button" key={label} aria-current={step===i+1?'step':undefined} disabled={i+1>step} onClick={()=>onSelect?.(i+1)}><b>{i+1}</b><span>{label}</span>{i<4&&<small aria-hidden="true">➔</small>}</button>)}</nav>;}

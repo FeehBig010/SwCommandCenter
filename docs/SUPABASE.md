@@ -98,3 +98,9 @@ Aplique também `supabase/migrations/202610220005_progression_and_crafts.sql`, d
 ## Equipamento principal e RTA
 
 Aplique `supabase/migrations/202610220006_equipment_pool_backup.sql` após a 005 para permitir `equipmentPools` no backup normalizado. RLS continua exclusiva do proprietário. Os itens físicos de runa são compartilhados pelo jogo, mas as atribuições de equipamento RTA reconhecidas no SWEX ficam separadas em `equipmentPools.rta`; não sobrescrevem `unit.runeIds` principal. Os builders atuais recusam uma busca RTA, em vez de reaproveitar silenciosamente a configuração principal. Travas locais ficam por conta neste dispositivo e não são publicadas nos links/QRs.
+
+## Tour e nome de exibição
+
+Aplique `supabase/migrations/202610220007_onboarding_profile.sql` depois das migrations anteriores. Adiciona `profiles.has_completed_onboarding`, inicialmente `false`, e os RPCs `complete_my_onboarding()` / `save_my_display_profile(text)`. Ambos exigem autenticação, atualizam somente `auth.uid()` e não aceitam nem alteram cargos. O nome é validado entre 2 e 80 caracteres. Permissões diretas de escrita em `profiles` continuam bloqueadas. Testes PostgreSQL/PGlite verificam dono, outro usuário, anônimo e tentativa de promoção.
+
+Sem projeto configurado, o tour, nome local e conta SWEX funcionam no navegador. Fechar/concluir o tour grava `has_completed_onboarding=true` no localStorage; salvar o perfil após importar também conclui o tour. Com login, os RPCs sincronizam essa preferência. Uma falha de sincronização não remove os planos locais. Nenhum banco remoto foi provisionado nesta alteração.

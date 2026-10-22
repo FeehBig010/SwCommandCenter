@@ -1,3 +1,4 @@
+import portraitCache from './portrait-cache.json' with {type:'json'};
 import metadata from './monster-metadata.json' with {type:'json'};
 import catalog from './catalog.json' with { type: 'json' };
 // Public SWARFARM bestiary filename snapshot; provenance/update reference is in CONTEXT.md.
@@ -15,6 +16,7 @@ export function monsterImageSources(master){
  return [
   `https://swarfarm.com/static/herders/images/monsters/${filename}`,
   `https://raw.githubusercontent.com/swarfarm/swarfarm/master/herders/static/herders/images/monsters/${filename}`,
+  ...(portraitCache.includes(filename)?[`/game-icons/monsters/${filename}`]:[]),
  ];
 }
 export function catalogMonster(master,label){

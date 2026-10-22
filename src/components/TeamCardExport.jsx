@@ -16,7 +16,7 @@ function VisualTeamCard({card,portraits,cardRef}){
   <div className="png-monster-grid">{card.monsters.map((monster,index)=>{
    const counts=monster.sets.filter(Boolean).reduce((all,id)=>({...all,[id]:(all[id]||0)+1}),{});
    return <section className="png-monster" key={index}>
-    <div className="png-monster-heading"><span className="png-portrait">{portraits[monster.master]?<img src={portraits[monster.master]} alt={monster.name} width="64" height="64"/>:<span>{monster.name?.[0]||'?'}</span>}</span><div><small>POSIÇÃO {String(index+1).padStart(2,'0')}</small><h2>{monster.isLeader?'👑 ':''}{monster.name}</h2>{monster.isLeader&&<span className="png-leader-badge">LÍDER ATIVO</span>}</div></div>
+    <div className="png-monster-heading"><span className="png-portrait portrait-crown-wrap">{monster.isLeader&&<span className="mini-crown">👑</span>}{portraits[monster.master]?<img src={portraits[monster.master]} alt={monster.name} width="64" height="64"/>:<span>{monster.name?.[0]||'?'}</span>}</span><div><small>POSIÇÃO {String(index+1).padStart(2,'0')}</small><h2>{monster.name}</h2></div></div>
     <p className="png-section-label">{monster.strictSets?'SETS OBRIGATÓRIOS':'SETS PREFERIDOS'}</p>
     <div className="png-set-badges">{Object.keys(counts).length?Object.entries(counts).map(([id,count])=><span key={id} title={SETS[id]||String(id)}>{count>1?`${count}× `:''}{SETS[id]&&<img src={`/game-icons/runes/${SETS[id].toLowerCase()}.png`} alt={SETS[id]} width="22" height="22"/>}{!SETS[id]&&id}</span>):<span>Livres</span>}</div>
     <div className="png-main-stats">{[2,4,6].map(slot=><div key={slot}><small>SLOT {slot}</small><strong>{STAT_NAMES[monster.mains[slot]]||'Livre'}</strong></div>)}</div>

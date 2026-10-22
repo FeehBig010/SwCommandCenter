@@ -20,9 +20,9 @@ export const WAVE_SKILLS={13413:{name:'Amputation Magic · Lushen',multiplier:.6
 export function makeCairosTeam(profile,account){
  if(!profile)throw new Error('Masmorra inválida.');
  const preset=presetsForArea(account?.accountPresets,'cairos',profile.id)[0];
- if(preset)return teamFromGameDeck(preset,account);
+ if(preset)return {...teamFromGameDeck(preset,account),towerSpd:15,guildSpd:5};
  const used=new Set();
- return {...makeTeam('cairos'),towerSpd:account?.towers?.glorySpd||0,dungeon:profile.id,name:profile.name,configs:profile.members.map((name,i)=>{
+ return {...makeTeam('cairos'),towerSpd:15,guildSpd:5,dungeon:profile.id,name:profile.name,configs:profile.members.map((name,i)=>{
   const master=MONSTER_CATALOG.find(m=>m.name===name)?.master;
   const unit=account?.units.filter(u=>u.name===name&&!used.has(u.id)).sort((a,b)=>b.level-a.level||b.master-a.master)[0];
   if(unit)used.add(unit.id);

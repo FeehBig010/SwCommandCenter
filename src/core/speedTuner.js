@@ -1,6 +1,6 @@
 import passiveNotices from './passive-notices.json' with {type:'json'};
 import {leaderApplies,speedLeaderBonus} from './leaders.js';
-export const PASSIVES={25311:'miles',23512:'masha',23612:'masha_dismounted',26113:'sonia',21214:'tian_lang',16615:'ragdoll',22211:'abellio',22311:'abellio_beast',16312:'antares',16613:'leo',21314:'tablo'};
+export const PASSIVES={20615:'amduat',25311:'miles',23512:'masha',23612:'masha_dismounted',26113:'sonia',21214:'tian_lang',16615:'ragdoll',22211:'abellio',22311:'abellio_beast',16312:'antares',16613:'leo',21314:'tablo'};
 const number=(v,fallback,min,max,label)=>{const n=Number(v??fallback);if(!Number.isFinite(n)||n<min||n>max)throw new Error(`${label} inválido.`);return n;};
 export function normalizeCombat(raw={}){const result={speedBuff:raw.speedBuff===true,slow:raw.slow===true,disabled:raw.disabled===true,oblivion:raw.oblivion===true,hpPercent:number(raw.hpPercent,100,0,100,'HP'),buffCount:number(raw.buffCount,0,0,100,'Buffs'),mashaStacks:number(raw.mashaStacks,0,0,5,'Stacks Masha'),targetTick:number(raw.targetTick,0,0,10000,'Tick alvo')};if(![result.targetTick,result.buffCount,result.mashaStacks].every(Number.isInteger))throw new Error('Buffs, stacks e ticks devem ser inteiros.');return result;}
 export function runtimeSpeed(raw,master,combat={},effects={}){
@@ -53,7 +53,7 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
   const targets=event.targets?.map(k=>{const t=state.find(a=>a.key===k);if(!t)throw new Error('Alvo de evento não encontrado.');return t;}).filter(t=>!t.dead)||[];
   const amount=number(event.amount,0,0,1000,'Valor do evento');if(event.critical&&event.glancing)throw new Error('Um hit não pode ser crítico e glancing ao mesmo tempo.');
   log.push({tick,source:source.key,type:event.type,targets:targets.map(t=>t.key),amount});
-  if(event.type==='leo_attack'){if(source.passive!=='leo')throw new Error('Ataque Leo exige Leo.');apply({...event,type:'reduce',amount:15},source,tick);}
+  if(event.type==='leo_attack'){if(source.passive!=='leo')throw new Error('Ataque Leo exige Leo.');const vulnerable=targets.filter(t=>!t.will||t.turns>0);if(vulnerable.length)apply({...event,type:'reduce',targets:vulnerable.map(t=>t.key),amount:15},source,tick);if(vulnerable.length!==targets.length)log.push({tick,source:source.key,type:'will_immunity',targets:targets.filter(t=>t.will&&t.turns===0).map(t=>t.key),amount:0});}
   else if(event.type==='cleanse'){for(const t of targets){t.combat.disabled=false;t.combat.slow=false;}}
   else if(event.type==='boost'){skillBoost(targets,amount,source);}
   else if(event.type==='reduce'){
@@ -91,6 +91,7 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
   const skipped=actor.combat.disabled;
   if(!skipped)for(const e of events.filter(e=>e.afterKey===actor.key&&Number(e.occurrence??1)===actor.turns))apply(e,actor,tick);
   if(skipped&&actor.disabledFor){actor.disabledFor--;if(!actor.disabledFor)actor.combat.disabled=false;}
+  for(const am of alive().filter(a=>a.passive==='amduat'&&!same(a,actor)))skillBoost([am],25,am);
   if(stopAfterFirst&&alive().every(a=>seen.has(a.key)))break;
  }
  if(stopAfterFirst&&alive().some(a=>!seen.has(a.key)))throw new Error('Simulação de turnos excedeu o limite.');
@@ -102,10 +103,10 @@ export const COMBAT_EVENTS={boost:'Boost de barra',reduce:'Redução de barra',d
 export function normalizeScenario(raw={}){
  if(!Array.isArray(raw.enemies||[])||!Array.isArray(raw.events||[])||(raw.enemies||[]).length>5||(raw.events||[]).length>100)throw new Error('Cenário inválido.');
  const ref=v=>{if(typeof v!=='string'||! /^(ally|enemy):[0-4]$/.test(v))throw new Error('Referência de cenário inválida.');return v;};
- return {enemies:(raw.enemies||[]).map(e=>{const spd=number(e.spd,0,0,10000,'SPD inimiga'),master=number(e.master??e.masterId,0,0,1000000,'Monstro'),nemesisSets=number(e.nemesisSets,0,0,3,'Nemesis');if(!Number.isInteger(master)||!Number.isInteger(nemesisSets))throw new Error('Monstro/Nemesis inválido.');return {master,label:String(e.label||'Inimigo').slice(0,80),spd,nemesisSets,combat:normalizeCombat(e.combat)};}),events:(raw.events||[]).map(e=>{if(!COMBAT_EVENTS[e.type])throw new Error('Evento inválido.');const occurrence=number(e.occurrence,1,1,100,'Turno');if(!Number.isInteger(occurrence)||!Array.isArray(e.targets||[])||(e.targets||[]).length>10)throw new Error('Alvos/turno inválidos.');return {afterKey:ref(e.afterKey),occurrence,type:e.type,targets:(e.targets||[]).map(ref),amount:number(e.amount,0,0,1000,'Valor'),critical:e.critical===true,glancing:e.glancing===true,enabled:e.enabled!==false};})};
+ return {enemies:(raw.enemies||[]).map(e=>{const spd=number(e.spd,0,0,10000,'SPD inimiga'),master=number(e.master??e.masterId,0,0,1000000,'Monstro'),nemesisSets=number(e.nemesisSets,0,0,3,'Nemesis');if(!Number.isInteger(master)||!Number.isInteger(nemesisSets))throw new Error('Monstro/Nemesis inválido.');return {will:e.will===true,master,label:String(e.label||'Inimigo').slice(0,80),spd,nemesisSets,combat:normalizeCombat(e.combat)};}),events:(raw.events||[]).map(e=>{if(!COMBAT_EVENTS[e.type])throw new Error('Evento inválido.');const occurrence=number(e.occurrence,1,1,100,'Turno');if(!Number.isInteger(occurrence)||!Array.isArray(e.targets||[])||(e.targets||[]).length>10)throw new Error('Alvos/turno inválidos.');return {afterKey:ref(e.afterKey),occurrence,type:e.type,targets:(e.targets||[]).map(ref),amount:number(e.amount,0,0,1000,'Valor'),critical:e.critical===true,glancing:e.glancing===true,enabled:e.enabled!==false};})};
 }
 export function scenarioForTeam(team,actors){
- const raw=normalizeScenario(team.combatScenario),ref=k=>k.startsWith('ally:')?team.configs[Number(k.split(':')[1])]?.key:k;
+ const raw=normalizeScenario(team.combatScenario);if(team.autoEnemyPassives)raw.enemies.forEach((e,i)=>{if(e.master===16613&&!raw.events.some(v=>v.afterKey===`enemy:${i}`&&v.type==='leo_attack'))raw.events.push({afterKey:`enemy:${i}`,type:'leo_attack',occurrence:1,targets:[`ally:${team.leoTarget||0}`],amount:15,critical:false,glancing:false});});const ref=k=>k.startsWith('ally:')?team.configs[Number(k.split(':')[1])]?.key:k;
  return {actors:[...actors,...raw.enemies.filter(e=>e.spd>0).map(e=>{const i=raw.enemies.indexOf(e);return {...e,key:`enemy:${i}`,rawSpd:e.spd,enemy:true,name:e.label};})],events:raw.events.map(e=>({...e,afterKey:ref(e.afterKey),targets:e.targets.map(ref)}))};
 }
 export function missingDefenseConditions(team){
