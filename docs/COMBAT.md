@@ -1,5 +1,18 @@
 # SPD de combate e cenários anti-corte
 
+## Regra atual da Calculadora Livre — sincronização automática
+
+O slot 1 determina a estratégia sem seletor manual. `automaticSyncStrategy` consulta `atb-openers.json`, extraído do bestiário com o SHA-256 já registrado neste documento e revisado por habilidade. O catálogo inclui 32 formas com componentes garantidos de boost de equipe: Bernard 30%, Bastet 25%, Megan 20%, Tiana/Kabilla 30%, entre outras. Procs, roubos condicionais, revives e boosts de alvo único não são tratados como boost garantido da composição.
+
+Com puxador, o solver inverte a fórmula de combate para fichas inteiras e valida a primeira rotação completa em ticks, incluindo quantidade real de ATB, buff SPD e artefatos. Busca uma configuração viável e reduz cada seguidor mantendo a ordem inteira antes do inimigo. Cascatas conservam os checkpoints reais de barra após o último puxador. Sem defesa informada, há um inimigo de referência com SPD do abridor menos 1. O coeficiente histórico 0,8475 continua apenas no helper conservador e na estratégia explícita antiga; não determina os mínimos automáticos atuais. Exemplo com base 100 e torre 15%, abridor 400/inimigo 399: Tiana 30% requer 338 de combate nos três seguidores; Bastet 25% requer 348; Bernard 30% + buff SPD admite 300 iniciais nesse cenário.
+
+Sem puxador garantido, as metas são ancoradas diretamente no Combat SPD do slot 1: S, S−1, S−2, S−3, estendendo a quinta posição em Cairos. A inversão inclui base, torre, líder, buffs e bônus de artefatos. A igualdade precisa ser representável por uma ficha inteira; se não for, não há meta falsa por arredondamento. A fila exata é aplicada mesmo se um inimigo informado puder interrompê-la; nesse caso, a UI mostra a falha do cenário. Sem inimigo, essa estratégia verifica a sequência aliada e não pressupõe uma velocidade da defesa.
+
+Planos antigos com `orderMode:advanced`, `perfectTune:false`, `autoOpener:false` ou AUTO desativado migram para a estratégia por identidade. Inputs/ranges de seguidores ficam bloqueados. O slot 1 recebe a badge automática “Puxador Detectado (+N% ATB)” ou “Sincronia Estrita (Fila Indiana)”. A edição da SPD do abridor, troca de monstro ou de artefatos recalcula os alvos. O switch Combate/Runagem só altera a visualização: Runagem = ficha requerida − base, após inverter os efeitos/artefatos uma única vez.
+
+As seções abaixo registram também políticas e validações anteriores. Quando descrevem toggle Perfect Tune, modo avançado público ou piso fixo no modo livre, esta regra atual prevalece.
+
+
 O otimizador, a prévia equipada/otimizada e a checagem de favoritos usam `src/core/speedTuner.js`. É um modelo explícito de SPD/barra e primeira rotação, com eventos de luta já resolvidos. Não é uma réplica completa do servidor de combate: não escolhe habilidades pela IA, calcula probabilidades de resistência, resolve dano automaticamente ou sorteia Violent/Antares. As hipóteses ficam visíveis no painel e procs/efeitos não cobertos produzem avisos condicionais.
 
 ## Uso

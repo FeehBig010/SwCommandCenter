@@ -1,44 +1,62 @@
+import {createElement} from 'react';
+import {createRoot} from 'react-dom/client';
+import {flushSync} from 'react-dom';
 import {MONSTER_FALLBACK} from './monsters.js';
-import {cardFileName,loadCardPortraits} from './team-card.js';
+import {loadCardPortraits} from './team-card.js';
+import {createInfographic,infographicFileName} from './export-infographic.js';
+import skillCache from './skill-cache.json' with {type:'json'};
 
-export async function exportQuickCard(node,team,signal){
- if(!node||team.configs.some(c=>!c.masterId))throw new Error('Selecione todos os monstros antes de exportar.');
- const [module,portraits]=await Promise.all([import('html2canvas'),loadCardPortraits(team.configs.map(c=>({master:c.masterId})),signal),document.fonts.ready]);
- if(signal.aborted)return;
- const width=Math.max(960,team.configs.length*240),probe=document.createElement('canvas').getContext('2d',{willReadFrequently:true});
- const rgb=color=>{probe.clearRect(0,0,1,1);probe.fillStyle=color;probe.fillRect(0,0,1,1);const [r,g,b,a]=probe.getImageData(0,0,1,1).data;return `rgba(${r},${g},${b},${a/255})`;};
- const canvas=await module.default(node,{scale:2,width,windowWidth:Math.max(1280,width),backgroundColor:'#0c1720',useCORS:true,allowTaint:false,logging:false,scrollX:0,scrollY:0,
-  ignoreElements:element=>element.hasAttribute('data-export-ignore'),
-  onclone:doc=>{
-   const root=doc.getElementById(node.id);root.classList.add('is-png-capture');root.style.width=`${width}px`;root.style.padding='28px';root.style.background='#0c1720';
-   const grid=root.querySelector('.summary-team-grid');grid.style.gridTemplateColumns=`repeat(${team.configs.length},minmax(0,1fr))`;
-   root.querySelectorAll('[data-png-name]').forEach(el=>{el.textContent=el.dataset.pngName;el.className='capture-monster-name';});
-   root.querySelectorAll('.monster-portrait').forEach(el=>{
-    const card=el.closest('[data-png-master]'),master=card?.dataset.pngMaster||team.configs.find(c=>c.label===el.closest('[role=listitem]')?.querySelector('strong')?.textContent)?.masterId,name=card?.dataset.pngLabel||el.closest('[role=listitem]')?.querySelector('strong')?.textContent;
-    if(portraits[master]){const img=doc.createElement('img');img.src=portraits[master];img.alt=name;img.width=64;img.height=64;el.replaceChildren(img);}
-    else{const img=doc.createElement('img');img.src=MONSTER_FALLBACK;img.alt=`Retrato indisponível: ${name||'monstro'}`;img.width=64;img.height=64;el.replaceChildren(img);el.classList.add('portrait-fallback');}
-   });
-   root.querySelectorAll('input').forEach(input=>{
-    const out=doc.createElement(input.type==='range'?'div':'strong');
-    if(input.type==='range'){
-     const min=Number(input.min)||0,max=Number(input.max)||350,pct=Math.max(0,Math.min(100,(Number(input.value)-min)/(max-min)*100));
-     out.className='capture-speed-track';out.style.background=`linear-gradient(to right,#d4af37 0%,#d4af37 ${pct}%,#24323c ${pct}%,#24323c 100%)`;
-     const thumb=doc.createElement('span');thumb.style.left=`${pct}%`;out.append(thumb);
-    }else{out.className='capture-speed-value';out.textContent=input.value;}
-    input.replaceWith(out);
-   });
-   // html2canvas does not parse modern color()/color-mix(). Resolve such colors
-   // through the browser so current theme rules cannot break image generation.
-   for(const el of [root,...root.querySelectorAll('*')]){
-    const style=doc.defaultView.getComputedStyle(el);
-    for(const property of ['color','background-color','border-top-color','border-right-color','border-bottom-color','border-left-color','outline-color']){const value=style.getPropertyValue(property);if(/color\(|(?:ok)?lab\(|(?:ok)?lch\(/.test(value))el.style.setProperty(property,rgb(value),'important');}
-    if(/color\(|(?:ok)?lab\(|(?:ok)?lch\(/.test(style.backgroundImage))el.style.backgroundImage='none';
-    if(/color\(|(?:ok)?lab\(|(?:ok)?lch\(/.test(style.boxShadow))el.style.boxShadow='none';
-   }
-  }
- });
- if(signal.aborted)return;
- const blob=await new Promise((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error('Falha ao gerar PNG.')),'image/png'));
- if(signal.aborted)return;
- const url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=cardFileName(team.name);document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+function dataUrl(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob);});}
+async function imageAsset(sources,signal){
+ for(const url of sources){
+  signal.throwIfAborted();
+  try{
+   const response=await fetch(url,{mode:'cors',credentials:'omit',referrerPolicy:'no-referrer',signal:AbortSignal.any([signal,AbortSignal.timeout(4000)])});
+   if(!response.ok)continue;const blob=await response.blob();if(!blob.type.startsWith('image/'))continue;
+   const src=await dataUrl(blob),image=new Image();image.src=src;await image.decode();return src;
+  }catch{signal.throwIfAborted();}
+ }
+ return null;
 }
+async function loadAssets(data,signal){
+ const sources=new Map([[data.background,[data.background]]]);
+ for(const m of data.monsters){
+  if(m.elementIcon)sources.set(m.elementIcon,[m.elementIcon]);
+  for(const item of [...m.runes.filter(Boolean),...m.sets])if(item.icon)sources.set(item.icon,[item.icon]);
+  for(const s of m.skills)if(s.icon&&/^[\w.-]+$/.test(s.icon))sources.set(`skill:${s.icon}`,[...(skillCache.includes(s.icon)?[`/game-icons/skills/${s.icon}`]:[]),`https://swarfarm.com/static/herders/images/skills/${s.icon}`,`https://raw.githubusercontent.com/swarfarm/swarfarm/master/herders/static/herders/images/skills/${s.icon}`]);
+ }
+ const [entries,portraits]=await Promise.all([
+  Promise.all([...sources].map(async([key,urls])=>[key,await imageAsset(urls,signal)])),
+  loadCardPortraits(data.monsters,signal),
+  document.fonts.load('700 108px Cinzel'),document.fonts.ready
+ ]);
+ signal.throwIfAborted();const assets=Object.fromEntries(entries);
+ if(!assets[data.background])throw new Error('Não foi possível carregar o cenário do infográfico. Tente novamente.');
+ for(const m of data.monsters)assets[`portrait:${m.master}`]=portraits[m.master]||MONSTER_FALLBACK;
+ return assets;
+}
+
+export async function exportTeamInfographic(team,account,signal,settings={}){
+ const data=createInfographic(team,account,settings);
+ const [{default:html2canvas},{default:ExportTemplate},assets]=await Promise.all([import('html2canvas'),import('../components/ExportTemplate.jsx'),loadAssets(data,signal)]);
+ signal.throwIfAborted();
+ const host=document.createElement('div');host.setAttribute('data-infographic-host','');host.setAttribute('aria-hidden','true');host.inert=true;
+ Object.assign(host.style,{position:'absolute',left:'-100000px',top:'0',width:'1280px',pointerEvents:'none'});document.body.append(host);
+ const root=createRoot(host);
+ try{
+  flushSync(()=>root.render(createElement(ExportTemplate,{data,assets})));
+  const node=host.querySelector('#sw-export-template');
+  await Promise.all([...node.querySelectorAll('img')].map(img=>img.decode().catch(()=>{})));
+  await document.fonts.ready;signal.throwIfAborted();
+  const canvas=await html2canvas(node,{scale:2,width:1280,height:Math.ceil(node.getBoundingClientRect().height),windowWidth:1440,windowHeight:Math.ceil(node.getBoundingClientRect().height),backgroundColor:null,useCORS:true,allowTaint:false,logging:false,scrollX:0,scrollY:0,
+   onclone:doc=>{const clonedHost=doc.querySelector('[data-infographic-host]');clonedHost.style.left='0';clonedHost.style.top='0';}
+  });
+  signal.throwIfAborted();
+  const blob=await new Promise((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error('Falha ao gerar PNG.')),'image/png'));
+  signal.throwIfAborted();
+  const url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=infographicFileName();document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ }finally{root.unmount();host.remove();}
+}
+
+// Compatibility for the prominent free-calculator action.
+export const exportQuickCard=exportTeamInfographic;

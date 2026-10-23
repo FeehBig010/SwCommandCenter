@@ -1,85 +1,68 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {quickTeam,quickConfig,quickOrderLocked,autoTuneQuickTeam,quickPreview,updateQuickSheetSpeed,quickSpeedTarget} from '../src/core/quick-calculator.js';
-import {firstRotationSafe,requiredSheetSpeed} from '../src/core/speedTuner.js';
+import {firstRotationSafe,automaticSyncStrategy} from '../src/core/speedTuner.js';
+import {monsterOpener} from '../src/core/monsterDatabase.js';
 
-function team(area='arena'){
- const t=quickTeam(area);
- t.configs=t.configs.map((_,i)=>quickConfig(i?13413:18913,i?`Follower ${i}`:'Tiana'));
+function team(area='arena',master=14412){
+ const t=quickTeam(area);t.configs=t.configs.map((_,i)=>quickConfig(i?13413:master,i?`Follower ${i}`:'Opener'));
  for(const c of t.configs){c.manual.base.spd=100;c.manual.sheet.spd=385;}
- t.enemyCombatSpd=399;return t;
+ return t;
 }
-function assertLocked(t){
- assert.equal(t.perfectTuneAudit.safe,true);
- const p=quickPreview(t);assert.ok(firstRotationSafe(p.scenario,t.configs.map(c=>c.key)));
- assert.equal(p.turns[0].key,t.configs[0].key);assert.ok(p.actors[0].spd>p.actors[1].spd);
- for(let i=2;i<t.configs.length;i++)assert.equal(p.actors[i-1].spd-p.actors[i].spd,1);
- assert.ok(p.turns.every(t=>Number.isInteger(t.tick)));assert.equal(p.cut,false);
+function assertStrict(t,{safe=true}={}){
+ assert.equal(t.automaticSync.kind,'strict');assert.equal(t.syncAudit.representable,true);assert.equal(t.syncAudit.safe,safe);
+ const p=quickPreview(t);for(let i=1;i<t.configs.length;i++)assert.equal(p.actors[i-1].spd-p.actors[i].spd,1);
+ if(safe)assert.ok(firstRotationSafe(p.scenario,t.configs.map(c=>c.key)));
+ assert.ok(p.turns.every(t=>Number.isInteger(t.tick)));
 }
 
-test('fresh and legacy plans are locked unless advanced is explicitly selected',()=>{
+test('native 3/4/5-slot and legacy advanced plans automatically use the opener-anchored ladder',()=>{
  for(const area of ['siege','arena','cairos']){
-  assert.equal(quickTeam(area).orderMode,'locked');let t=team(area);delete t.orderMode;t.perfectTune=false;
-  t.configs.forEach(c=>c.autoSpeed=false);const keys=t.configs.map(c=>c.key),out=autoTuneQuickTeam(t);
-  assertLocked(out);assert.equal(out.orderMode,'locked');assert.deepEqual(out.configs.map(c=>c.key),keys);
-  assert.deepEqual(t.configs.map(c=>c.manual.sheet.spd),Array(t.configs.length).fill(385));
+  const input=team(area);input.orderMode='advanced';input.perfectTune=false;input.autoOpener=false;input.configs.forEach(c=>c.autoSpeed=false);
+  const before=structuredClone(input),out=autoTuneQuickTeam(input);assertStrict(out);assert.equal(out.orderMode,'auto');assert.equal(quickOrderLocked(out),true);
+  assert.deepEqual(quickPreview(out).actors.map(a=>a.spd),Array.from({length:out.configs.length},(_,i)=>400-i));
+  assert.deepEqual(out.configs.map(c=>c.key),input.configs.map(c=>c.key));assert.deepEqual(input,before);
  }
 });
 
-test('Slot 2 is raised only enough for the whole locked four-slot ladder',()=>{
- const t=autoTuneQuickTeam(team());assertLocked(t);
- assert.deepEqual(quickPreview(t).actors.map(a=>a.spd),[400,340,339,338]);
- // Check every lower allowed sheet speed, rebuilding an exact ladder rather
- // than merely perturbing an individual follower and changing the contract.
- for(let value=100;value<Number(t.configs[1].manual.sheet.spd);value++){
-  const probe=structuredClone(t),target=value+15;
-  probe.configs.slice(1).forEach((c,i)=>{c.manual.sheet.spd=requiredSheetSpeed(target-i,{master:c.masterId,base:c.manual.base},probe);});
-  assert.equal(firstRotationSafe(quickPreview(probe).scenario,probe.configs.map(c=>c.key)),false,`Slot 2 sheet ${value}`);
+test('database detects Bernard 30 and Bastet 25 without inventing boosts for a stripper or conditional passive',()=>{
+ assert.equal(monsterOpener(11513).boost,30);assert.equal(monsterOpener(20511).boost,25);
+ for(const master of [14412,26811,14712,99991])assert.equal(automaticSyncStrategy(team('arena',master)).kind,'strict');
+ for(const [master,targets] of [[20511,[348,348,348]],[11513,[300,300,300]],[18913,[338,338,338]]]){
+  const t=autoTuneQuickTeam(team('arena',master)),p=quickPreview(t);assert.equal(t.automaticSync.kind,'boost');assert.equal(t.syncAudit.safe,true);assert.equal(p.referenceEnemy,399);
+  assert.deepEqual(p.actors.slice(1).map(a=>a.spd),targets);assert.ok(firstRotationSafe(p.scenario,t.configs.map(c=>c.key)));
+  const event=p.scenario.log.find(e=>e.type==='boost'||e.type==='tiana');assert.equal(event.amount,monsterOpener(master).boost);
+  for(let i=1;i<4;i++){const probe=structuredClone(t);probe.configs[i].manual.sheet.spd--;assert.equal(firstRotationSafe(quickPreview(probe).scenario,t.configs.map(c=>c.key)),false);}
  }
 });
 
-test('locked follower edits cannot bypass order, even with legacy AUTO disabled',()=>{
- const t=autoTuneQuickTeam(team());t.configs[2].autoSpeed=false;
- assert.equal(updateQuickSheetSpeed(t,t.configs[2].key,999,false),t);
- const updated=updateQuickSheetSpeed(t,t.configs[2].key,999);assertLocked(updated);
- assert.equal(updated.configs[2].manual.sheet.spd,324);
-});
-
-test('artifact SPD reduces rune demand once and remains part of the actual tick simulation',()=>{
- const plain=autoTuneQuickTeam(team()),input=team();input.configs[2].combat={artifactSpd:20};
- const withArtifact=autoTuneQuickTeam(input);assertLocked(withArtifact);
- const a=quickSpeedTarget(plain,plain.configs[2]),b=quickSpeedTarget(withArtifact,withArtifact.configs[2]);
- assert.equal(a.combatSpd,b.combatSpd);assert.equal(a.runeSpd-b.runeSpd,20);
- assert.equal(b.runeSpd,204);assert.equal(b.combatSpd,339);
- assert.equal(quickPreview(withArtifact).turns.find(t=>t.key===input.configs[2].key).spd,339);
-});
-
-test('unsafe, disabled, no-booster and unrepresentable ladders clear targets and preserve sheets',()=>{
- for(const kind of ['fast enemy','disabled','no booster','rounding']){
-  const t=autoTuneQuickTeam(team());
-  if(kind==='fast enemy')t.enemyCombatSpd=999;
-  if(kind==='disabled')t.configs[0].combat={disabled:true};
-  if(kind==='no booster')t.autoOpener=false;
-  if(kind==='rounding')t.configs.slice(1).forEach(c=>c.combat={speedBuff:true,artifactSpdBuff:100,artifactSpdLostHp:100,hpPercent:0});
-  const sheets=t.configs.map(c=>c.manual.sheet.spd),out=autoTuneQuickTeam(t);
-  assert.equal(out.perfectTuneAudit.safe,false,kind);assert.ok(out.configs.slice(1).every(c=>c.syncMinimum===null&&c.syncCombatTarget===null));
-  assert.deepEqual(out.configs.map(c=>c.manual.sheet.spd),sheets);
+test('master changes retune automatically and follower edits cannot bypass either strategy',()=>{
+ for(const master of [14412,20511]){
+  let t=autoTuneQuickTeam(team('arena',master));const keys=t.configs.map(c=>c.key);
+  assert.equal(updateQuickSheetSpeed(t,t.configs[2].key,999,false),t);
+  for(const value of [435,285,385]){t=updateQuickSheetSpeed(t,t.configs[0].key,value);assert.equal(t.syncAudit.safe,true);assert.deepEqual(t.configs.map(c=>c.key),keys);assert.ok(t.configs.slice(1).every(c=>c.manual.sheet.spd===c.syncMinimum));if(master===14412)assertStrict(t);}
+  t.configs[0].masterId=master===14412?20511:14412;t=autoTuneQuickTeam(t);assert.equal(t.automaticSync.kind,master===14412?'boost':'strict');assert.equal(t.syncAudit.safe,true);
  }
 });
 
-test('advanced manual order allows follower edits and preserves them when the opener changes',()=>{
- let t=team();t.orderMode='advanced';t.configs.forEach(c=>c.autoSpeed=false);
- t=updateQuickSheetSpeed(t,t.configs[2].key,800);assert.equal(t.configs[2].manual.sheet.spd,800);
- t=updateQuickSheetSpeed(t,t.configs[0].key,300);assert.equal(t.configs[2].manual.sheet.spd,800);
- assert.equal(quickOrderLocked(t),false);assert.equal(t.perfectTune,false);assert.equal(t.perfectTuneAudit,null);
- assert.ok(t.configs.slice(1).every(c=>c.syncMinimum==null));assert.equal(quickPreview(t).turns[0].key,t.configs[2].key);
- t.orderMode='locked';t.enemyCombatSpd=299;t=autoTuneQuickTeam(t);assertLocked(t);
+test('strict rune inversion subtracts artifacts exactly once with base, leader and SPD buff',()=>{
+ const input=team();input.configs[0].manual.sheet.spd=364;input.leader={stat:'spd',value:24,scope:'general'};
+ input.configs.slice(1).forEach(c=>c.combat={speedBuff:true});
+ const plain=autoTuneQuickTeam(input);assertStrict(plain);assert.deepEqual(quickPreview(plain).actors.map(a=>a.spd),[403,402,401,400]);
+ input.configs[2].combat={...input.configs[2].combat,artifactSpd:20};const withArtifact=autoTuneQuickTeam(input);assertStrict(withArtifact);
+ const a=quickSpeedTarget(plain,plain.configs[2]),b=quickSpeedTarget(withArtifact,withArtifact.configs[2]);assert.equal(a.runeSpd-b.runeSpd,20);assert.equal(a.combatSpd,b.combatSpd);assert.equal(b.combatSpd,401);
+ assert.equal(quickPreview(withArtifact).turns.find(t=>t.key===withArtifact.configs[2].key).spd,401);
 });
 
-test('partial selection and intermediate empty opener speed never retain stale safe targets',()=>{
- const t=autoTuneQuickTeam(team());t.configs[2].masterId=null;
- const partial=autoTuneQuickTeam(t);assert.equal(partial.perfectTuneAudit,null);assert.equal(quickPreview(partial).complete,false);
- assert.ok(partial.configs.slice(1).every(c=>c.syncMinimum===null));
- const actual=autoTuneQuickTeam(team());const empty=updateQuickSheetSpeed(actual,actual.configs[0].key,'');
- assert.equal(empty.perfectTuneAudit.safe,false);assert.ok(empty.configs.slice(1).every(c=>c.syncMinimum===null));
+test('a faster opponent warns about cuts while strict targets remain exactly anchored',()=>{
+ const input=team();input.enemyCombatSpd=999;const out=autoTuneQuickTeam(input);assertStrict(out,{safe:false});assert.equal(quickPreview(out).cut,true);
+ assert.deepEqual(out.configs.slice(1).map(c=>c.syncCombatTarget),[399,398,397]);assert.ok(out.configs.slice(1).every(c=>c.syncMinimum!=null));
+ const boosted=team('arena',20511);boosted.enemyCombatSpd=999;const original=structuredClone(boosted),failed=autoTuneQuickTeam(boosted);assert.equal(failed.syncAudit.safe,false);assert.ok(failed.configs.slice(1).every(c=>c.syncMinimum===null));assert.deepEqual(failed.configs.map(c=>c.manual.sheet.spd),original.configs.map(c=>c.manual.sheet.spd));
+});
+
+test('unrepresentable exact targets, incomplete plans and invalid master input never retain safe badges',()=>{
+ const input=team();input.configs.slice(1).forEach(c=>c.combat={speedBuff:true});const out=autoTuneQuickTeam(input);
+ assert.equal(out.syncAudit.representable,false);assert.equal(out.syncAudit.safe,false);assert.ok(out.configs.slice(1).every(c=>c.syncMinimum===null));
+ const partial=autoTuneQuickTeam(team());partial.configs[1].masterId=null;const empty=autoTuneQuickTeam(partial);assert.equal(empty.syncAudit,null);assert.ok(empty.configs.slice(1).every(c=>c.syncMinimum===null));
+ const t=autoTuneQuickTeam(team());const invalid=updateQuickSheetSpeed(t,t.configs[0].key,'');assert.equal(invalid.syncAudit.safe,false);assert.ok(invalid.configs.slice(1).every(c=>c.syncMinimum===null));
 });

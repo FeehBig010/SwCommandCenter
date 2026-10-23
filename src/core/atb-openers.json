@@ -1,0 +1,243 @@
+{
+  "source": "https://raw.githubusercontent.com/swarfarm/swarfarm/master/bestiary/fixtures/bestiary_data.json",
+  "sha256": "70dac6866b23c45bd9bf431918d599e6d5ad29c4ef72a0f6a80ef38e271a7438",
+  "note": "Reviewed unconditional team ATB components. Targeted, conditional, passive, healing, damage and cooldown effects are not inferred from skill text at runtime. Speed buffs and Tiana cleanse/strip use explicit tick-engine events.",
+  "monsters": {
+    "10504": {
+      "skill": "Alert",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 1614
+    },
+    "10514": {
+      "skill": "Alert",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 1614
+    },
+    "10912": {
+      "skill": "Rapidity",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 1912,
+      "speedBuff": true
+    },
+    "11503": {
+      "skill": "Tailwind",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 2513,
+      "speedBuff": true
+    },
+    "11513": {
+      "skill": "Tailwind",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 2513,
+      "speedBuff": true
+    },
+    "11533": {
+      "skill": "Tailwind",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 2563,
+      "speedBuff": true
+    },
+    "11701": {
+      "skill": "Adrenaline",
+      "slot": 3,
+      "boost": 50,
+      "type": "boost",
+      "sourceSkillId": 2711
+    },
+    "11711": {
+      "skill": "Adrenaline",
+      "slot": 3,
+      "boost": 50,
+      "type": "boost",
+      "sourceSkillId": 2711
+    },
+    "15601": {
+      "skill": "Ready to Ambush",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 7011,
+      "speedBuff": true
+    },
+    "15611": {
+      "skill": "Ready to Ambush",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 7011,
+      "speedBuff": true
+    },
+    "15911": {
+      "skill": "Spell of Strengthening",
+      "slot": 3,
+      "boost": 20,
+      "type": "boost",
+      "sourceSkillId": 7311
+    },
+    "15931": {
+      "skill": "Spell of Strengthening",
+      "slot": 3,
+      "boost": 20,
+      "type": "boost",
+      "sourceSkillId": 7361
+    },
+    "18001": {
+      "skill": "Harmless Prank",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 8811
+    },
+    "18002": {
+      "skill": "Whistle",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 8812,
+      "speedBuff": true
+    },
+    "18011": {
+      "skill": "Harmless Prank",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 8811
+    },
+    "18012": {
+      "skill": "Whistle",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 8812,
+      "speedBuff": true
+    },
+    "18903": {
+      "skill": "Wind of Changes",
+      "slot": 3,
+      "boost": 30,
+      "type": "tiana",
+      "sourceSkillId": 9713
+    },
+    "18913": {
+      "skill": "Wind of Changes",
+      "slot": 3,
+      "boost": 30,
+      "type": "tiana",
+      "sourceSkillId": 9713
+    },
+    "19415": {
+      "skill": "Full Speed Ahead",
+      "slot": 3,
+      "boost": 50,
+      "type": "boost",
+      "sourceSkillId": 10225
+    },
+    "20501": {
+      "skill": "Oasis's Blessing",
+      "slot": 3,
+      "boost": 25,
+      "type": "boost",
+      "sourceSkillId": 11311
+    },
+    "20511": {
+      "skill": "Oasis's Blessing",
+      "slot": 3,
+      "boost": 25,
+      "type": "boost",
+      "sourceSkillId": 11311
+    },
+    "24402": {
+      "skill": "Renkiko",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 14312,
+      "speedBuff": true
+    },
+    "24412": {
+      "skill": "Renkiko",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 14312,
+      "speedBuff": true
+    },
+    "24902": {
+      "skill": "Full Moon",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 14812,
+      "speedBuff": true
+    },
+    "24912": {
+      "skill": "Full Moon",
+      "slot": 3,
+      "boost": 30,
+      "type": "boost",
+      "sourceSkillId": 14812,
+      "speedBuff": true
+    },
+    "26603": {
+      "skill": "Perish!",
+      "slot": 3,
+      "boost": 15,
+      "type": "boost",
+      "sourceSkillId": 16413
+    },
+    "26613": {
+      "skill": "Perish!",
+      "slot": 3,
+      "boost": 15,
+      "type": "boost",
+      "sourceSkillId": 16413
+    },
+    "27103": {
+      "skill": "Chivalry of the Dessert Kingdom",
+      "slot": 3,
+      "boost": 15,
+      "type": "boost",
+      "sourceSkillId": 16913
+    },
+    "27113": {
+      "skill": "Chivalry of the Dessert Kingdom",
+      "slot": 3,
+      "boost": 15,
+      "type": "boost",
+      "sourceSkillId": 16913
+    },
+    "27204": {
+      "skill": "Puppet Ball",
+      "slot": 3,
+      "boost": 20,
+      "type": "boost",
+      "sourceSkillId": 17014
+    },
+    "27214": {
+      "skill": "Puppet Ball",
+      "slot": 3,
+      "boost": 20,
+      "type": "boost",
+      "sourceSkillId": 17014
+    },
+    "50001": {
+      "skill": "Spell of Strengthening",
+      "slot": 3,
+      "boost": 20,
+      "type": "boost",
+      "sourceSkillId": 7361
+    }
+  }
+}

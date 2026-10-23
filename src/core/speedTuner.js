@@ -11,6 +11,14 @@ export function boostedFollowerMinimum(combatSpd,boost=30){
  if(amount!==30)throw new Error('Piso de sincronização disponível apenas para boost de 30.');
  return Math.ceil(speed*8475/10000-1e-10);
 }
+// Identity drives free-calculator synchronization; legacy manual flags do not
+// override the detected first-slot skill. Conditional/single-target procs are
+// deliberately not treated as guaranteed boosts of the entire team.
+export function automaticSyncStrategy(team){
+ const first=team.configs?.[0];if(!first?.masterId)return {kind:'pending',boost:0};
+ const skill=monsterOpener(first.masterId);
+ return skill?{kind:'boost',...skill}:{kind:'strict',boost:0};
+}
 export function normalizeCombat(raw={}){const result={speedBuff:raw.speedBuff===true,slow:raw.slow===true,disabled:raw.disabled===true,oblivion:raw.oblivion===true,hpPercent:number(raw.hpPercent,100,0,100,'HP'),buffCount:number(raw.buffCount,0,0,100,'Buffs'),mashaStacks:number(raw.mashaStacks,0,0,5,'Stacks Masha'),targetTick:number(raw.targetTick,0,0,10000,'Tick alvo'),artifactSpd:number(raw.artifactSpd,0,0,500,'SPD adicional de artefatos'),artifactSpdBuff:number(raw.artifactSpdBuff,0,0,100,'Buff SPD de artefatos'),artifactSpdLostHp:number(raw.artifactSpdLostHp,0,0,100,'SPD por HP perdido'),artifactSpdDisabled:number(raw.artifactSpdDisabled,0,0,100,'SPD sob incapacidade')};if(![result.targetTick,result.buffCount,result.mashaStacks].every(Number.isInteger))throw new Error('Buffs, stacks e ticks devem ser inteiros.');return result;}
 function runtimeSpeedValue(raw,master,combat={},effects={}){
  const c=normalizeCombat(combat),p=c.oblivion?null:PASSIVES[master],a=effects.totals||effects;
@@ -129,10 +137,10 @@ export function normalizeScenario(raw={}){
 }
 export function scenarioForTeam(team,actors){
  const raw=normalizeScenario(team.combatScenario);if(team.autoEnemyPassives)raw.enemies.forEach((e,i)=>{if(e.master===16613&&!raw.events.some(v=>v.afterKey===`enemy:${i}`&&v.type==='leo_attack'))raw.events.push({afterKey:`enemy:${i}`,type:'leo_attack',occurrence:1,targets:[`ally:${team.leoTarget||0}`],amount:15,critical:false,glancing:false});});if(team.autoOpener){
-  team.configs.forEach((config,index)=>{const skill=monsterOpener(config.masterId),source=`ally:${index}`;if(!skill||!actors.some(a=>a.key===config.key)||raw.events.some(e=>e.afterKey===source&&Number(e.occurrence??1)===1&&['boost','tiana'].includes(e.type)))return;
+  team.configs.forEach((config,index)=>{const skill=monsterOpener(config.masterId),source=`ally:${index}`;if(!skill||!actors.some(a=>a.key===config.key)||raw.events.some(e=>e.enabled!==false&&e.afterKey===source&&Number(e.occurrence??1)===1&&['boost','tiana'].includes(e.type)))return;
    const targets=actors.filter(a=>!a.enemy).map(a=>`ally:${team.configs.findIndex(c=>c.key===a.key)}`).filter(ref=>!ref.endsWith(':-1'));
    raw.events.push({afterKey:source,type:skill.type,occurrence:1,targets,amount:skill.boost});
-   if(skill.speedBuff&&!raw.events.some(e=>e.afterKey===source&&Number(e.occurrence??1)===1&&e.type==='speed_buff'))raw.events.push({afterKey:source,type:'speed_buff',occurrence:1,targets,amount:0});
+   if(skill.speedBuff&&!raw.events.some(e=>e.enabled!==false&&e.afterKey===source&&Number(e.occurrence??1)===1&&e.type==='speed_buff'))raw.events.push({afterKey:source,type:'speed_buff',occurrence:1,targets,amount:0});
   });
  }const ref=k=>k.startsWith('ally:')?team.configs[Number(k.split(':')[1])]?.key:k;
  return {actors:[...actors,...raw.enemies.filter(e=>e.spd>0).map(e=>{const i=raw.enemies.indexOf(e);return {...e,key:`enemy:${i}`,rawSpd:e.spd,enemy:true,name:e.label};})],events:raw.events.map(e=>({...e,afterKey:ref(e.afterKey),targets:e.targets.map(ref)}))};

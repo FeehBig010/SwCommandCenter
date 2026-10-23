@@ -73,17 +73,3 @@ export async function loadCardPortraits(monsters,signal){
  }));
  return Object.fromEntries(entries);
 }
-export async function downloadCardPng(node,name,signal){
- await document.fonts.ready;
- await Promise.all([...node.querySelectorAll('img')].map(img=>img.decode().catch(()=>{})));
- if(signal.aborted)return;
- const htmlToImage=await import('html-to-image');
- const dataUrl=await htmlToImage.toPng(node,{pixelRatio:2,backgroundColor:'#101925',cacheBust:false});
- if(signal.aborted)return;
- // toPng produces a data URL; download a PNG Blob so large cards avoid URL-length limits.
- const blob=await (await fetch(dataUrl)).blob();
- if(signal.aborted)return;
- const url=URL.createObjectURL(blob),anchor=document.createElement('a');
- anchor.href=url;anchor.download=cardFileName(name);document.body.append(anchor);anchor.click();anchor.remove();
- setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
