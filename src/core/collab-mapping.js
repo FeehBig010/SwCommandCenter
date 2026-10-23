@@ -3,7 +3,12 @@ import {monsterSlug,portraitNameKeys} from './monster-assets.js';
 // Portrait overrides only: never replace inventory IDs, stats or skills.
 export const collabMapping={
  'Pure Vanilla Cookie':'Adriana',
- 'Magic Order Swordsinger (Água)':'Mage (Água)'
+ 'Magic Order Swordsinger (Água)':'Mage (Água)',
+ // Ciri's collab IDs use the same awakened portrait in both SWEX ID forms.
+ // Resolve to the original Magic Order Swordsinger, keeping the exact element.
+ 'Ciri':29711,
+ 29301:29711,29302:29712,29303:29713,29304:29714,29305:29715,
+ 29311:29711,29312:29712,29313:29713,29314:29714,29315:29715
 };
 
 // Element-preserving SW/com2us counterparts, including unawakened IDs.
@@ -24,8 +29,9 @@ const families=[
 const elements=['water','fire','wind','light','dark'];
 for(const [collab,original,name] of families){
  collabMapping[name]??=original*100+10+({241:2,262:3,273:4}[collab]||1);
+ const alwaysAwakened=collab>=240&&collab<=244||collab>=292&&collab<=295;
  for(let element=1;element<=5;element++){
-  for(const state of [0,10])collabMapping[collab*100+state+element]=original*100+state+element;
+  for(const state of [0,10])collabMapping[collab*100+state+element]??=original*100+(alwaysAwakened?10:state)+element;
   collabMapping[`${name} (${elements[element-1]})`]=original*100+10+element;
  }
 }
