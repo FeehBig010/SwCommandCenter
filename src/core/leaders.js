@@ -11,7 +11,14 @@ export function leaderApplies(leader,unit,context='siege'){
  return leader.scope==='general'||leader.scope==='element'&&Number(unit.element??unit.master%10)===leader.element||leader.scope==='guild'&&context==='siege'||leader.scope==='arena'&&context==='arena'||leader.scope==='dungeon'&&['cairos','dimensional','rift','toa'].includes(context);
 }
 export function speedLeaderBonus(unit,team){
+ if(team.raid)return raidLeaderBonuses(unit,team).spd||0;
  if(!team.leader)return Number(team.leaderSpd||0);
  const leader=normalizeLeader(team.leader);
  return leader.stat==='spd'&&leaderApplies(leader,unit,team.gameMode||'siege')?leader.value:0;
+}
+
+export function raidLeaderBonuses(unit,team){
+ const result={};if(!team.raid)return result;
+ for(const raw of team.raidLeaders||[]){const leader=normalizeLeader(raw);if(!leader||!['general','element'].includes(leader.scope)||!leaderApplies(leader,unit,'rift'))continue;result[leader.stat]=Math.max(result[leader.stat]||0,leader.value);}
+ return result;
 }

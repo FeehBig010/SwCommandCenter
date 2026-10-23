@@ -1,6 +1,6 @@
 import {monsterOpener} from './monsterDatabase.js';
 import passiveNotices from './passive-notices.json' with {type:'json'};
-import {leaderApplies,speedLeaderBonus} from './leaders.js';
+import {leaderApplies,speedLeaderBonus,raidLeaderBonuses} from './leaders.js';
 export const PASSIVES={20615:'amduat',25311:'miles',23512:'masha',23612:'masha_dismounted',26113:'sonia',21214:'tian_lang',16615:'ragdoll',22211:'abellio',22311:'abellio_beast',16312:'antares',16613:'leo',21314:'tablo'};
 const number=(v,fallback,min,max,label)=>{const n=Number(v??fallback);if(!Number.isFinite(n)||n<min||n>max)throw new Error(`${label} inválido.`);return n;};
 // Conservative requested 30-ATB floor, separate from the discrete scenario proof.
@@ -20,12 +20,18 @@ export function runtimeSpeed(raw,master,combat={},effects={}){
  const artifact=1+Number(a.spdLostHp||0)*(1-c.hpPercent/100)/100+(c.disabled?Number(a.spdDisabled||0)/100:0);
  return Math.max(1,Math.ceil(raw*status*artifact-1e-10));
 }
+// Manual calculator inputs always represent sheet SPD, including equipped Swift.
+export function combatSpeedFromSheet(sheetSpd,unit,team={}){
+ const sheet=number(sheetSpd,0,1,10000000,'SPD ficha');
+ return sheet+unit.base.spd*(Number(team.towerSpd||0)+speedLeaderBonus(unit,team))/100;
+}
 export function combatAttributes(unit,stats,counts={},team={},combat={},effects={}){
  const swift=25*Math.floor((counts[3]||0)/4),guild=(team.gameMode||'siege')==='siege'?Number(team.guildSpd||0):0;
- const raw=team.sheetSpeedFormula===true?Number(stats.total.spd)+unit.base.spd*(Number(team.towerSpd||0)+guild+speedLeaderBonus(unit,team))/100:stats.total.spd-Math.ceil(unit.base.spd*swift/100)+unit.base.spd*(swift+Number(team.towerSpd||0)+guild+speedLeaderBonus(unit,team))/100;
+ const raw=team.sheetSpeedFormula===true?combatSpeedFromSheet(stats.total.spd,unit,team):stats.total.spd-Math.ceil(unit.base.spd*swift/100)+unit.base.spd*(swift+Number(team.towerSpd||0)+guild+speedLeaderBonus(unit,team))/100;
  if(!Number.isFinite(raw)||raw<=0)throw new Error('SPD de combate inválida.');
  const total={...stats.total,spd:runtimeSpeed(raw,unit.master,combat,effects)},leader=team.leader;
- if(leader&&leader.stat!=='spd'&&leaderApplies(leader,unit,team.gameMode||'siege')){
+ if(team.raid){for(const [stat,value] of Object.entries(raidLeaderBonuses(unit,team)))if(stat!=='spd')total[stat]=Math.ceil(total[stat]+(['hp','atk','def'].includes(stat)?unit.base[stat]*value/100:value));}
+ if(!team.raid&&leader&&leader.stat!=='spd'&&leaderApplies(leader,unit,team.gameMode||'siege')){
   const stat=leader.stat;total[stat]=Math.ceil(total[stat]+(['hp','atk','def'].includes(stat)?unit.base[stat]*leader.value/100:leader.value));
  }
  for(const key of ['cr','res','acc'])total[key]=Math.min(100,total[key]);
@@ -131,6 +137,6 @@ export function missingDefenseConditions(team){
 // Exact displayed delta after rounding, buffs/passives and capped combat attributes.
 export function leaderImpact(unit,stats,counts,team,combat={},effects={}){
  const withLeader=combatAttributes(unit,stats,counts,team,combat,effects);
- const without=combatAttributes(unit,stats,counts,{...team,leader:null,leaderSpd:0},combat,effects);
+ const without=combatAttributes(unit,stats,counts,{...team,leader:null,leaderSpd:0,raidLeaders:[]},combat,effects);
  return {combat:withLeader,bonus:Object.fromEntries(['hp','atk','def','spd','cr','res','acc'].map(k=>[k,withLeader[k]-without[k]]))};
 }

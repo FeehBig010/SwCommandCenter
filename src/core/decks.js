@@ -25,9 +25,12 @@ export function extractAccountPresets(deckList,units,forcedArea=null){
  const known=new Map(units.map(u=>[Number(u.id),u.id])),out=[],seen=new Set(),idsSeen=new Map();
  function walk(node,path='',depth=0,inherited={}){
   if(!node||typeof node!=='object'||depth>8||seen.has(node))return;seen.add(node);
-  const context={...inherited,...Object.fromEntries(['dungeon_id','content_id','dungeon_name','content_name','area','mode','game_mode','deck_type'].filter(key=>Object.hasOwn(node,key)).map(key=>[key,node[key]]))};
+  const context={...inherited,...Object.fromEntries(['dungeon_id','content_id','dungeon_name','content_name','area','mode','game_mode','deck_type','raid_party_id','raid_team_index','party_id'].filter(key=>Object.hasOwn(node,key)).map(key=>[key,node[key]]))};
+  const isRaid=/r5|raid|party/.test(path)||classifyDeck({...context,...node},path).dungeon==='r5';
+  if(Array.isArray(node)&&node.length&&node.every(v=>['number','string'].includes(typeof v))&&isRaid){walk({unit_id_list:node},path,depth+1,context);return;}
   const rawIds=node.monster_ids??node.unit_id_list??node.unit_ids??(Array.isArray(node.unit_list)?node.unit_list:undefined);
   if(Array.isArray(rawIds)){
+   if(isRaid&&rawIds.length&&(rawIds.length>6||rawIds.every(Array.isArray))){const rows=rawIds.every(Array.isArray)?rawIds:Array.from({length:Math.ceil(rawIds.length/6)},(_,i)=>rawIds.slice(i*6,i*6+6));rows.forEach((ids,i)=>walk({...node,monster_ids:undefined,unit_ids:undefined,unit_list:undefined,unit_id_list:ids,raid_party_id:context.raid_party_id??node.deck_id??path,raid_team_index:i},`${path}/team/${i}`,depth+1,context));return;}
    const ids=rawIds.slice(0,6).map(v=>Number(typeof v==='object'?v?.unit_id??v?.id:v));
    if(!ids.length||!ids.some(id=>Number.isSafeInteger(id)&&id>0))return;
    let inferred=classifyDeck({...context,...node},path,ids.length);
@@ -35,7 +38,7 @@ export function extractAccountPresets(deckList,units,forcedArea=null){
    const area=forcedArea==='pve'?(['cairos','dimensional','rift','toa'].includes(inferred.gameMode)?inferred:{gameMode:'cairos',dungeon:null}):['siege','arena','rta'].includes(forcedArea)?{gameMode:forcedArea,dungeon:null}:inferred;
    const base=`deck-${String(node.deck_id??node.id??path).slice(0,80)}-${path.replace(/\/\d+(?=\/|$)/g,'').slice(0,80)}`,occurrence=idsSeen.get(base)||0;idsSeen.set(base,occurrence+1);
    const leaderId=Number(node.leader_unit_id??0),leaderIndex=leaderId>0?Math.max(0,ids.indexOf(leaderId)):Math.max(0,Math.min(ids.length-1,Math.floor(Number(node.leader_index)||0)));
-   out.push({mode:node.mode==='attack'?'attack':/defen|defesa/.test(fold([path,node.mode,node.name,node.deck_name].join(' ')))?'defense':'attack',leaderIndex,id:`${base}-${occurrence}`,name:String(node.name??node.deck_name??`Deck ${out.length+1}`).slice(0,100),...area,unitIds:ids.map(id=>known.get(id)??null),missingIds:ids.filter(id=>id>0&&!known.has(id))});return;
+   out.push({mode:node.mode==='attack'?'attack':/defen|defesa/.test(fold([path,node.mode,node.name,node.deck_name].join(' ')))?'defense':'attack',leaderIndex,id:`${base}-${occurrence}`,name:String(node.name??node.deck_name??`Deck ${out.length+1}`).slice(0,100),...area,...(area.gameMode==='rift'&&area.dungeon==='r5'?{raidPartyId:String(context.raid_party_id??context.party_id??`party-${Math.floor(out.filter(p=>p.dungeon==='r5').length/3)}`),raidTeamIndex:Number(context.raid_team_index??out.filter(p=>p.dungeon==='r5').length%3)}:{}),unitIds:ids.map(id=>known.get(id)??null),missingIds:ids.filter(id=>id>0&&!known.has(id))});return;
   }
   for(const [key,value] of Object.entries(node))if(value&&typeof value==='object')walk(value,`${path}/${key}`,depth+1,context);
  }

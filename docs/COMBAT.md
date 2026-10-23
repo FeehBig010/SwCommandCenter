@@ -97,3 +97,43 @@ da busca por ticks, evitando interferência de valores antigos durante o arraste
 Validação: 199 testes; build Vite; Playwright (Browser plugin indisponível),
 input numérico e evento de teclado no range mestre atualizando os três pares
 input/range, 1440 e 390 px sem overflow ou erros de execução.
+
+
+## Fórmula automática da Calculadora Livre (atualização)
+
+O modo livre assume **sempre SPD de ficha** (base + runas, incluindo Swift).
+`combatSpeedFromSheet` calcula `ficha + base * (torreArena + líderAplicável)/100`;
+`runtimeSpeed` aplica buffs/passivas e arredonda a velocidade efetiva para cima.
+Não há seletor de tipo de velocidade, nem entrada manual de Combat SPD nessa tela.
+Bônus de Guilda persistido de versões antigas é ignorado no modo livre. O motor
+normal de equipamento Siege conserva seu bônus de Guilda e arredondamento Swift.
+O tick alvo continua sendo uma meta calculada, sem substituir a origem da ficha.
+
+Exemplo de UI: base 100, ficha 320, torre 15%, líder geral 19% → Combat SPD354;
+slider para 321 → 355. Líder fora do escopo ou de ATK não acrescenta SPD.
+Não somamos Swift novamente quando a entrada já é ficha. O piso do boost e sua
+conversão de volta para ficha usam os mesmos bônus, sem desconto duplo.
+
+## Raid R5: três equipes e líderes cruzados
+
+A área R5 mantém três times de seis slots, com configs/IDs independentes e
+alocação conjunta pelo worker do otimizador. As três habilidades de líder ativas
+são passadas como `raidLeaders` a cada equipe. Líderes gerais aplicam em todos;
+elementares só nos elementos correspondentes. Para o mesmo atributo vale o maior
+valor, sem somar duplicatas; líderes de Guilda/Arena/Masmorra não se aplicam ao Raid.
+Um slot desativado não fornece a habilidade de líder. Esses efeitos não vazam
+para Cairos, Arena ou outras áreas Rift.
+
+SPD é aplicada sobre a base antes de runtimeSpeed. HP/ATK/DEF usam percentuais
+da base; RES/ACC/CR usam pontos percentuais e os tetos existentes. `leaderImpact`
+remove todas as habilidades cruzadas ao comparar com/sem líder, evitando bônus
+visuais zerados. Metas do Raid usam combate (ou adicionais sobre a base quando
+essa opção é escolhida), incluindo os três líderes. Nenhuma runa/unidade física
+pode ser reutilizada entre os 18 slots na otimização conjunta.
+
+Validação: 217 testes, incluindo rodada conjunta de 18 unidades com 108 runas
+únicas e metas com líderes; UI Playwright com HTTP simulado confirmou 18 cards,
+144 ranges, SPD compartilhada161 nos 18 slots e 18 interações de sliders em cerca
+de 1,8 s (inclui automação/foco/rolagem; não é benchmark de hardware universal).
+A simulação continua condicionada aos eventos informados; isso não implementa
+IA, fases, dano e sobrevivência completos do chefe Raid.

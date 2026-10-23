@@ -46,3 +46,37 @@ Concept reference: `/workspace/generated_images/exec-88fa602e-bd44-492d-8f0c-86d
 | Interaction and responsive behavior | Boss tabs, proportional deficits, crown, smart sorting, native drag/drop, keyboard movement, reset, Worker search and Ancient stock bench; 1536/1440/1280/390/320 checks without horizontal overflow or app errors. |
 
 Above-the-fold copy review: kept actual route/team names and user-requested controls. Intentional deviations from the generated concept: no invented global search/bells, fake seed stats or fabricated buffs; real imported units/sets/levels and existing account-sharing actions replace those concept placeholders. Equipment details remain an expandable per-monster sheet with the existing rune-swap drawer; no invented aggregate equipment totals. The supplied reference name `image_74f2ff` had no corresponding attached image, so compression follows the written brief and this generated reference.
+
+
+## Atualização: presets reativos e Raid R5 3×6
+
+A limitação anterior de um único time R5 foi substituída por três equipes de seis
+slots. Todas permanecem montadas; painéis usam grid de três, duas ou uma coluna
+conforme a largura. Leader Skills compartilhadas e metas de combate são descritas
+em docs/COMBAT.md. Elementos de edição de cada equipe são memoizados para evitar
+renderizações completas dos outros times quando apenas uma meta muda.
+
+Context deriva `deck_list`, `defense_deck_list`, `world_arena_deck_list` e
+`hydratedPresets` do inventário atualizado. A view model cruza IDs numéricos/string
+com unidades, runas, imagens e atributos de combate. Monstros removidos ficam como
+null na posição original e slots desativados, preservando líder/ordem e renderização.
+Os dados hidratados não duplicam o payload do backup.
+
+SiegeHub mostra a fila de times antes de Ataque/Defesa; ela compartilha o mesmo
+estado do Otimizador. Os Hubs PvE reagem à chegada de presets e escolhem uma etapa
+que contenha times, inclusive se a tela já estava montada aguardando a nuvem.
+Presets B12 legados expõem a etapa correta somente quando presentes na conta.
+A restauração em nuvem não troca uma área já aberta; cache local antigo também
+é reconciliado com os decks da conta.
+
+Raid aceita fontes raid_deck, raid_deck_list e party_deck, incluindo equipes
+separadas, listas aninhadas ou uma lista plana de 18 IDs. O grupo e a posição de
+cada time são preservados em campos dos decks no payload compacto já existente;
+esta entrega não exige uma migration nova. Para recuperar equipes que o parser
+antigo não importava, é necessário reimportar o SWEX original uma vez.
+
+QA Playwright (Browser plugin indisponível): resposta REST atrasada recebida numa
+tela Cairos já montada, sete abas com miniaturas e seleção automática do Dragão,
+35 abas Siege com unidade ausente sem TypeError, 18 cards/144 sliders Raid e SPD
+161 nos 18 membros, viewport 390 sem overflow e sem erros JavaScript. Auth/REST foram
+simulados; não usamos senha/token real do proprietário nem afirmamos teste remoto.

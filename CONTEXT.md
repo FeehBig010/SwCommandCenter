@@ -353,3 +353,12 @@ Validation: **196/196 tests pass**, no failures/skips; clean production build. N
 - `src/pages/About.jsx`, rota `/#/about` e ícone Sobre na sidebar, sem exigência de login.
 - Cinco cards de funcionalidades e histórico de novidades; detalhes explicam escopo dos ticks/backup e Raid R5 como um time de seis monstros.
 - Tema escuro/dourado responsivo; Playwright (Browser indisponível) verificou acesso público, navegação/foco, detalhes e CTA em 1440/390/320 px sem overflow ou erros JavaScript. Build Vite limpo.
+
+### Presets reativos, Raid R5 3×6 e SPD de ficha automática
+- Context expõe listas normalizadas/hidratadas; roster com nome, elemento, imagens e combat_spd derivado; unidade ausente vira slot vazio desativado sem deslocar índices.
+- SiegeHub mostra imediatamente a fila importada; PvE reage ao inventário recebido enquanto montado e seleciona etapa com presets. B12 legado aparece apenas quando importado, sem reclassificar como Abissal.
+- Cache local também reconcilia times e planos; restore cloud mantém a área aberta.
+- RaidR5 exibe 3 painéis/18 cards, importa raid_deck/raid_deck_list/party_deck (equipes, arrays ou 18 IDs), mantém agrupamento no payload compacto existente.
+- Líderes gerais/elementares ativos compartilhados entre 18 unidades; mesmo atributo usa maior bônus aplicável. RaidGoals usa atributos de combate; worker otimiza os 3 times juntos sem repetir unidades/runas.
+- Calculadora Livre sempre recebe SPD de ficha e calcula ficha + base × (torre Arena + líder aplicável); antigo Guild SPD não entra no modo livre. Buffs/passivas continuam em etapa posterior. Construtor de conta Siege mantém seu cálculo próprio.
+- Verificação: 217 testes, build limpo; Playwright com Auth/REST simulados valida restore atrasado sem refresh, 35 abas Siege incluindo monstro ausente, PvE hidratado, R5 18 cards/144 ranges e fórmula manual reativa. Ver docs/COMBAT.md e docs/PVE-UX.md.

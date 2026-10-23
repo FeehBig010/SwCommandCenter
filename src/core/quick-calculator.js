@@ -9,10 +9,10 @@ export function quickConfig(master=null,name='Escolher monstro'){
  const base={...(monsterBase(master)||fallback)};
  return {...blankConfig(null,name),masterId:master,sets:[],basis:'total',manual:{base,sheet:{...base}}};
 }
-export function quickTeam(area='siege'){return {...makeTeam(area),towerSpd:15,guildSpd:area==='siege'?5:0,sheetSpeedFormula:true,autoEnemyPassives:true,autoOpener:true,configs:Array.from({length:{siege:3,arena:4,cairos:5}[area]||3},()=>quickConfig())};}
+export function quickTeam(area='siege'){return {...makeTeam(area),towerSpd:15,guildSpd:0,sheetSpeedFormula:true,autoEnemyPassives:true,autoOpener:true,configs:Array.from({length:{siege:3,arena:4,cairos:5}[area]||3},()=>quickConfig())};}
 export function selectQuickMonster(config,option){return {...quickConfig(option?.master,option?.name),key:config.key};}
 export function quickPreview(input){
- const team={...input,sheetSpeedFormula:true};
+ const team={...input,guildSpd:0,sheetSpeedFormula:true};
  const active=team.configs.filter(c=>c.enabled!==false),actors=[];
  for(const c of active){if(!c.masterId)return {complete:false,missing:active.filter(c=>!c.masterId).map(c=>c.label),actors:[],turns:[],cut:null};
   const {base,sheet}=c.manual;for(const kind of [base,sheet])for(const stat of STATS){const n=Number(kind[stat]);if(!Number.isFinite(n)||n<0||n>10000000||stat==='spd'&&n<=0)throw new Error(`${c.label}: atributo ${stat.toUpperCase()} inválido.`);}
@@ -30,7 +30,7 @@ export function quickLeader(master){return catalogLeader(master);}
 // procs/damage still remain conditional; this is not a win guarantee.
 export function autoTuneQuickTeam(team){
  if(team.configs.some(c=>!c.masterId))return team;
- let working={...team,towerSpd:15,guildSpd:team.gameMode==='siege'?5:0,configs:team.configs.map(c=>({...c,manual:{...c.manual,sheet:{...c.manual.sheet}}}))};
+ let working={...team,towerSpd:15,guildSpd:0,configs:team.configs.map(c=>({...c,manual:{...c.manual,sheet:{...c.manual.sheet}}}))};
  // Seed all boosted followers together before testing any prefix: stale fast
  // followers must not invalidate the first follower's search during a drag.
  const floors=openerRequirements(working);

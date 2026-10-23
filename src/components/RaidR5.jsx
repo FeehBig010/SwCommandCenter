@@ -1,0 +1,25 @@
+import {memo,useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {useAccount} from '../contexts/AccountContext';
+import {RAID_KEYS,raidParties,raidTeam,selectRaidParty,raidTeamsWithLeaders,syncRaidPlans,activeRaidLeader} from '../core/raid';
+import {MonsterEditor} from './TeamEditor';
+import {plannedReservations} from '../core/loadouts';
+import {LEADER_STATS,LEADER_SCOPES} from '../core/leaders';
+import Results from './Results';
+import PveTeamTimeline from './PveTeamTimeline';
+const RaidPanel=memo(function RaidPanel({base,leaders,index,account,options,onChange}){
+ const team=useMemo(()=>({...base,gameMode:'rift',dungeon:'r5',raid:true,raidLeaders:leaders,guildSpd:0,configs:base.configs.map(c=>c.raidGoals?c:{...c,raidGoals:true})}),[base,leaders]);
+ return <section className="raid-team-panel" aria-label={`Raid Time ${index+1}`}><header><h2>Time {index+1}</h2><span>{team.configs.filter(c=>c.unitId).length}/6 monstros</span></header><div className="raid-monster-grid">{team.configs.map((c,i)=><MonsterEditor key={c.key} config={c} index={i} slotCount={6} account={account} team={team} options={options} leaderActive={!!team.leader&&team.leaderKey===c.key} onLeader={leader=>onChange(index,{...base,leader,leaderIndex:i,leaderKey:leader?c.key:null})} onChange={next=>onChange(index,{...base,configs:base.configs.map(x=>x.key===c.key?next:x),...(next.masterId!==c.masterId&&base.leaderKey===c.key?{leader:null,leaderKey:null}:{})})}/>)}</div><PveTeamTimeline account={account} team={team} options={options}/></section>;
+});
+export default function RaidR5({account,plans={},onPlansChange,options={},allTeams=[],reservedIds=[]}){
+ const global=useAccount();account=account||global?.account;
+ const parties=useMemo(()=>raidParties(account),[account]),fallback=useMemo(()=>[0,1,2].map(raidTeam),[account]);
+ const a=plans.r5||fallback[0],b=plans[RAID_KEYS[1]]||fallback[1],c=plans[RAID_KEYS[2]]||fallback[2];
+ useEffect(()=>{if(parties.length&&(!plans[RAID_KEYS[1]]||!plans[RAID_KEYS[2]]))onPlansChange(all=>syncRaidPlans(all,account));},[parties,account,plans,onPlansChange]);
+ const la=activeRaidLeader(a),lb=activeRaidLeader(b),lc=activeRaidLeader(c);
+ const leaders=useMemo(()=>[la,lb,lc],[la,lb,lc]);
+ const teams=useMemo(()=>raidTeamsWithLeaders([a,b,c]),[a,b,c]),[result,setResult]=useState(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('');const worker=useRef();
+ useEffect(()=>{worker.current?.terminate();worker.current=null;setBusy(false);setResult(null);return()=>worker.current?.terminate();},[teams,account]);
+ const change=useCallback((index,team)=>onPlansChange(all=>({...all,[RAID_KEYS[index]]:{...team,raid:true,configs:team.configs.map(c=>({...c,raidGoals:true}))}})),[onPlansChange]);
+ function run(){if(!account)return;const w=new Worker(new URL('../core/optimizer.worker.js',import.meta.url),{type:'module'});worker.current=w;setBusy(true);setMessage('Distribuindo runas entre 18 monstros…');w.onmessage=({data})=>{if(worker.current!==w)return;if(data.type==='progress'){setMessage(data.message);return;}w.terminate();worker.current=null;setBusy(false);if(data.type==='error')setMessage(data.message);else{setResult(data.result);setMessage('');}};w.onerror=()=>{w.terminate();worker.current=null;setBusy(false);setMessage('Busca interrompida. Seus times foram preservados.');};w.postMessage({account,teams,options,reservedIds:[...new Set([...reservedIds,...plannedReservations(allTeams.filter(t=>!teams.some(r=>r.id===t.id)),account)])]});}
+ return <section className="raid-r5" aria-labelledby="raid-title"><header><h1 id="raid-title">Raid R5 · 3 times × 6 monstros</h1><p className="fineprint">Líderes gerais e elementares são compartilhados. Para o mesmo atributo, vale o maior bônus aplicável; líderes de Arena, Guilda e Masmorra não se aplicam ao Raid. Metas mínimas consideram os bônus de combate.</p><div className="raid-leader-badges">{leaders.map((l,i)=><span key={i}>👑 Time {i+1}: {l?`${l.value}% ${LEADER_STATS[l.stat]} · ${LEADER_SCOPES[l.scope]}${['general','element'].includes(l.scope)?'':' · inativo no Raid'}`:'sem líder'}</span>)}</div></header>{parties.length>0&&<div className="preset-tabs" role="group" aria-label="Grupos Raid importados">{parties.map((p,i)=><button type="button" className="button small" key={p.id} aria-pressed={a.raidPartyId===p.id} onClick={()=>onPlansChange(all=>selectRaidParty(all,p,account))}>Raid {i+1} · {p.presets.length} times</button>)}</div>}<fieldset className="editor-fieldset" disabled={busy}><div className="raid-team-panels">{[a,b,c].map((t,i)=><RaidPanel key={i} base={t} index={i} leaders={leaders} account={account} options={options} onChange={change}/>)}</div></fieldset><div className="button-group"><button className="button primary" disabled={busy||!account||teams.some(t=>t.configs.some(c=>!c.unitId))} onClick={run}>Otimizar os 3 times</button>{busy&&<button className="button" onClick={()=>{worker.current?.terminate();worker.current=null;setBusy(false);}}>Cancelar</button>}{message&&<span role="status">{message}</span>}</div>{result&&<Results result={result} account={account}/>}</section>;
+}

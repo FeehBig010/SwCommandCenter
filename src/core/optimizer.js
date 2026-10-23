@@ -51,7 +51,7 @@ export function statsFromVector(unit,v,counts,artifactFlat={}){
 }
 export function calculateStats(unit,runes,artifactFlat={}){return statsFromVector(unit,runes.reduce((v,r)=>add(v,runeVector(r)),zero()),setCounts(runes),artifactFlat);}
 export function artifactBonus(account,unit){const out={hp:0,atk:0,def:0};for(const a of account.artifacts)if(unit.artifactIds.includes(a.id)){const key={100:'hp',101:'atk',102:'def'}[a.main[0]];if(key)out[key]+=a.main[1];}return out;}
-export function goalValue(stats,config,key){return stats[config.basis==='total'||['cr','cd','res','acc'].includes(key)?'total':'bonus'][key];}
+export function goalValue(stats,config,key){if(config.raidGoals&&stats.combat){if(config.basis==='total'||['cr','cd','res','acc'].includes(key))return stats.combat[key];return stats.bonus[key]+stats.combat[key]-stats.total[key];}return stats[config.basis==='total'||['cr','cd','res','acc'].includes(key)?'total':'bonus'][key];}
 export function goalReport(stats,config){const rows=STATS.filter(k=>Number(config.goals[k])>0).map(key=>{const target=Number(config.goals[key]);const actual=goalValue(stats,config,key);return {key,target,actual,missing:Math.max(0,target-actual),met:actual>=target};});if(Number(config.combatSpd)>0){const target=Number(config.combatSpd),actual=stats.combat?.spd??stats.total.spd;rows.push({key:'combatSpd',target,actual,missing:Math.max(0,target-actual),met:actual>=target});}return rows;}
 function setRequirements(c){const req={};for(const id of c.sets.filter(Boolean))req[id]=(req[id]||0)+(FOUR.has(id)?4:2);return req;}
 function setsValid(counts,req){return Object.entries(req).every(([id,n])=>(counts[id]||0)>=n);}

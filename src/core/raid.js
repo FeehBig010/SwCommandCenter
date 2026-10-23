@@ -1,0 +1,10 @@
+import {makeTeam} from './data.js';
+import {teamFromGameDeck,pvePlanKey} from './account-teams.js';
+export const RAID_KEYS=['r5','r5:team:2','r5:team:3'];
+export function raidParties(account){const groups=new Map();for(const p of account?.accountPresets||[])if(p.gameMode==='rift'&&p.dungeon==='r5'){const id=p.raidPartyId||`party-${Math.floor([...groups.values()].reduce((n,g)=>n+g.presets.length,0)/3)}`;if(!groups.has(id))groups.set(id,{id,presets:[]});groups.get(id).presets.push(p);}return [...groups.values()].flatMap(g=>Array.from({length:Math.ceil(g.presets.length/3)},(_,i)=>({id:g.presets.length>3?`${g.id}:${i}`:g.id,presets:g.presets.slice(i*3,i*3+3)})));}
+export function raidTeam(index){return {...makeTeam('rift'),name:`Raid R5 · Time ${index+1}`,dungeon:'r5',mode:'attack',raid:true,configs:makeTeam('rift').configs.map(c=>({...c,raidGoals:true,basis:'total'}))};}
+export function selectRaidParty(plans,party,account){const next={...plans};for(const key of RAID_KEYS){const t=next[key];if(t?.sourceDeckId)next[pvePlanKey('r5',t.sourceDeckId)]=t;}
+ for(let i=0;i<3;i++){const p=party?.presets[i],saved=p&&Object.values(next).find(t=>t.sourceDeckId===p.id);const team=p?(saved||teamFromGameDeck(p,account)):raidTeam(i);next[RAID_KEYS[i]]={...team,raid:true,raidPartyId:party?.id||'manual',configs:team.configs.map(c=>({...c,raidGoals:true}))};if(p)delete next[pvePlanKey('r5',p.id)];}return next;}
+export function syncRaidPlans(plans,account){const parties=raidParties(account);if(!parties.length)return plans;const current=parties.find(p=>p.id===plans.r5?.raidPartyId)||parties[0];return selectRaidParty(plans,current,account);}
+export function activeRaidLeader(team){const c=team.configs.find(c=>c.key===team.leaderKey)||team.configs[team.leaderIndex||0];return c?.masterId&&c.enabled!==false?team.leader||null:null;}
+export function raidTeamsWithLeaders(teams){const raidLeaders=teams.map(activeRaidLeader);return teams.map(t=>({...t,gameMode:'rift',dungeon:'r5',raid:true,raidLeaders,guildSpd:0,configs:t.configs.map(c=>({...c,raidGoals:true}))}));}

@@ -1,7 +1,8 @@
+import {useAccount} from '../contexts/AccountContext';
 import PresetTabs from './PresetTabs';
 import PveTeamTimeline from './PveTeamTimeline';
 import BossTabs from './BossTabs';
-import {PVE_AREAS} from '../core/pve';
+import {PVE_AREAS,cairosStagesForPresets} from '../core/pve';
 import InfoTooltip from './InfoTooltip';
 import {presetsForArea} from '../core/deckManager';
 import {MonsterEditor} from './TeamEditor';
@@ -13,11 +14,13 @@ import {teamFromGameDeck,selectPvePreset} from '../core/account-teams';
 import {reorderTeam,updateAutomaticName} from '../core/team-ux';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Castle,FlaskConical,LoaderCircle,Square} from 'lucide-react';
-import {CAIROS_PROFILES as ALL_CAIROS_PROFILES,makeCairosTeam} from '../core/cairos';
+import {ALL_CAIROS_PROFILES,makeCairosTeam} from '../core/cairos';
 import TeamCardExport from './TeamCardExport';
 
 export default function CairosHub({account,options,reservedIds=[],plans={},onPlansChange,allTeams=[],onSceneChange,initialStage}){
- const [dungeon,setDungeon]=useState(()=>PVE_AREAS.cairos.stages.some(s=>s[0]===initialStage)?initialStage:account?.accountPresets?.find(p=>p.gameMode==='cairos'&&['gbah','dbah','nbah','sf10','pc10'].includes(p.dungeon))?.dungeon||'gbah'),[result,setResult]=useState(null),[resultSignature,setResultSignature]=useState(''),[running,setRunning]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');
+ const global=useAccount();account=account||global?.account;const presetSource=global?.account===account?global.hydratedPresets:account?.accountPresets;const stages=useMemo(()=>cairosStagesForPresets(presetSource),[presetSource]);
+ const [dungeon,setDungeon]=useState(()=>stages.some(s=>s[0]===initialStage)?initialStage:account?.accountPresets?.find(p=>p.gameMode==='cairos'&&stages.some(s=>s[0]===p.dungeon))?.dungeon||'gbah'),[result,setResult]=useState(null),[resultSignature,setResultSignature]=useState(''),[running,setRunning]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');
+ useEffect(()=>{setDungeon(current=>presetsForArea(presetSource,'cairos',current).length?current:presetSource?.find(p=>p.gameMode==='cairos'&&stages.some(s=>s[0]===p.dungeon))?.dungeon||current);},[presetSource,stages]);
  const workerRef=useRef(),profile=ALL_CAIROS_PROFILES.find(p=>p.id===dungeon);
  const fallback=useMemo(()=>makeCairosTeam(profile,account),[profile,account]);
  const storedTeam=plans[dungeon]||fallback,team=useMemo(()=>({...storedTeam,towerSpd:15,guildSpd:5}),[storedTeam]);
@@ -36,9 +39,9 @@ export default function CairosHub({account,options,reservedIds=[],plans={},onPla
  }
  useEffect(()=>{onSceneChange?.('cairos',dungeon);},[dungeon,onSceneChange]);
  const stale=!!result&&signature!==resultSignature;
- return <div className="cairos-reactive pve-hub" data-dungeon={dungeon}><header className="pve-compact-header"><h1>Cairos Dungeon</h1></header><BossTabs stages={PVE_AREAS.cairos.stages} value={dungeon} onChange={setDungeon} disabled={running}/>
+ return <div className="cairos-reactive pve-hub" data-dungeon={dungeon}><header className="pve-compact-header"><h1>Cairos Dungeon</h1></header><BossTabs stages={stages} value={dungeon} onChange={setDungeon} disabled={running}/>
   <section className="cairos-panel pve-operation-panel" role="tabpanel" id={`boss-panel-${dungeon}`} aria-label={profile.title}><div className="section-toolbar"><div><h2>{profile.title}<InfoTooltip label="Informações técnicas">Templates de partida para planejar velocidade; ajuste à estratégia. O checklist usa o cenário informado; não valida mecânicas especiais do chefe, IA ou recargas. ACC considera resistência − 15%, com teto de 85%; alguns inimigos podem exigir ajustes.</InfoTooltip></h2><p className="fineprint">Composição inicial editável · metas de SPD total da ficha · Meta ACC do perfil: {profile.accuracy}%</p></div><input className="team-name" aria-label="Nome do time Cairos" value={team.autoName?team.configs.map(c=>c.label).join(' - '):team.name} onChange={e=>setTeam({...team,name:e.target.value,autoName:false})}/><TeamCardExport team={team} account={account}/>   {team.sourceDeckId&&<p className="imported-deck-note screen-reader-only">Deck do jogo: {team.sourceDeckName} · runas equipadas do SWEX</p>}
-   <PresetTabs presets={presetsForArea(account?.accountPresets,'cairos',dungeon)} value={team.sourceDeckId} disabled={running} onSelect={p=>onPlansChange(all=>selectPvePreset(all,dungeon,p,account,team))}/>
+   <PresetTabs presets={presetsForArea(presetSource,'cairos',dungeon)} value={team.sourceDeckId} disabled={running} onSelect={p=>onPlansChange(all=>selectPvePreset(all,dungeon,p,account,team))}/>
 
 </div>
 
