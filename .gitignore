@@ -4,3 +4,8 @@ work/
 .env*
 *.swex.json
 !.env.example
+
+# Runtime SWARFARM checkout and generated ID manifest
+public/assets/imagens_sw/
+public/assets/sw-monster-images.json
+public/assets/sw-monster-images.json.*.tmp

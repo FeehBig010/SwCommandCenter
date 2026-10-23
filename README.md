@@ -15,7 +15,7 @@ Unlike existing single-monster optimizers, this tool performs **joint multi-team
 - **Theme & Branding:** Navy/gold guild pirate identity, local Inter font, responsive layout.
 - **Calculation Engine:** Multithreaded JavaScript heuristic search executing inside a dedicated **Web Worker** (`optimizer.worker.js`).
 - **Data Persistence:** Local browser storage via **IndexedDB** (`storage.js`) and JSON plan import/export.
-- **Backend Dependency:** None (100% Client-side execution, zero external AI API or server DB dependencies, full privacy compliance).
+- **Backend:** Computation and SWEX parsing remain client-side. An optional persistent Node.js service serves local SWARFARM artwork and runs its weekly node-cron update; static hosting supports the artwork snapshot from the latest build.
 
 ---
 
@@ -130,3 +130,16 @@ Use **Exportar card (PNG)** on a completed team or Guild Hub composition to down
 ## Piratas e Marés Sombrias
 
 The interface uses an ocean/oak/brass theme with locally hosted Google Fonts Cinzel and Oswald (licenses included). Each monster target supports typing or dragging the paired helm slider; both update the same optimizer goal. Slider limits are suggestions and expand to preserve larger typed/imported targets. Rune details use an interactive six-slot ship helm, and considered artifacts appear in treasure-chest slots. Motion respects reduced-motion preferences.
+
+## Imagens locais e serviço de atualização
+
+Os retratos agora priorizam o clone público do SWARFARM. `npm run dev` e `npm run build` preparam esse clone automaticamente. Instale Node.js 22+ e Git antes de executar.
+
+```sh
+npm run assets:setup   # clona e prepara o índice local
+npm run assets:update  # git pull imediato e atualização do índice
+npm run build
+npm start              # site + cron: terça às 23:59, America/Sao_Paulo
+```
+
+O cron exige um processo Node permanentemente ativo e armazenamento persistente; um host puramente estático entrega apenas as imagens do último build. [Configuração, fonte, logs e operação](docs/ASSETS.md).

@@ -1,3 +1,4 @@
+import {localGameImage} from './monster-assets.js';
 import {createElement} from 'react';
 import {createRoot} from 'react-dom/client';
 import {flushSync} from 'react-dom';
@@ -23,7 +24,7 @@ async function loadAssets(data,signal){
  for(const m of data.monsters){
   if(m.elementIcon)sources.set(m.elementIcon,[m.elementIcon]);
   for(const item of [...m.runes.filter(Boolean),...m.sets])if(item.icon)sources.set(item.icon,[item.icon]);
-  for(const s of m.skills)if(s.icon&&/^[\w.-]+$/.test(s.icon))sources.set(`skill:${s.icon}`,[...(skillCache.includes(s.icon)?[`/game-icons/skills/${s.icon}`]:[]),`https://swarfarm.com/static/herders/images/skills/${s.icon}`,`https://raw.githubusercontent.com/swarfarm/swarfarm/master/herders/static/herders/images/skills/${s.icon}`]);
+  for(const s of m.skills)if(s.icon&&/^[\w.-]+$/.test(s.icon))sources.set(`skill:${s.icon}`,[localGameImage('skills',s.icon),...(skillCache.includes(s.icon)?[`/game-icons/skills/${s.icon}`]:[]),`https://swarfarm.com/static/herders/images/skills/${s.icon}`,`https://raw.githubusercontent.com/swarfarm/swarfarm/master/herders/static/herders/images/skills/${s.icon}`]);
  }
  const [entries,portraits]=await Promise.all([
   Promise.all([...sources].map(async([key,urls])=>[key,await imageAsset(urls,signal)])),

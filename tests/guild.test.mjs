@@ -62,7 +62,8 @@ test('matching reports a successful team when all leadership targets are met',()
 });
 test('monster thumbnail sources use the real SWARFARM filename, with a public asset fallback',()=>{
  const sources=monsterImageSources(19614);
- assert.equal(sources[0],'https://swarfarm.com/static/herders/images/monsters/unit_icon_0035_3_0.png');
- assert.match(sources[1],/^https:\/\/raw.githubusercontent.com\/swarfarm\/swarfarm\/master\/herders\/static\/herders\/images\/monsters\/unit_icon_/);
+ assert.equal(sources[0],'/assets/imagens_sw/herders/static/herders/images/monsters/unit_icon_0035_3_0.png');
+ assert.equal(sources[1],'https://swarfarm.com/static/herders/images/monsters/unit_icon_0035_3_0.png');
+ assert.match(sources[2],/^https:\/\/raw.githubusercontent.com\/swarfarm\/swarfarm\/master\/herders\/static\/herders\/images\/monsters\/unit_icon_/);
  assert.deepEqual(monsterImageSources('bad'),[]);
 });
