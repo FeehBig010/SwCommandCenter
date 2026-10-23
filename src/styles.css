@@ -375,3 +375,13 @@ main{max-width:1920px;padding:24px 24px 0}
 .pve-hub .three-fields select{appearance:none;padding:4px 11px 4px 3px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='7' viewBox='0 0 8 8'%3E%3Cpath d='m1 2 3 3 3-3' fill='none' stroke='%23d4af37' stroke-width='1.2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 2px center;background-size:7px}
 
 .inventory-sync-badge{display:inline-flex;align-items:center;color:#9ce6b0;background:#10271dcc;border:1px solid #39764a;border-radius:6px;padding:5px 9px;margin:4px 0;font-size:12px}
+
+.sidebar nav button.nav-locked{opacity:.5;filter:saturate(.25)}
+.nav-lock-marker{font-size:10px;position:absolute;right:5px;top:4px}
+.private-route-locked{max-width:600px;margin:3rem auto;padding:24px;background:#121921e8;border:1px solid #8c6d31;border-radius:12px}
+.private-route-locked .button{margin:6px}
+.preset-tabs{display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;max-width:100%;min-width:0;padding:8px 2px;scrollbar-width:thin}
+.preset-tabs>.button{flex:0 0 auto;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.preset-tabs [aria-pressed=true]{border-color:#d4af37;color:#f1d884;background:#322811}
+.pve-operation-panel,.defense-selection-ruler,.team-panel{min-width:0;max-width:100%}
+.section-toolbar>.preset-tabs{flex-basis:100%}

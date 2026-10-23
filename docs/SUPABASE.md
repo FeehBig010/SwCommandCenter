@@ -117,8 +117,7 @@ incluídas na configuração do projeto.
 
 Ao iniciar uma sessão (não a cada refresh do token), o cliente busca o backup
 privado, revalida o payload e monta times de Siege/Arena, planos PvE e fichas
-manuais da Calculadora Livre com equipamento atual. Siege monta até dez decks;
-o restante permanece na biblioteca. RTA continua isolada. Decks sem categoria ou
+manuais da Calculadora Livre com equipamento atual. Siege monta todos os decks importados, sem limite de quantidade. RTA continua isolada. Decks sem categoria ou
 masmorra reconhecível não são atribuídos silenciosamente a um chefe arbitrário.
 Context API expõe inventário, times e planos; a persistência local existente
 mantém as composições ao alternar telas ou recarregar offline.
@@ -140,3 +139,43 @@ QA desta atualização: 204 testes passaram e build Vite limpo. Playwright
 restauração em contexto de navegador novo, presets da Calculadora Livre,
 navegação PvE e viewport 390 px sem overflow ou erros JavaScript. Endpoints de
 Auth/REST foram interceptados com respostas sintéticas, sem login real.
+
+
+## Payload compacto e presets sem limite — migration 008
+
+Execute `supabase/migrations/202610220008_compact_account_payload.sql` no SQL
+Editor antes de salvar backups com a nova versão. Não execute novamente as
+migrations iniciais. Esta atualização conserva os backups antigos e suas RLS,
+adicionando metadados privados de identificação da conta fora do JSON.
+
+O campo `payload` contém exatamente `unit_list`, `runes`, `deck_list`,
+`defense_deck_list` e `world_arena_deck_list`. Status/IDs de unidades e suas runas
+equipadas são reconstruídos com whitelist; `runes` contém apenas as demais
+runas, evitando armazenar a mesma runa equipada nas duas listas. Chat, amigos,
+históricos, sessões e quaisquer propriedades arbitrárias não são copiadas.
+O código não precisa manter nem percorrer árvores sociais para montar o backup.
+A linha conserva `user_id` e metadados de ID/nome da conta em colunas próprias,
+protegidas pelas mesmas regras do proprietário.
+
+Este formato solicitado **não inclui artefatos, totens/torres, pedras de melhoria,
+níveis de habilidades ou atribuições de runas RTA**. Esses dados continuam locais;
+carregar o novo backup em outro dispositivo não os recupera. Backups legados ainda
+podem ser lidos com seus dados completos. Redução do JSON não elimina os limites
+HTTP do serviço: erros 413 preservam o estado local e são reportados. O teto técnico
+de tamanho da tabela permanece, sem impor quantidade de times.
+
+Todos os presets são preservados, inclusive composições repetidas em decks distintos.
+Siege e Arena usam uma régua horizontal e montam somente o time selecionado. PvE
+mantém cada plano separadamente por masmorra e ID de deck, com régua horizontal;
+trocar de preset preserva as edições do anterior. Não há limite de dez times nem
+restrição no botão Adicionar time. Dimensional, Rift e ToA usam o mesmo seletor.
+Presets sem área/masmorra reconhecida não são atribuídos a um chefe arbitrário.
+
+Visitantes veem cadeados e itens atenuados nas áreas privadas. O clique abre o login;
+acesso direto pela URL também não monta o painel privado. A Calculadora Livre
+permanece pública. Essa trava de UI não substitui as RLS do Supabase.
+
+QA: 207 testes; testes PostgreSQL da migration 008 e RLS; Playwright com Auth/REST
+simulados validou 50 times PvE e 35 Siege, edição preservada ao alternar presets,
+um único painel montado, rolagem mobile de 390 px sem overflow, formato exato do
+upsert, bloqueio direto/Sidebar e Calculadora Livre pública. Browser plugin indisponível.

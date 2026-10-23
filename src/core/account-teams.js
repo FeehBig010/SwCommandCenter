@@ -21,21 +21,32 @@ export function teamFromGameDeck(preset,account,previous){
 }
 function refreshManualTeam(account,team){return {...team,plannedRunes:null,configs:team.configs.map(c=>{const unit=account.units.find(u=>u.id===c.unitId);return unit?{...c,masterId:unit.master,label:unit.name}:{...c,unitId:null};})};}
 export function syncAccountTeams(account,previous=[],sameAccount=false){
- const decks=(account.accountPresets||[]).filter(p=>['siege','arena'].includes(p.gameMode)).filter((p,i,all)=>p.gameMode!=='siege'||all.slice(0,i).filter(v=>v.gameMode==='siege').length<10);
+ const decks=(account.accountPresets||[]).filter(p=>['siege','arena'].includes(p.gameMode));
  const kept=sameAccount?previous.filter(t=>!t.sourceDeckId).map(t=>refreshManualTeam(account,t)):[];
  const imported=decks.map(p=>teamFromGameDeck(p,account,sameAccount?previous.find(t=>t.sourceDeckId===p.id):null));
  return [...kept,...imported];
 }
+export const pvePlanKey=(stage,id)=>`${stage}::${id}`;
+export function selectPvePreset(all,stage,preset,account,current){
+ const key=pvePlanKey(stage,preset.id),saved=all[key];
+ const next={...all};
+ if(current?.sourceDeckId&&current.sourceDeckId!==preset.id)next[pvePlanKey(stage,current.sourceDeckId)]=current;
+ next[stage]=saved||teamFromGameDeck(preset,account);
+ delete next[key];return next;
+}
 export function syncCairosPlans(account,previous={},sameAccount=false){
+ const oldByDeck=new Map(Object.values(previous).filter(t=>t.sourceDeckId).map(t=>[t.sourceDeckId,t]));
+ const presetById=new Map((account.accountPresets||[]).map(p=>[p.id,p]));
  const next=sameAccount?Object.fromEntries(Object.entries(previous).map(([key,t])=>[key,{...refreshManualTeam(account,t),sourceDeckId:null,sourceDeckName:null}])):{},selected=new Set();
- for(const p of account.accountPresets||[])if(['cairos','dimensional','rift','toa'].includes(p.gameMode)&&p.dungeon&&!selected.has(p.dungeon)){
-  selected.add(p.dungeon);const old=sameAccount?previous[p.dungeon]:null;
-  const selectedDeck=old?.sourceDeckId&&(account.accountPresets||[]).find(d=>d.dungeon===p.dungeon&&d.id===old.sourceDeckId);
-  next[p.dungeon]=teamFromGameDeck(selectedDeck||p,account,old);
+ for(const p of account.accountPresets||[])if(['cairos','dimensional','rift','toa'].includes(p.gameMode)&&p.dungeon){
+  const stage=p.dungeon,first=!selected.has(stage);selected.add(stage);
+  const old= sameAccount?oldByDeck.get(p.id):null;
+  const team=teamFromGameDeck(p,account,old);
+  if(first){const chosen=sameAccount?previous[stage]?.sourceDeckId:null;const candidate=presetById.get(chosen),preset=candidate?.dungeon===stage&&candidate?.gameMode===p.gameMode?candidate:null;next[stage]=preset?teamFromGameDeck(preset,account,previous[stage]):team;}
+  if(next[stage].sourceDeckId!==p.id)next[pvePlanKey(stage,p.id)]=team;
  }
  return next;
 }
-
 // Manual calculator gets a snapshot of the equipped sheet, never base-only values.
 export function quickPlansFromAccount(account){
  const plans={};

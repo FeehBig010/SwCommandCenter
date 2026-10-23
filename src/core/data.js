@@ -42,8 +42,7 @@ export function normalizeAccount(raw){
   const ordered=raw.defense_unit_list.slice().sort((a,b)=>Number(a.pos_id??0)-Number(b.pos_id??0));
   supplemental.push(...extractAccountPresets({arena_defense:{deck_name:'Defesa Arena',unit_id_list:ordered.map(u=>Number(u.unit_id))}},units));
  }
- const existing=new Set(presets.map(p=>JSON.stringify([p.gameMode,p.mode,p.dungeon,p.unitIds])));
- for(const preset of supplemental){const key=JSON.stringify([preset.gameMode,preset.mode,preset.dungeon,preset.unitIds]);if(!existing.has(key)){existing.add(key);presets.push({...preset,id:`source-${preset.id}`});}}
+ for(const preset of supplemental)presets.push({...preset,id:`source-${preset.id}`});
  return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege,accountPresets:presets,towers:extractTowers(raw),crafts:normalizeCrafts(raw.rune_craft_item_list),equipmentPools:equipmentPools(raw,units,[...runeMap.values()])};
 }
 export function blankConfig(unit=null,name='Escolher monstro'){

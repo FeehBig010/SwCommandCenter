@@ -341,3 +341,10 @@ Validation: **196/196 tests pass**, no failures/skips; clean production build. N
 - AccountContext expõe estado; coordenador protege contra respostas atrasadas, troca de usuário e saves fora de ordem; sem backup/falha preserva modo local.
 - Sem migration nova; reutiliza account_snapshots e suas RLS. JSON bruto/segredos não são enviados. Ver docs/SUPABASE.md.
 - Verificação: 204 testes passando, build limpo; Playwright com Auth/REST simulados confirma upload/upsert, restauração em navegador novo, fichas preenchidas e responsividade mobile. Validação remota real entre dispositivos pendente do proprietário.
+
+### Presets sem limite, payload compacto e áreas privadas
+- Removido limite de dez times e deduplicação de decks distintos com a mesma composição; PvE mantém todos os planos por masmorra/deck e preserva suas edições.
+- Réguas horizontais; só o painel selecionado é montado. Validado com 50 PvE e 35 Siege.
+- Novo payload com exatamente cinco listas SWEX; runas equipadas são armazenadas nas unidades e demais runas no inventário. Campos fora da whitelist não são enviados.
+- Aplicar migration 008 no Supabase: aceita formato compacto e legado, conserva RLS, adiciona metadados privados de identificação. O formato compacto exclui artefatos/torres/crafts/RTA assignments (continuam locais).
+- Sidebar e rotas privadas exigem login; Calculadora Livre permanece pública. 207 testes e validação Playwright com HTTP simulado; ver docs/SUPABASE.md.

@@ -1,3 +1,4 @@
+import PresetTabs from './PresetTabs';
 import PveTeamTimeline from './PveTeamTimeline';
 import BossTabs from './BossTabs';
 import {PVE_AREAS} from '../core/pve';
@@ -8,7 +9,7 @@ import TeamDiagnosis from './TeamDiagnosis';
 import AutomaticCairosReport from './AutomaticCairosReport';
 import useTeamDiagnostics from '../hooks/useTeamDiagnostics';
 import {applyDiagnosticPlan,plannedReservations} from '../core/loadouts';
-import {teamFromGameDeck} from '../core/account-teams';
+import {teamFromGameDeck,selectPvePreset} from '../core/account-teams';
 import {reorderTeam,updateAutomaticName} from '../core/team-ux';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Castle,FlaskConical,LoaderCircle,Square} from 'lucide-react';
@@ -37,7 +38,8 @@ export default function CairosHub({account,options,reservedIds=[],plans={},onPla
  const stale=!!result&&signature!==resultSignature;
  return <div className="cairos-reactive pve-hub" data-dungeon={dungeon}><header className="pve-compact-header"><h1>Cairos Dungeon</h1></header><BossTabs stages={PVE_AREAS.cairos.stages} value={dungeon} onChange={setDungeon} disabled={running}/>
   <section className="cairos-panel pve-operation-panel" role="tabpanel" id={`boss-panel-${dungeon}`} aria-label={profile.title}><div className="section-toolbar"><div><h2>{profile.title}<InfoTooltip label="Informações técnicas">Templates de partida para planejar velocidade; ajuste à estratégia. O checklist usa o cenário informado; não valida mecânicas especiais do chefe, IA ou recargas. ACC considera resistência − 15%, com teto de 85%; alguns inimigos podem exigir ajustes.</InfoTooltip></h2><p className="fineprint">Composição inicial editável · metas de SPD total da ficha · Meta ACC do perfil: {profile.accuracy}%</p></div><input className="team-name" aria-label="Nome do time Cairos" value={team.autoName?team.configs.map(c=>c.label).join(' - '):team.name} onChange={e=>setTeam({...team,name:e.target.value,autoName:false})}/><TeamCardExport team={team} account={account}/>   {team.sourceDeckId&&<p className="imported-deck-note screen-reader-only">Deck do jogo: {team.sourceDeckName} · runas equipadas do SWEX</p>}
-   {!!presetsForArea(account?.accountPresets,'cairos',dungeon).length&&<label className="field compact-deck-field"><span className="screen-reader-only">Meus decks de {profile.name}</span><select aria-label="Deck da masmorra" value={team.sourceDeckId||''} onChange={e=>{const p=presetsForArea(account.accountPresets,'cairos',dungeon).find(p=>p.id===e.target.value);if(p)setTeam(teamFromGameDeck({...p,gameMode:'cairos',dungeon},account,team));}}><option value="">Composição editada</option>{presetsForArea(account.accountPresets,'cairos',dungeon).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}
+   <PresetTabs presets={presetsForArea(account?.accountPresets,'cairos',dungeon)} value={team.sourceDeckId} disabled={running} onSelect={p=>onPlansChange(all=>selectPvePreset(all,dungeon,p,account,team))}/>
+
 </div>
 
    <TeamDiagnosis report={diagnosis.reports[team.id]} account={account} busy={diagnosis.busy} planned={team.plannedRunes} onApply={applyDiagnosis} onUndo={()=>setTeam({...team,plannedRunes:null})}/>
