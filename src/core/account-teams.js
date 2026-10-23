@@ -18,7 +18,7 @@ export function teamFromGameDeck(preset,account,previous){
  const mode=preset.gameMode||previous?.gameMode||'siege';assertPresetArea(preset,mode,preset.dungeon);if(previous&&(previous.gameMode||'siege')!==mode)throw new Error('Não é possível carregar um deck de outra área.');const slots=GAME_MODES[mode]?.slots||3;
  const oldByUnit=new Map((previous?.configs||[]).map(c=>[c.unitId,c]));
  const configs=Array.from({length:slots},(_,i)=>{
-  const unit=account.units.find(u=>Number(u.id)===Number(preset.unitIds[i])),old=unit&&oldByUnit.get(unit.id);
+  const original=account.units.find(u=>Number(u.id)===Number(preset.unitIds[i])),equipment=preset.equipment?.find(e=>e.unitId===original?.id),unit=original&&equipment?{...original,runeIds:equipment.runeIds,artifactIds:equipment.artifactIds}:original,old=unit&&oldByUnit.get(unit.id);
   if(old)return {...old,masterId:unit.master,label:unit.name};
   const c=blankConfig(unit);const counts={};
   for(const id of unit?.runeIds||[]){const r=account.runes.find(r=>r.id===id);if(r)counts[r.set]=(counts[r.set]||0)+1;}
@@ -28,6 +28,7 @@ export function teamFromGameDeck(preset,account,previous){
  const leaderIndex=Math.max(0,Math.min(slots-1,Number(preset.leaderIndex)||0)),leader=catalogLeader(configs[leaderIndex]?.masterId);
  const next={...makeTeam(mode),...previous,gameMode:mode,mode:preset.mode||previous?.mode||'defense',configs,inactiveConfigs:[],leader,leaderIndex,leaderKey:leader?configs[leaderIndex]?.key:null,leaderSpd:0,towerSpd:previous?.towerSpd??account.towers?.glorySpd??0,guildSpd:previous?.guildSpd??account.towers?.guildSpd??0,sourceDeckId:preset.id,sourceAccountId:account.id,sourceDungeon:preset.dungeon||null,dungeon:preset.dungeon||previous?.dungeon||null,sourceDeckName:preset.name,sourceImportedAt:account.importedAt};
  delete next.plannedRunes;
+ if(preset.equipment?.length)next.plannedRunes={accountStamp:`${account.id}:${account.importedAt||''}`,byConfig:Object.fromEntries(configs.flatMap(c=>{const e=preset.equipment.find(e=>e.unitId===c.unitId);return e?[[c.key,e.runeIds.filter(id=>account.runes.some(r=>r.id===id))]]:[];}))};
  return {...next,autoName:previous?.autoName!==false,name:previous?.autoName===false?previous.name:automaticTeamName(configs)};
 }
 function refreshManualTeam(account,team){return {...team,plannedRunes:null,configs:team.configs.map(c=>{const unit=account.units.find(u=>u.id===c.unitId);return unit?{...c,masterId:unit.master,label:unit.name}:{...c,unitId:null};})};}
@@ -80,8 +81,9 @@ export function hydrateAccountPresets(account){
  const units=new Map(account.units.map(u=>[Number(u.id),u])),runes=new Map(account.runes.map(r=>[Number(r.id),r])),sheets=new Map();
  return (account.accountPresets||[]).map(p=>{
   const leaderUnit=units.get(Number(p.unitIds[p.leaderIndex||0])),team={gameMode:p.gameMode,leader:catalogLeader(leaderUnit?.master),towerSpd:account.towers?.glorySpd||0,guildSpd:account.towers?.guildSpd||0};
-  const members=p.unitIds.map(id=>{if(!id)return null;const unit=units.get(Number(id));if(!unit)return null;
-   let sheet=sheets.get(unit.id);if(!sheet){const equipped=(unit.runeIds||[]).map(id=>runes.get(Number(id))).filter(Boolean);sheet={stats:calculateStats(unit,equipped,artifactBonus(account,unit)),counts:setCounts(equipped),runes:equipped};sheets.set(unit.id,sheet);}
+  const members=p.unitIds.map(id=>{if(!id)return null;const original=units.get(Number(id));if(!original)return null;
+   const equipment=p.equipment?.find(e=>e.unitId===original.id),unit=equipment?{...original,runeIds:equipment.runeIds,artifactIds:equipment.artifactIds}:original,cacheKey=JSON.stringify([unit.id,unit.runeIds,unit.artifactIds]);
+   let sheet=sheets.get(cacheKey);if(!sheet){const equipped=(unit.runeIds||[]).map(id=>runes.get(Number(id))).filter(Boolean);sheet={stats:calculateStats(unit,equipped,artifactBonus(account,unit)),counts:setCounts(equipped),runes:equipped};sheets.set(cacheKey,sheet);}
    const combat=combatAttributes(unit,sheet.stats,sheet.counts,team,{},artifactEffects(account,unit));
    return {...unit,imageUrl:monsterImageSources(unit.master)[0]||null,runes:sheet.runes,sheetStats:sheet.stats.total,combat_spd:combat.spd,equipmentComplete:sheet.runes.length===6};
   });return {...p,members};

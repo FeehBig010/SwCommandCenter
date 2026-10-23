@@ -70,3 +70,28 @@ test('explicit null unit_id is an empty slot even when the slot object also has 
  const p=extractAccountPresets({dbah:{unit_id_list:[{unit_id:101},{unit_id:null,id:102},{unit_id:102}]}},[{id:101},{id:102}],'pve-default');
  assert.deepEqual(p[0].unitIds,[101,null,102,null,null]);
 });
+
+test('explicit Dragon dungeon in party_deck takes priority over legacy R5 fallback and hydrates empty slots',()=>{
+ const r=raw();delete r.deck_list;r.party_deck={9011:[{deck_id:7,unit_id_list:[101,null,102,null,null]}]};
+ const a=normalizeAccount(r),dragon=hydrateAccountPresets(a).find(p=>p.dungeon==='dbah');
+ assert.ok(dragon);assert.equal(dragon.gameMode,'cairos');assert.deepEqual(dragon.unitIds,[101,null,102,null,null]);
+ assert.equal(dragon.members[0].name,'Teon');assert.equal(dragon.members[2].name,'Agrius');assert.equal(dragon.members[0].runes[0].id,1);assert.ok(dragon.members[0].sheetStats.spd>=142);
+ assert.deepEqual(syncCairosPlans(a).dbah.configs.map(c=>c.unitId),dragon.unitIds);
+ assert.equal(a.presetImport.sources.party_deck.imported,1);assert.equal(a.presetImport.sources.party_deck.present,true);
+ const restored=restoreAccountPayload(cleanAccountPayload(a),'user');assert.deepEqual(syncCairosPlans(restored).dbah.configs.map(c=>c.unitId),dragon.unitIds);
+});
+
+test('real SWEX schema: saved 24/202 and recent 3/2002 hydrate Dragon preset equipment instead of current gear',()=>{
+ const r=raw();r.unit_list[1].unit_master_id=34112;delete r.unit_list[1].unit_name;
+ const equip=r.unit_list.map(u=>({unit_id:u.unit_id,rune_id_list:u.runes.map(r=>r.rune_id),artifact_id_list:[]}));
+ r.runes=r.unit_list.flatMap(u=>u.runes.map(r=>({...r,occupied_id:0})));r.unit_list.forEach(u=>u.runes=[]);
+ r.deck_list=[{deck_type:24,deck_seq:202,leader_unit_id:102,unit_id_list:[102,101,0,0,0,0,0,0],equip}];
+ r.deck_recent_list=[{type:3,sub_type:2002,leader_unit_id:102,unit_id_list:[102,101,0,0,0,0,0,0],equip}];
+ const account=normalizeAccount(r);
+ for(const a of [account,restoreAccountPayload(cleanAccountPayload(account),'user')]){
+  const decks=hydrateAccountPresets(a).filter(p=>p.dungeon==='dbah');assert.equal(decks.length,2);
+  for(const p of decks){assert.equal(p.members[0].name,'Agrius');assert.equal(p.members[1].name,'Teon');assert.equal(p.members[0].runes[0].id,2);assert.equal(p.members[1].runes[0].id,1);assert.equal(p.members[1].sheetStats.spd,142);assert.deepEqual(p.members.slice(2),Array(6).fill(null));assert.equal(p.leaderIndex,0);}
+  const plan=syncCairosPlans(a).dbah;assert.deepEqual(plan.plannedRunes.byConfig[plan.configs[0].key],[2]);assert.deepEqual(plan.plannedRunes.byConfig[plan.configs[1].key],[1]);
+ }
+ assert.equal(account.presetImport.sources.deck_recent_list.imported,1);
+});

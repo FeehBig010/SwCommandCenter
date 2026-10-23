@@ -38,13 +38,13 @@ export function normalizeAccount(raw){
  const presetImport={sources:{}};
  function nativeDecks(key,path,area=null){
   const value=raw[key],detail={present:Object.hasOwn(raw,key),hasData:!!value&&typeof value==='object'&&Object.keys(value).length>0,imported:0,unrecognized:0};
-  const decks=extractAccountPresets({[path]:value},units,area,detail);detail.imported=decks.length;
+  const decks=extractAccountPresets({[path]:{sourceKey:key,entries:value}},units,area,detail);detail.imported=decks.length;
   if(detail.hasData&&!decks.length)detail.unrecognized=Math.max(1,detail.unrecognized);
   presetImport.sources[key]=detail;return decks;
  }
  const presets=nativeDecks('deck_list','pve','pve-default');
- const typed=[...extractAccountPresets({r5:{raid:raw.raid_deck,party:raw.party_deck,raid_list:raw.raid_deck_list}},units,'pve'),...extractAccountPresets({siege:raw.siege_deck},units,'siege'),...extractAccountPresets({arena:raw.arena_deck},units,'arena'),...extractAccountPresets({dungeon:raw.dungeon_deck},units,'pve'),...extractAccountPresets({rta:raw.world_arena_deck},units,'rta'),...nativeDecks('world_arena_deck_list','rta_list','rta')];
- const supplemental=[...typed,...nativeDecks('defense_deck_list','native_defense'),...extractAccountPresets({siege_defense:raw.guildsiege_defense_deck_unit_list},units)];
+ const typed=[...nativeDecks('raid_deck','r5/raid','pve'),...nativeDecks('party_deck','r5/party','pve'),...nativeDecks('raid_deck_list','r5/raid_list','pve'),...extractAccountPresets({siege:raw.siege_deck},units,'siege'),...extractAccountPresets({arena:raw.arena_deck},units,'arena'),...nativeDecks('dungeon_deck','dungeon','pve'),...extractAccountPresets({rta:raw.world_arena_deck},units,'rta'),...nativeDecks('world_arena_deck_list','rta_list','rta')];
+ const supplemental=[...typed,...nativeDecks('deck_recent_list','recent'),...nativeDecks('defense_deck_info','arena_defense_info','arena'),...nativeDecks('server_arena_defense_deck_info','arena_server_defense','arena'),...nativeDecks('defense_deck_list','native_defense'),...extractAccountPresets({siege_defense:raw.guildsiege_defense_deck_unit_list},units)];
  if(Array.isArray(raw.defense_unit_list)&&raw.defense_unit_list.length===4&&raw.defense_unit_list.every(u=>Number.isSafeInteger(Number(u.unit_id)))){
   const ordered=raw.defense_unit_list.slice().sort((a,b)=>Number(a.pos_id??0)-Number(b.pos_id??0));
   supplemental.push(...extractAccountPresets({arena_defense:{deck_name:'Defesa Arena',unit_id_list:ordered.map(u=>Number(u.unit_id))}},units));

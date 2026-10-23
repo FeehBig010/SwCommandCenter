@@ -1,6 +1,9 @@
 // SWEX deck layouts vary by exporter/game version. Unrecognized numeric types stay unclassified.
+export const DECK_SOURCE_KEYS=['deck_list','deck_recent_list','defense_deck_list','world_arena_deck_list','party_deck','raid_deck','raid_deck_list','dungeon_deck','defense_deck_info','server_arena_defense_deck_info'];
 const fold=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 export function classifyDeck(node={},path='',slots=0){
+ // Confirmed against the real SWEX export: saved Abyss Dragon and recent battle.
+ if(Number(node.deck_type)===24&&Number(node.deck_seq)===202||node.sourceKey==='deck_recent_list'&&Number(node.type)===3&&Number(node.sub_type)===2002)return {gameMode:'cairos',dungeon:'dbah'};
  const context=fold([path,node.area,node.mode,node.game_mode,node.content_name,node.deck_type].join(' '));
  if(/(?:^|[^a-z])rta(?:$|[^a-z])|world.?arena|arena.?world/.test(context))return {gameMode:'rta',dungeon:null};
  if(/arena/.test(context))return {gameMode:'arena',dungeon:null};
@@ -8,7 +11,7 @@ export function classifyDeck(node={},path='',slots=0){
  const pve=fold([context,node.dungeon_name,node.name,node.deck_name].join(' '));
  if(pve.includes('pve-other'))return {gameMode:'cairos',dungeon:'pve-other'};
  const dimension=['karzhan','ellunia','lumel','khalderun'].find(v=>pve.includes(v));if(dimension)return {gameMode:'dimensional',dungeon:dimension};
- const rift=['ice-beast','fire-beast','wind-beast','light-beast','dark-beast','r5'].find(v=>pve.includes(v));if(rift)return {gameMode:'rift',dungeon:rift};
+ const rift=['ice-beast','fire-beast','wind-beast','light-beast','dark-beast'].find(v=>pve.includes(v));if(rift)return {gameMode:'rift',dungeon:rift};
  // These IDs overlap with elemental Halls. Require a Rift namespace as well.
  if(/elemental.?rift|rift.?dungeon|(?:^|[^a-z])rift(?:$|[^a-z])/.test(pve)&&!/raid/.test(pve)){
   const beasts={1001:'ice-beast',2001:'fire-beast',3001:'wind-beast',4001:'light-beast',5001:'dark-beast'};
@@ -24,6 +27,8 @@ export function classifyDeck(node={},path='',slots=0){
  if(dungeon)return {gameMode:'cairos',dungeon};
  if(/arena/.test(label))return {gameMode:'arena',dungeon:null};
  if(/siege|gvg|guild|cerco/.test(label))return {gameMode:'siege',dungeon:null};
+ // Explicit dungeon metadata above takes priority over the legacy R5 source wrapper.
+ if(/(?:^|[^a-z0-9])r5(?:$|[^a-z0-9])/.test(pve))return {gameMode:'rift',dungeon:'r5'};
  // Unknown metadata must not make a four-unit RTA deck appear as Arena.
  if(/dungeon|cairos/.test(context))return {gameMode:'cairos',dungeon:null};
  return {gameMode:null,dungeon:null};
@@ -80,7 +85,7 @@ export function extractAccountPresets(deckList,units,forcedArea=null,diagnostics
  while(pending.length){
   const {node,path,inherited}=pending.pop();
   if(!node||typeof node!=='object'||seen.has(node))continue;seen.add(node);
-  const context={...inherited,...Object.fromEntries(['dungeon_id','content_id','dungeon_name','content_name','difficulty','area','mode','game_mode','deck_type','raid_party_id','raid_team_index','party_id','name','deck_name','leader_unit_id','leader_index'].filter(key=>Object.hasOwn(node,key)).map(key=>[key,node[key]]))};
+  const context={...inherited,...Object.fromEntries(['dungeon_id','content_id','dungeon_name','content_name','difficulty','area','mode','game_mode','deck_type','deck_seq','type','sub_type','sourceKey','raid_party_id','raid_team_index','party_id','name','deck_name','leader_unit_id','leader_index'].filter(key=>Object.hasOwn(node,key)).map(key=>[key,node[key]]))};
   const isRaid=/r5|raid|party/.test(path)||classifyDeck({...context,...node},path).dungeon==='r5';
   const grouped=groupedDeckRows(node);
   if(grouped){for(let i=grouped.length-1;i>=0;i--)pending.push({node:grouped[i],path:`${path}/group/${i}`,inherited:context});continue;}
@@ -106,7 +111,8 @@ export function extractAccountPresets(deckList,units,forcedArea=null,diagnostics
    const base=`deck-${String(node.deck_id??node.id??path)}-${path.replace(/\/\d+(?=\/|$)/g,'')}`,occurrence=idsSeen.get(base)||0;idsSeen.set(base,occurrence+1);
    const leaderId=Number(node.leader_unit_id??context.leader_unit_id??0),leaderIndex=leaderId>0?Math.max(0,ids.indexOf(leaderId)):Math.max(0,Math.min(Math.max(0,ids.length-1),Math.floor(Number(node.leader_index??context.leader_index)||0)));
    const unitIds=ids.map(id=>Number.isSafeInteger(id)&&id>0?known.get(id)??null:null),slots=({siege:3,arena:4,cairos:5,dimensional:4,rift:6,toa:5,rta:4})[area.gameMode]||unitIds.length;while(unitIds.length<slots)unitIds.push(null);
-   out.push({mode:node.mode==='attack'?'attack':/defen|defesa/.test(fold([path,node.mode,node.name,node.deck_name].join(' ')))?'defense':'attack',leaderIndex,id:`${base}-${occurrence}`,name:String(node.name??node.deck_name??context.name??context.deck_name??`Deck ${out.length+1}`),...area,...(area.gameMode==='rift'&&area.dungeon==='r5'?{raidPartyId:String(context.raid_party_id??context.party_id??`party-${Math.floor(raidCount/3)}`),raidTeamIndex:Number(context.raid_team_index??raidCount%3)}:{}),unitIds,missingIds:ids.filter(id=>Number.isSafeInteger(id)&&id>0&&!known.has(id))});if(area.dungeon==='r5')raidCount++;continue;
+   const equipment=Array.isArray(node.equip)?node.equip.filter(e=>e&&known.has(Number(e.unit_id))).map(e=>({unitId:Number(e.unit_id),runeIds:(Array.isArray(e.rune_id_list)?e.rune_id_list:[]).map(Number).filter(id=>Number.isSafeInteger(id)&&id>0),artifactIds:(Array.isArray(e.artifact_id_list)?e.artifact_id_list:[]).map(Number).filter(id=>Number.isSafeInteger(id)&&id>0)})):[];
+   out.push({...(equipment.length?{equipment}:{}),...(DECK_SOURCE_KEYS.includes(context.sourceKey)?{sourceKey:context.sourceKey}:{}),mode:node.mode==='attack'?'attack':/defen|defesa/.test(fold([path,node.mode,node.name,node.deck_name].join(' ')))?'defense':'attack',leaderIndex,id:`${base}-${occurrence}`,name:String(node.name??node.deck_name??context.name??context.deck_name??`Deck ${out.length+1}`),...area,...(area.gameMode==='rift'&&area.dungeon==='r5'?{raidPartyId:String(context.raid_party_id??context.party_id??`party-${Math.floor(raidCount/3)}`),raidTeamIndex:Number(context.raid_team_index??raidCount%3)}:{}),unitIds,missingIds:ids.filter(id=>Number.isSafeInteger(id)&&id>0&&!known.has(id))});if(area.dungeon==='r5')raidCount++;continue;
   }
   if(fields.length&&diagnostics)diagnostics.unrecognized=(diagnostics.unrecognized||0)+1;
   const entries=Object.entries(node);for(let i=entries.length-1;i>=0;i--){const [key,value]=entries[i];if(value&&typeof value==='object')pending.push({node:value,path:`${path}/${key}`,inherited:context});}
