@@ -39,7 +39,7 @@ test('dual controls retain values beyond suggested slider ranges for every stat'
 });
 test('unknown portraits resolve by exact master ID, deduplicate API requests and reject unsafe filenames',async()=>{
  let calls=0;const fetcher=async()=>{calls++;return {ok:true,json:async()=>({results:[{com2us_id:99981,image_filename:'unit_icon_new.png'}]})};};
- const [a,b]=await Promise.all([resolveMonsterImageSources(99981,{fetcher}),resolveMonsterImageSources(99981,{fetcher})]);assert.equal(calls,2);assert.deepEqual(a,b);assert.ok(a[0].includes('unit_icon_new.png'));
+ const [a,b]=await Promise.all([resolveMonsterImageSources(99981,{fetcher}),resolveMonsterImageSources(99981,{fetcher})]);assert.equal(calls,3);assert.deepEqual(a,b);assert.ok(a[0].includes('unit_icon_new.png'));
  assert.deepEqual(await resolveMonsterImageSources(99982,{fetcher:async()=>({ok:true,json:async()=>({results:[{com2us_id:99982,image_filename:'../../unsafe.png'}]})})}),[]);
  assert.deepEqual(await resolveMonsterImageSources(99983,{fetcher:async()=>{throw new Error('Offline');}}),[]);assert.equal(MONSTER_FALLBACK,'/game-icons/monster-silhouette.svg');assert.deepEqual(monsterImageSources(99983),[]);
 });

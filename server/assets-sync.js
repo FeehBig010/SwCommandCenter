@@ -1,3 +1,4 @@
+import {portraitNameKeys} from '../src/core/monster-assets.js';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {access,mkdir,readdir,readFile,rename,writeFile,realpath} from 'node:fs/promises';
@@ -14,14 +15,15 @@ const exists=async target=>{try{await access(target);return true;}catch(error){i
 // Keep Git metadata local. Only the artwork tree and generated ID manifest are public.
 export async function writeImageManifest(root=PROJECT_ROOT,git=runGit){
  const paths=assetPaths(root),records=JSON.parse(await readFile(paths.fixture,'utf8'));
- const filenames=new Set(await readdir(path.join(paths.imageRoot,'monsters'))),monsters={};
+ const filenames=new Set(await readdir(path.join(paths.imageRoot,'monsters'))),monsters={},nameCandidates=new Map();
  for(const row of records){
   const unit=row.model==='bestiary.monster'&&row.fields,id=Number(unit?.com2us_id),filename=unit?.image_filename;
-  if(Number.isSafeInteger(id)&&id>=10000&&safeImageFilename(filename)&&filenames.has(filename))monsters[id]=filename;
+  if(Number.isSafeInteger(id)&&id>=10000&&safeImageFilename(filename)&&filenames.has(filename)){monsters[id]=filename;for(const key of portraitNameKeys(unit.name,id%10)){const values=nameCandidates.get(key)||new Set();values.add(filename);nameCandidates.set(key,values);}}
  }
  if(!Object.keys(monsters).length)throw new Error('O bestiário não contém retratos locais válidos; o manifesto anterior foi preservado.');
  const {stdout:revision}=await git(['rev-parse','HEAD'],paths.checkout);
- const manifest={version:1,source:ASSET_REPOSITORY,revision,updatedAt:new Date().toISOString(),monsters};
+ const names=Object.fromEntries([...nameCandidates].filter(([,values])=>values.size===1).map(([key,values])=>[key,[...values][0]]));
+ const manifest={version:1,names,source:ASSET_REPOSITORY,revision,updatedAt:new Date().toISOString(),monsters};
  const temp=`${paths.manifest}.${process.pid}.tmp`;
  await writeFile(temp,`${JSON.stringify(manifest)}\n`);await rename(temp,paths.manifest);
  return manifest;

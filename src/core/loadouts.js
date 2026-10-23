@@ -9,7 +9,7 @@ export function plannedReservations(teams,account,exceptId){
 export function applyDiagnosticPlan(account,team,report,options,reservedIds=[]){
  if(report?.signature!==diagnosticSignature(account,team,options,reservedIds)||!report.improvement?.builds?.length)throw new Error('Diagnóstico desatualizado. Aguarde uma nova análise.');
  const locks=lockContext(account,options);
- const own=new Set(team.configs.map(c=>c.unitId)),used=new Set(),blocked=new Set(reservedIds),byConfig={};
+ const own=new Set(team.configs.map(c=>c.unitId)),used=new Set(),blocked=new Set([...reservedIds,...(options.blockedRuneIds||[])]),byConfig={};
  for(const build of report.improvement.builds){
   if(locks.units.has(build.unitId)&&JSON.stringify(build.runeIds.slice().sort((a,b)=>a-b))!==JSON.stringify(account.units.find(u=>u.id===build.unitId)?.runeIds.slice().sort((a,b)=>a-b)))throw new Error('Monstro travado.');
   if(!team.configs.some(c=>c.key===build.key&&c.unitId===build.unitId)||build.runeIds.length!==6)throw new Error('Build incompatível.');

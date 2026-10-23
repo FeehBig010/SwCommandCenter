@@ -1,3 +1,4 @@
+import {orderRuneSets} from './rune-sets.js';
 import {SETS,FOUR} from './data.js';
 import {quickPreview,quickOrderLocked} from './quick-calculator.js';
 import {firstRotationSafe,combatAttributes,scenarioForTeam,simulateCombat} from './speedTuner.js';
@@ -45,7 +46,7 @@ export function createInfographic(team,account=null,{builds=null,options={}}={})
   const abilities=(skillCatalog.monsters[c.masterId]||[]).map(id=>skillCatalog.skills[id]).filter(Boolean).map(s=>({...s,level:unit?.skillLevels?.find(l=>l.slot===s.slot)?.level??c.skillLevels?.find(l=>l.slot===s.slot)?.level??null}));
   const leader=monsterLeader(c.masterId),activeLeader=!!team.leader&&(team.leaderKey?team.leaderKey===c.key:team.configs.indexOf(c)===(team.leaderIndex||0));
   const setPieces=(gear.length?gear.map(r=>r.set):(c.sets||[]).filter(Boolean)).reduce((out,id)=>({...out,[id]:(out[id]||0)+1}),{});
-  const sets=Object.entries(setPieces).filter(([id])=>SETS[id]).map(([id,pieces])=>({name:SETS[id],count:gear.length?Math.floor(pieces/(FOUR.has(Number(id))?4:2)):pieces,partial:gear.length&&pieces<(FOUR.has(Number(id))?4:2)?`${pieces}/${FOUR.has(Number(id))?4:2}`:null,icon:`/game-icons/runes/${SETS[id].toLowerCase()}.png`}));
+  const sets=orderRuneSets(Object.keys(setPieces).map(Number)).map(id=>[id,setPieces[id]]).filter(([id])=>SETS[id]).map(([id,pieces])=>({name:SETS[id],count:gear.length?Math.floor(pieces/(FOUR.has(Number(id))?4:2)):pieces,partial:gear.length&&pieces<(FOUR.has(Number(id))?4:2)?`${pieces}/${FOUR.has(Number(id))?4:2}`:null,icon:`/game-icons/runes/${SETS[id].toLowerCase()}.png`}));
   return {name:c.label||unit?.name||'Monstro',master:c.masterId,position:index+1,role:manual?(index===0?'ABRIDOR':'SEQUÊNCIA'):'POSIÇÃO',elementIcon:elementNames[c.masterId%10]?`/game-icons/elements/${elementNames[c.masterId%10]}.png`:null,
    level:unit?(unit.level||null):base?40:null,stars:unit?(unit.stars||null):base?6:null,awakened:Math.floor(c.masterId/10)%10>0,planning:!unit,statsKnown:!!stats,selectedBuild:!!build,
    stats:rows,runes,artifacts,sets,desiredSets:!gear.length,skills:abilities,leader:activeLeader?team.leader:leader,activeLeader,

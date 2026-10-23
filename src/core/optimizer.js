@@ -71,6 +71,7 @@ function pickPool(pool,unit,c,depth){
  return [...chosen.values()];
 }
 export function generateCandidates(account,unit,c,options,reserved=new Set(),progress=()=>{}){
+ reserved=new Set([...reserved,...(options.blockedRuneIds||[])]);
  if(options.strictMode)c={...c,strictSets:true};
  const req=setRequirements(c);if(c.strictSets&&Object.values(req).reduce((a,b)=>a+b,0)>6)return {candidates:[],reason:'Os sets exigidos precisam de mais de seis runas.'};
  const locks=lockContext(account,options);
@@ -155,7 +156,7 @@ function orderCost(assignments,teams){
 export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[],candidateCache=null){
  assertMainPool(teams,options);
  teams=teams.filter(t=>t.active!==false);
- const started=Date.now(),reserved=new Set(reservedIds),jobs=[];const seen=new Set();
+ const started=Date.now(),reserved=new Set([...reservedIds,...(options.blockedRuneIds||[])]),jobs=[];const seen=new Set();
  for(const team of teams){
   for(const field of ['towerSpd','guildSpd','leaderSpd','enemyCombatSpd'])if(!Number.isFinite(Number(team[field]??0))||Number(team[field]??0)<0||Number(team[field]??0)>(field==='enemyCombatSpd'?1000:100))throw new Error('Bônus de SPD ou SPD inimiga inválidos.');
  }

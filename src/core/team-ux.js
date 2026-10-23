@@ -1,8 +1,9 @@
+import {orderRuneSets} from './rune-sets.js';
 import {SETS,FOUR} from './data.js';
 export function automaticTeamName(configs){return configs.filter(c=>c.enabled!==false&&c.masterId).map(c=>c.label).join(' - ')||'Novo time';}
 export function updateAutomaticName(previous,next){if(next.autoName===false)return {...next,autoName:false};const oldAuto=automaticTeamName(previous.configs);const automatic=previous.autoName!==false&&(previous.autoName===true||['Novo time','Molly · Vritra · Solveig',oldAuto].includes(previous.name));return {...next,autoName:automatic,...(automatic?{name:automaticTeamName(next.configs)}:{})};}
 export function setRuneSlot(current,index,value){
- const slots=Array.from({length:3},(_,i)=>Number(current[i])||0);slots[index]=Number(value)||0;
+ const slots=Array.from({length:3},(_,i)=>Number(orderRuneSets(current)[i])||0);slots[index]=Number(value)||0;
  if(slots[index]&&(!SETS[slots[index]]||slots[index]===25))throw new Error('Set não suportado.');
  const four=slots.findIndex(s=>FOUR.has(s));
  if(four>=0){const two=slots.filter((s,i)=>i!==four&&s&&!FOUR.has(s))[0]||0;return [slots[four],two].filter(Boolean);}

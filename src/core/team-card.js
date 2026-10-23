@@ -1,3 +1,4 @@
+import {orderRuneSets} from './rune-sets.js';
 import {skillLevels} from './skill-levels.js';
 import {equippedBuild,calculateStats,artifactBonus} from './optimizer.js';
 import {STATS,FOUR} from './data.js';
@@ -21,7 +22,7 @@ function technicalSnapshot(team,c,unit,account){
  const build=equippedBuild(account,team,c),runes=build?.runeIds.map(id=>account.runes.find(r=>r.id===id));
  if(!build||!runes)return {source:'swex',base,total:null};
  const flat=artifactBonus(account,unit),without=calculateStats(unit,runes.map(r=>({...r,subs:r.subs.map(e=>e.map((v,i)=>i===3?0:v))})),flat),total={...build.stats.total};
- return {source:team.plannedRunes?'local-plan':'swex',base,total,bonus:{...build.stats.bonus},grinds:Object.fromEntries(STATS.map(k=>[k,total[k]-without.total[k]])),sets:Object.entries(build.counts).flatMap(([id,n])=>Array(Math.floor(n/(FOUR.has(Number(id))?4:2))).fill(Number(id))),mains:Object.fromEntries(runes.filter(r=>[2,4,6].includes(r.slot)).map(r=>[r.slot,r.main[0]]))};
+ return {source:team.plannedRunes?'local-plan':'swex',base,total,bonus:{...build.stats.bonus},grinds:Object.fromEntries(STATS.map(k=>[k,total[k]-without.total[k]])),sets:orderRuneSets(Object.entries(build.counts).flatMap(([id,n])=>Array(Math.floor(n/(FOUR.has(Number(id))?4:2))).fill(Number(id)))),mains:Object.fromEntries(runes.filter(r=>[2,4,6].includes(r.slot)).map(r=>[r.slot,r.main[0]]))};
 }
 
 // Snapshot only the visible, included composition. No inventory or account identifiers.
@@ -37,7 +38,7 @@ export function createTeamCard(team,account){
   if(!master)return null;
   const technical=technicalSnapshot(team,c,unit,account),skills=unit?.skillLevels||skillLevels(c.skillLevels);
   const leaderActive=!!team.leader&&(team.leaderKey?team.leaderKey===c.key:(team.configs||[]).indexOf(c)===(team.leaderIndex||0));
-  return {isLeader:leaderActive,technical,skillLevels:skills.map(s=>({...s})),...(Number(c.combatSpd)>0?{combatSpd:Number(c.combatSpd)}:{}),master,name:unit?.name||c.label,sets:[...(c.sets||[])],strictSets:c.strictSets!==false,
+  return {isLeader:leaderActive,technical,skillLevels:skills.map(s=>({...s})),...(Number(c.combatSpd)>0?{combatSpd:Number(c.combatSpd)}:{}),master,name:unit?.name||c.label,sets:orderRuneSets(c.sets||[]),strictSets:c.strictSets!==false,
    mains:{...c.mains},goals:{...c.goals},basis:c.basis,lockSpeedSync:c.lockSpeedSync===true};
  });
  if(monsters.some(m=>!m))return null;
@@ -56,7 +57,7 @@ function asDataUrl(blob){
 // Inline only CORS-readable images. A failed host never taints the export canvas.
 export async function loadCardPortraits(monsters,signal){
  const entries=await Promise.all([...new Set(monsters.map(m=>m.master))].map(async master=>{
-  const sources=await resolveMonsterImageSources(master);
+  const member=monsters.find(m=>m.master===master),sources=await resolveMonsterImageSources(master,{name:member?.name,element:Number(master)%10});
   for(const url of [...sources,MONSTER_FALLBACK]){
    if(signal.aborted)return [master,null];
    try{

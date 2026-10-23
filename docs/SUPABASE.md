@@ -1,6 +1,6 @@
 # Ativar a nuvem
 
-O repositório funciona sem Supabase. **Não há projeto configurado ou banco remoto criado nesta entrega**: o proprietário informou que ainda não tem projeto. A migration, cliente, autenticação e sincronização estão prontos para conectar. Testes locais de PostgreSQL/RLS e testes de contrato do SDK não substituem validação no seu projeto.
+O repositório funciona também sem Supabase. As seções históricas abaixo descrevem etapas anteriores; a configuração e o resultado do job `migrate-supabase` no GitHub Actions são a referência para o deploy atual. Testes locais PostgreSQL/RLS e contratos do SDK não comprovam aplicação das migrations no projeto remoto.
 
 ## 1. Projeto e configuração pública
 
@@ -44,11 +44,11 @@ O workflow `.github/workflows/verify.yml` executa `npm ci`, `npm test` e `npm ru
 
 Depois de criar/configurar o projeto, no GitHub:
 
-- Variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (somente chave pública), `SUPABASE_PROJECT_REF` e `ENABLE_SUPABASE_DEPLOY=true`.
+- Variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (somente chave pública) e `SUPABASE_PROJECT_REF`. O job pode derivar a referência de uma URL pública padrão `https://PROJECT_REF.supabase.co`.
 - Secrets no ambiente `supabase-production`: `SUPABASE_ACCESS_TOKEN` e `SUPABASE_DB_PASSWORD`.
 - Configure as proteções desse ambiente de acordo com seu processo.
 
-Somente com a flag habilitada e o projeto definido, após os testes passarem, o job `migrate-supabase` executa `supabase db push`. Enquanto não houver projeto, o job de banco fica desativado. Não existe deploy remoto verificado nesta entrega.
+Após os testes e o build passarem em um push da `main`, o job `migrate-supabase` verifica as credenciais e executa `supabase link` e `supabase db push`. A antiga flag `ENABLE_SUPABASE_DEPLOY` deixou de ser necessária. Também é possível executar o workflow manualmente em Actions → Verify and prepare deployment → Run workflow. Falta de configuração produz erro com os nomes das variáveis/secrets ausentes, sem revelar seus valores. O ambiente `supabase-production` mantém suas proteções; deploys são serializados para evitar migrations concorrentes. Se forem exigidas aprovações no ambiente, o proprietário precisa liberá-las no GitHub. Credenciais administrativas nunca são colocadas no código nem em variáveis públicas do frontend.
 
 
 ## 6. Banco de Counters de Siege
@@ -179,3 +179,11 @@ QA: 207 testes; testes PostgreSQL da migration 008 e RLS; Playwright com Auth/RE
 simulados validou 50 times PvE e 35 Siege, edição preservada ao alternar presets,
 um único painel montado, rolagem mobile de 390 px sem overflow, formato exato do
 upsert, bloqueio direto/Sidebar e Calculadora Livre pública. Browser plugin indisponível.
+
+## Ataques compartilhados: votos e Defesa Alvo
+
+A migration `202610230001_guild_attack_votes.sql` acrescenta `votes` e `target_defense` a `guild_teams` e cria `guild_team_votes`. Aplique depois de todo o histórico anterior com `supabase db push`. Se migrations antigas já foram executadas manualmente, concilie o histórico com o CLI antes de fazer push; não reaplique SQL inicial nem marque migrations não executadas como aplicadas.
+
+Cada membro da guilda pode manter um voto +1 ou −1 por ataque, trocar ou remover seu voto pelo RPC `set_guild_team_vote`. O banco atualiza as contagens atomicamente, inclusive ao excluir uma conta, e recusa escrita direta nos totais. A leitura depende da guilda e da moderação existente. `Defesa Alvo` aceita até 1000 caracteres e sua edição usa ownership RLS e controle de concorrência por `updated_at`; somente o autor edita pela interface.
+
+Sem essa migration, a biblioteca existente continua acessível e o frontend desabilita os novos controles, informando que aguardam atualização do serviço. Compartilhar publica somente o template portável, sem inventário, runas privadas ou IDs de instância. Os testes de PostgreSQL verificam integração com as migrations de guildas, counters e administração.
