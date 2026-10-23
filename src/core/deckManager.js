@@ -1,4 +1,4 @@
-export const AREA_SLOTS={siege:3,arena:4,cairos:5,dimensional:4,rift:6,toa:5};
+export const AREA_SLOTS={siege:3,arena:4,rta:4,cairos:5,dimensional:4,rift:6,toa:5};
 export function presetsForArea(presets,area,dungeon){
  if(!AREA_SLOTS[area]||['cairos','dimensional','rift','toa'].includes(area)&&!dungeon)return [];
  return (presets||[]).filter(p=>p.gameMode===area&&Array.isArray(p.unitIds)&&(!['cairos','dimensional','rift','toa'].includes(area)||p.dungeon===dungeon));

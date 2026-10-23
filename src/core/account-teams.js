@@ -32,10 +32,11 @@ export function teamFromGameDeck(preset,account,previous){
  return {...next,autoName:previous?.autoName!==false,name:previous?.autoName===false?previous.name:automaticTeamName(configs)};
 }
 function refreshManualTeam(account,team){return {...team,plannedRunes:null,configs:team.configs.map(c=>{const unit=account.units.find(u=>u.id===c.unitId);return unit?{...c,masterId:unit.master,label:unit.name}:{...c,unitId:null};})};}
-export function syncAccountTeams(account,previous=[],sameAccount=false){
- const decks=(account.accountPresets||[]).filter(p=>['siege','arena'].includes(p.gameMode));
+export function syncAccountTeams(account,previous=[],sameAccount=false){return collectSteps(syncAccountTeamsSteps(account,previous,sameAccount));}
+function* syncAccountTeamsSteps(account,previous=[],sameAccount=false){
+ const decks=(account.accountPresets||[]).filter(p=>['siege','arena','rta'].includes(p.gameMode));
  const kept=sameAccount?previous.filter(t=>!t.sourceDeckId).map(t=>refreshManualTeam(account,t)):[];
- const imported=decks.map(p=>teamFromGameDeck(p,account,sameAccount?previous.find(t=>t.sourceDeckId===p.id):null));
+ const imported=[];for(let i=0;i<decks.length;i++){const p=decks[i];imported.push(teamFromGameDeck(p,account,sameAccount?previous.find(t=>t.sourceDeckId===p.id):null));if(i%8===0)yield {completed:i+1,total:decks.length};}
  return [...kept,...imported];
 }
 export const pvePlanKey=(stage,id)=>`${stage}::${id}`;
@@ -46,16 +47,19 @@ export function selectPvePreset(all,stage,preset,account,current){
  next[stage]=saved||teamFromGameDeck(preset,account);
  delete next[key];return next;
 }
-export function syncCairosPlans(account,previous={},sameAccount=false){
+export function syncCairosPlans(account,previous={},sameAccount=false){return collectSteps(syncCairosPlansSteps(account,previous,sameAccount));}
+function* syncCairosPlansSteps(account,previous={},sameAccount=false){
  const oldByDeck=new Map(Object.values(previous).filter(t=>t.sourceDeckId).map(t=>[t.sourceDeckId,t]));
  const presetById=new Map((account.accountPresets||[]).map(p=>[p.id,p]));
  const next=sameAccount?Object.fromEntries(Object.entries(previous).map(([key,t])=>[key,{...refreshManualTeam(account,t),sourceDeckId:null,sourceDeckName:null}])):{},selected=new Set();
+ let completed=0;const total=(account.accountPresets||[]).length;
  for(const p of account.accountPresets||[])if(['cairos','dimensional','rift','toa'].includes(p.gameMode)&&p.dungeon){
   const stage=p.dungeon,first=!selected.has(stage);selected.add(stage);
   const old= sameAccount?oldByDeck.get(p.id):null;
   const team=teamFromGameDeck(p,account,old);
   if(first){const chosen=sameAccount?previous[stage]?.sourceDeckId:null;const candidate=presetById.get(chosen),preset=candidate?.dungeon===stage&&candidate?.gameMode===p.gameMode?candidate:null;next[stage]=preset?teamFromGameDeck(preset,account,previous[stage]):team;}
   if(next[stage].sourceDeckId!==p.id)next[pvePlanKey(stage,p.id)]=team;
+  if(++completed%8===0)yield {completed,total};
  }
  return next;
 }
@@ -82,7 +86,7 @@ export function hydrateAccountPresets(account){
  return (account.accountPresets||[]).map(p=>{
   const leaderUnit=units.get(Number(p.unitIds[p.leaderIndex||0])),team={gameMode:p.gameMode,leader:catalogLeader(leaderUnit?.master),towerSpd:account.towers?.glorySpd||0,guildSpd:account.towers?.guildSpd||0};
   const members=p.unitIds.map(id=>{if(!id)return null;const original=units.get(Number(id));if(!original)return null;
-   const equipment=p.equipment?.find(e=>e.unitId===original.id),unit=equipment?{...original,runeIds:equipment.runeIds,artifactIds:equipment.artifactIds}:original,cacheKey=JSON.stringify([unit.id,unit.runeIds,unit.artifactIds]);
+   const equipment=p.equipment?.find(e=>e.unitId===original.id),unit=equipment?{...original,runeIds:equipment.runeIds,artifactIds:equipment.artifactIds}:p.gameMode==='rta'?{...original,runeIds:account.equipmentPools?.rta?.assignments?.[original.id]||[]}:original,cacheKey=JSON.stringify([unit.id,unit.runeIds,unit.artifactIds]);
    let sheet=sheets.get(cacheKey);if(!sheet){const equipped=(unit.runeIds||[]).map(id=>runes.get(Number(id))).filter(Boolean);sheet={stats:calculateStats(unit,equipped,artifactBonus(account,unit)),counts:setCounts(equipped),runes:equipped};sheets.set(cacheKey,sheet);}
    const combat=combatAttributes(unit,sheet.stats,sheet.counts,team,{},artifactEffects(account,unit));
    return {...unit,imageUrl:monsterImageSources(unit.master)[0]||null,runes:sheet.runes,sheetStats:sheet.stats.total,combat_spd:combat.spd,equipmentComplete:sheet.runes.length===6};
@@ -95,4 +99,12 @@ export function reconcileStoredPresets(account,stored=[],pve={}){
  const imported=syncAccountTeams(account),seen=new Set(stored.map(t=>t.sourceDeckId).filter(Boolean));
  const kept=imported.length?stored.filter(t=>t.sourceDeckId||t.configs.some(c=>c.masterId||c.unitId)):stored;
  return {teams:[...kept,...imported.filter(t=>!seen.has(t.sourceDeckId))],pve:{...syncCairosPlans(account),...pve}};
+}
+
+function collectSteps(iterator){let step=iterator.next();while(!step.done)step=iterator.next();return step.value;}
+async function collectStepsAsync(iterator,onProgress){let step=iterator.next();while(!step.done){onProgress(step.value);await new Promise(resolve=>setTimeout(resolve,0));step=iterator.next();}return step.value;}
+export async function prepareImportedTeams(account,previous=[],pve={},sameAccount=false,onProgress=()=>{}){
+ const teams=await collectStepsAsync(syncAccountTeamsSteps(account,previous,sameAccount),({completed,total})=>onProgress(94+Math.floor(completed/Math.max(1,total)*2)));
+ const plans=await collectStepsAsync(syncCairosPlansSteps(account,pve,sameAccount),({completed,total})=>onProgress(96+Math.floor(completed/Math.max(1,total)*2)));
+ return {teams,plans};
 }
