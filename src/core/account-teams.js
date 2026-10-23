@@ -9,10 +9,10 @@ import {automaticTeamName} from './team-ux.js';
 // to an area that actually has imported formations, including Rift and ToA.
 export function accountPresetPage(account,current='portal'){
  const areas=new Set((account?.accountPresets||[]).map(p=>p.gameMode));
- const area=current==='optimizer'?'siege':current;
- if(areas.has(area))return current;
+ const area=['optimizer','guild'].includes(current)?'siege':current;
+ if(areas.has(area))return area==='siege'?'siege':current;
  const first=['siege','arena','cairos','dimensional','rift','toa','rta'].find(a=>areas.has(a));
- return first==='siege'?'optimizer':first||'optimizer';
+ return first||'siege';
 }
 export function teamFromGameDeck(preset,account,previous){
  const mode=preset.gameMode||previous?.gameMode||'siege';assertPresetArea(preset,mode,preset.dungeon);if(previous&&(previous.gameMode||'siege')!==mode)throw new Error('Não é possível carregar um deck de outra área.');const slots=GAME_MODES[mode]?.slots||3;

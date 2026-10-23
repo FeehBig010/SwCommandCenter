@@ -5,7 +5,7 @@ export const FIXED_BRAND=Object.freeze({name:'Clã D8stino - Euro',color:'#d4af3
 export const ENGINE_DEFAULTS=Object.freeze({default_speed_tick:7,max_teams:10,maintenance_mode:false});
 export const canAdmin=profile=>!!profile?.id&&['super_admin','guild_leader'].includes(profile.role);
 export const canManageSystem=profile=>!!profile?.id&&profile.role==='super_admin';
-export function pageFromLocation({pathname='',hash=''}={}){const page=hash.replace(/^#\/?/,'').split(/[/?]/)[0];if(page)return page;return /^\/admin(?:\/|$)/.test(pathname)?'admin':'optimizer';}
+export function pageFromLocation({pathname='',hash=''}={}){const page=hash.replace(/^#\/?/,'').split(/[/?]/)[0];if(page)return page==='guild'?'siege':page;return /^\/admin(?:\/|$)/.test(pathname)?'admin':'optimizer';}
 export function normalizeEngineSettings(input){
  const tick=Number(input?.default_speed_tick),max=Number(input?.max_teams);
  if(!Number.isFinite(tick)||tick<1||tick>100||!Number.isInteger(max)||max<1||max>10||typeof input?.maintenance_mode!=='boolean')throw new Error('Configurações do motor inválidas.');

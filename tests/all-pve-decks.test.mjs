@@ -45,7 +45,7 @@ test('import diagnostics distinguish absent/empty sources and unsupported struct
 test('account destination preserves active PvE area and handles Rift/ToA-only login and continuation',()=>{
  for(const mode of ['cairos','dimensional','rift','toa','rta'])assert.equal(accountPresetPage({accountPresets:[{gameMode:mode}]}),mode);
  const a={accountPresets:[{gameMode:'siege'},{gameMode:'arena'},{gameMode:'cairos'},{gameMode:'toa'}]};
- assert.equal(accountPresetPage(a,'cairos'),'cairos');assert.equal(accountPresetPage(a,'toa'),'toa');assert.equal(accountPresetPage(a),'optimizer');assert.equal(accountPresetPage(a,'arena'),'arena');assert.equal(accountPresetPage(null),'optimizer');
+ assert.equal(accountPresetPage(a,'cairos'),'cairos');assert.equal(accountPresetPage(a,'toa'),'toa');assert.equal(accountPresetPage(a),'siege');assert.equal(accountPresetPage(a,'arena'),'arena');assert.equal(accountPresetPage(null),'siege');
 });
 test('direct numeric slot maps and malformed slot references keep the rest of each formation',()=>{
  const p=extractAccountPresets({dbah:{1:{unit_id:101},2:{unit_id:102},4:null},toah:{unit_id_list:[101,{deleted:true},102,{unit_id:[101]},null]}},[{id:101},{id:102}],'pve-default');

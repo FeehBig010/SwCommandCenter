@@ -37,7 +37,7 @@ export function cleanTemplate(input,{newId=false}={}){
    objective:['balanced','hp','spd','cr','damage'].includes(c.objective)?c.objective:'balanced'};
  });
  return {id:newId?crypto.randomUUID():text(input.id||crypto.randomUUID(),80,true),name:text(input.name,100,true),description:text(input.description||'',1000),
-  team:{...(Object.hasOwn(input.team,'leader')?{leader:normalizeLeader(input.team.leader),leaderIndex:Math.min(2,Math.max(0,Number.isInteger(input.team.leaderIndex)?input.team.leaderIndex:0))}:{}),...(input.team.combatScenario?{combatScenario:normalizeScenario(input.team.combatScenario)}:{}),...(input.team.guildSpd!==undefined?{guildSpd:metric(input.team.guildSpd,100)||0}:{}),towerSpd:metric(input.team.towerSpd,100)||0,leaderSpd:metric(input.team.leaderSpd,100)||0,enemyCombatSpd:metric(input.team.enemyCombatSpd,1000)||0,configs}};
+  team:{...(input.team.mode?{mode:input.team.mode==='attack'?'attack':'defense'}:{}),...(Object.hasOwn(input.team,'leader')?{leader:normalizeLeader(input.team.leader),leaderIndex:Math.min(2,Math.max(0,Number.isInteger(input.team.leaderIndex)?input.team.leaderIndex:0))}:{}),...(input.team.combatScenario?{combatScenario:normalizeScenario(input.team.combatScenario)}:{}),...(input.team.guildSpd!==undefined?{guildSpd:metric(input.team.guildSpd,100)||0}:{}),towerSpd:metric(input.team.towerSpd,100)||0,leaderSpd:metric(input.team.leaderSpd,100)||0,enemyCombatSpd:metric(input.team.enemyCombatSpd,1000)||0,configs}};
 }
 export function newTemplate(){
  return {id:crypto.randomUUID(),name:'Novo template Siege',description:'',team:{towerSpd:0,leaderSpd:0,enemyCombatSpd:0,configs:Array.from({length:3},()=>({...blankConfig(),masterId:null,basis:'total',strictSets:true}))}};
