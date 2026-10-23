@@ -348,3 +348,8 @@ Validation: **196/196 tests pass**, no failures/skips; clean production build. N
 - Novo payload com exatamente cinco listas SWEX; runas equipadas são armazenadas nas unidades e demais runas no inventário. Campos fora da whitelist não são enviados.
 - Aplicar migration 008 no Supabase: aceita formato compacto e legado, conserva RLS, adiciona metadados privados de identificação. O formato compacto exclui artefatos/torres/crafts/RTA assignments (continuam locais).
 - Sidebar e rotas privadas exigem login; Calculadora Livre permanece pública. 207 testes e validação Playwright com HTTP simulado; ver docs/SUPABASE.md.
+
+### Página pública Sobre / Release Notes
+- `src/pages/About.jsx`, rota `/#/about` e ícone Sobre na sidebar, sem exigência de login.
+- Cinco cards de funcionalidades e histórico de novidades; detalhes explicam escopo dos ticks/backup e Raid R5 como um time de seis monstros.
+- Tema escuro/dourado responsivo; Playwright (Browser indisponível) verificou acesso público, navegação/foco, detalhes e CTA em 1440/390/320 px sem overflow ou erros JavaScript. Build Vite limpo.

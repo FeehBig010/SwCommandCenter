@@ -385,3 +385,28 @@ main{max-width:1920px;padding:24px 24px 0}
 .preset-tabs [aria-pressed=true]{border-color:#d4af37;color:#f1d884;background:#322811}
 .pve-operation-panel,.defense-selection-ruler,.team-panel{min-width:0;max-width:100%}
 .section-toolbar>.preset-tabs{flex-basis:100%}
+
+.about-page{max-width:1120px;margin:0 auto;padding:clamp(12px,2.5vw,32px);color:#eae3c9}
+.about-hero{position:relative;padding:clamp(22px,4vw,46px);border:1px solid #8c6d31;border-radius:14px;background:radial-gradient(ellipse at top right,#1d42464d,transparent 65%),linear-gradient(145deg,#161c22f2,#0c151ef2);box-shadow:inset 0 0 0 4px #d4af3708,0 12px 36px #0004}
+.about-eyebrow{display:flex;align-items:center;gap:8px;color:#d4af37;font-size:12px;letter-spacing:.08em}
+.about-hero h1{font-size:clamp(27px,4vw,44px);margin:18px 0;color:#ead38e;line-height:1.2}
+.about-hero p{max-width:760px;line-height:1.8;color:#c9c7b9;margin-bottom:24px}
+.about-page section>h2{margin:32px 0 18px;color:#d4af37;font-size:22px}
+.about-feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.about-feature{min-width:0;padding:24px;background:linear-gradient(135deg,#1f201cdd,#121921ee);border:1px solid #8c6d316e;border-radius:12px}
+.about-feature-icon{display:inline-flex;padding:11px;color:#d4af37;background:#d4af3710;border:1px solid #8c6d3155;border-radius:10px}
+.about-feature h3,.about-release-list h3{font-size:18px;color:#e5d095;line-height:1.5;margin:16px 0 10px}
+.about-feature p,.about-release-list li{font-size:14px;line-height:1.85;color:#d2d0c2}
+.about-feature details{margin-top:18px;border-top:1px solid #8c6d313d;padding-top:14px}
+.about-feature summary{color:#c9ab59;cursor:pointer;font-size:13px}
+.about-feature details p{font-size:13px;color:#b9beb6}
+.about-section-intro{color:#b9beb6;font-size:14px}
+.about-release-list{padding:0;list-style:none;display:grid;gap:14px}
+.about-release-list>li{padding:6px 22px 18px;border-left:2px solid #8c6d31;background:#121921de;border-radius:0 10px 10px 0}
+.about-release-list ul{padding-left:20px;margin:0}
+.about-releases h2{scroll-margin-top:90px}
+.about-page a.button{display:inline-flex;align-items:center;text-decoration:none}
+.about-page :is(button,a,summary):focus-visible{outline:2px solid #00f2fe;outline-offset:4px}
+@media(max-width:650px){.about-feature-grid{grid-template-columns:1fr}.about-feature{padding:20px}.about-hero .button-group>*{width:100%;justify-content:center}.about-page{padding:10px}}
+
+.about-feature:last-child{grid-column:1/-1}
