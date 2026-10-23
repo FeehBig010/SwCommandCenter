@@ -28,6 +28,10 @@ Após o setup e cada atualização, o serviço lê o bestiário do clone e gera 
 
 O mapa embarcado, o cache local anterior, os hosts públicos do SWARFARM e a silhueta padrão continuam como alternativas. Nenhum erro de imagem deixa o ícone quebrado no layout. Uma página já aberta consulta o novo índice ao ser recarregada.
 
+`src/core/collab-mapping.js` define `collabMapping`: overrides por nome ou ID são aplicados antes do cache, manifesto e API, para exibir o equivalente original do Summoners War. Os pares conhecidos preservam o elemento (por exemplo Pure Vanilla de Água → Adriana, e de Fogo → Lucia); há também o override explícito Magic Order Swordsinger (Água) → Mage (Água). Apenas a identidade do retrato muda, sem alterar os IDs do inventário, atributos ou habilidades. Para novas exceções, acrescente o nome/ID e o nome/ID de destino nesse dicionário.
+
+Antes do slugify, os sufixos Água/Fogo/Vento/Luz/Escuridão/Trevas entre parênteses viram water/fire/wind/light/dark. Espaços e pontuação são normalizados para sublinhados: `Hellhound (Água)` gera `hellhound_water.png`. Quando o manifesto conhece o nome/elemento, usa o `image_filename` real da mesma unidade (normalmente `unit_icon_*.png`). Se a imagem original escolhida falhar, `MonsterPortrait.onError` exibe a silhueta cinza local, sem voltar ao retrato da colaboração.
+
 ## Serviço Node e cron
 
 ```sh

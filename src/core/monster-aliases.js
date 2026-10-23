@@ -1,8 +1,5 @@
-// Explicit exceptions; IDs resolve through the same verified filename database.
-// Name-only families use a canonical API lookup instead of inventing unit_icon IDs.
+// Legacy spellings; numeric aliases still pass through collab portrait mapping.
 export const monsterAliases={
- chun_li_agua:24411,chun_li_water:24411,chunli_agua:24411,
- chun_li_fogo:24412,chun_li_vento:24413,chun_li_luz:24414,chun_li_trevas:24415,
- magic_order_swordsinger_agua:{searchName:'Magic Order Swordsinger',element:1},
- magic_order_swordsinger_water:{searchName:'Magic Order Swordsinger',element:1}
+ chun_li_water:24411,chunli_water:24411,
+ chun_li_fire:24412,chun_li_wind:24413,chun_li_light:24414,chun_li_dark:24415
 };
