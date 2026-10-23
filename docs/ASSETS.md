@@ -18,15 +18,21 @@ O setup valida diretório, origin e branch antes de qualquer pull. Não usa rese
 
 ## Retratos e mapeamento dinâmico
 
-As telas usam `src/core/monsters.js` / `MonsterPortrait.jsx`; as exportações compartilham o mesmo resolver. Ícones de habilidades da ficha e do infográfico também priorizam a pasta local de skills. A primeira opção de cada retrato é:
+As telas usam `src/core/monsters.js` / `MonsterPortrait.jsx`; as exportações compartilham o mesmo resolver. Ícones de habilidades da ficha e do infográfico também priorizam a pasta local de skills. Retratos disponíveis no clone local podem usar:
 
 ```text
 /assets/imagens_sw/herders/static/herders/images/monsters/<image_filename>
 ```
 
-Após o setup e cada atualização, o serviço lê o bestiário do clone e gera atomicamente `public/assets/sw-monster-images.json`, com `com2us_id → image_filename`, revisão e data. Só entram nomes de arquivo seguros que existam na pasta local. O frontend consulta esse manifesto uma vez por carregamento da página, incluindo para IDs recentes ou nomes de arquivo alterados. Ele não precisa de um novo bundle para usar o índice atualizado no servidor Node.
+Após o setup e cada atualização, o serviço lê o bestiário do clone e gera atomicamente `public/assets/sw-monster-images.json`, com `com2us_id → image_filename`, revisão e data. Só entram nomes de arquivo seguros que existam na pasta local. Esse clone é uma alternativa local; sua fixture pode ficar atrás do bestiário vivo.
 
-O mapa embarcado, o cache local anterior, os hosts públicos do SWARFARM e a silhueta padrão continuam como alternativas. Nenhum erro de imagem deixa o ícone quebrado no layout. Uma página já aberta consulta o novo índice ao ser recarregada.
+O resolver consulta em paralelo o manifesto local e um índice comunitário de imagens SWARFARM, compartilhando as duas requisições entre todos os cards. O índice remoto tem prioridade sobre mapas locais antigos, inclusive para monstros clássicos. Os resultados são revalidados após 15 minutos em novas resoluções; falhas temporárias podem ser tentadas novamente depois de dez segundos. Um ID não presente nos índices é consultado na API SWARFARM por `com2us_id` exato. Somente nomes de arquivo seguros são aceitos. Não se calcula `unit_icon_*` por aritmética nem se substitui um ID desconhecido por outra família.
+
+Fonte dinâmica: [índice comunitário SWARFARM](https://cdn.jsdelivr.net/gh/Millet0217/summonerswar-tool@main/work/icon_map.json), mantido em [Millet0217/summonerswar-tool](https://github.com/Millet0217/summonerswar-tool). Retratos desse índice usam o CDN jsDelivr `.../icons/<image_filename>`; há alternativas SWARFARM e locais. Arquivos novos encontrados somente pela API usam diretamente `https://swarfarm.com/static/herders/images/monsters/<image_filename>`. A disponibilidade e a atualização dos serviços externos continuam necessárias para lançamentos posteriores ao snapshot; o código não assume que uma fixture Git contém todos os arquivos.
+
+O snapshot embarcado foi atualizado de 2.295 para 3.070 IDs a partir do índice público, incluindo 775 IDs adicionais e três correções de nomes de arquivo. Referência da cópia pública dos dados: commit `bcc84f785d316f929f76ad31e0758191291af9dd`, publicado em 10/07/2026. Nenhum atributo, habilidade ou nome exibido foi copiado dessa fonte: a atualização contém somente `ID → arquivo de imagem`. Para atualizar o snapshot completo novamente, execute `npm run images:update`; download incompleto/falho preserva o arquivo anterior. O runtime não depende desse comando para consultar o índice dinâmico. Em ambientes Node atrás de proxy, use o suporte de proxy do runtime (Node 24: `NODE_USE_ENV_PROXY=1 npm run images:update`).
+
+O `onError` de `MonsterPortrait` permanece intacto: se a imagem escolhida falhar, exibe a silhueta cinza local. Não há ícone de imagem quebrada no layout.
 
 `src/core/collab-mapping.js` define `collabMapping`: overrides por nome ou ID são aplicados antes do cache, manifesto e API, para exibir o equivalente original do Summoners War. Os pares conhecidos preservam o elemento (por exemplo Pure Vanilla de Água → Adriana, e de Fogo → Lucia); há também o override explícito Magic Order Swordsinger (Água) → Mage (Água). Apenas a identidade do retrato muda, sem alterar os IDs do inventário, atributos ou habilidades. Para novas exceções, acrescente o nome/ID e o nome/ID de destino nesse dicionário.
 

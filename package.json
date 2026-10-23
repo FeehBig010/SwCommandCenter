@@ -11,7 +11,8 @@
     "prebuild": "node server/assets-cli.js setup",
     "start": "node server/index.js",
     "assets:setup": "node server/assets-cli.js setup",
-    "assets:update": "node server/assets-cli.js update"
+    "assets:update": "node server/assets-cli.js update",
+    "images:update": "node scripts/update-monster-images.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
