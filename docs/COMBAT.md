@@ -63,7 +63,7 @@ A identidade visual e o RBAC existentes permanecem fixos. As três migrations e 
 
 ## Calculadora reativa, Will e Amduat
 
-O Modo Livre aplica Glória SPD 15% e Guilda SPD 5% por padrão (o bônus de Guilda continua respeitando o escopo da área). AUTO SELECT preenche apenas slots vazios com uma composição de exemplo e SPD 300 no abridor; não representa equipamento existente. Alterar a ficha do abridor busca mínimos inteiros dos seguidores em AUTO para a primeira rotação. Sem inimigo, o prazo é o tick do abridor mais a posição do seguidor; com defesa, também exige agir antes dela. O cálculo mantém a ordem dos slots e testa o cenário. Editar um seguidor desativa seu AUTO; “rever ordem” indica ausência de solução nesse intervalo. Não é uma prova global para ramos condicionais/procs.
+O Modo Livre aplica Glória SPD 15% e Guilda SPD 0%. AUTO SELECT preenche apenas slots vazios com uma composição de exemplo e SPD 300 no abridor; não representa equipamento existente. A ordem padrão é travada da esquerda para a direita: slot 1 abridor, slot 2 no menor valor que sustenta a fila completa, slots seguintes com exatamente −1 SPD de combate inicial por posição. A primeira rotação precisa ocupar ticks consecutivos antes do inimigo. A seleção explícita “Avançado / Desordenado” libera os campos de SPD; mudar o abridor nesse modo preserva os valores manuais dos seguidores. Planos antigos sem `orderMode` migram para a trava, mesmo com `perfectTune:false` ou AUTO desativado. Não é uma prova global para ramos condicionais/procs.
 
 Amduat ganha 25% de ATB ao final dos turnos oponentes; Tian Lang reduz esse ganho e reage conforme as regras existentes. O ataque resolvido de Leo reduz 15% de ATB, com piso zero, mas Will protege até o início do primeiro turno do portador. O scanner insere um primeiro ataque de Leo tendo o primeiro aliado como alvo previsto. Resistência, escolha real de alvo e strip não são sorteados. Lucifer continua exigindo ganhos resolvidos de ATB, pois dano/boosts completos não foram modelados. Ragdoll/Abellio também exigem eventos de dano e críticos do ramo analisado.
 
@@ -86,13 +86,7 @@ overflow, inimigos e eventos. A simulação discreta existente continua validand
 ordem/prazos e pode exigir velocidade maior ou retornar mínimo impossível.
 O badge indica somente cumprimento do piso; não garante imunidade a cortes.
 
-A conversão para ficha subtrai os bônus de base aplicáveis de Glória/Guilda/líder
-uma vez, com arredondamento final para cima. Guilda continua restrita a Siege.
-Alterar a SPD de ficha do slot 1, por input ou range, reativa AUTO em todos os
-seguidores e recalcula seus valores em uma única atualização de estado React.
-Editar diretamente um seguidor ainda permite override até a próxima mudança
-do mestre. Todos os seguidores com boost são inicializados juntos no piso antes
-da busca por ticks, evitando interferência de valores antigos durante o arraste.
+A conversão para ficha inverte a mesma fórmula de combate, com torre/líder, buffs, passivas, artefatos e arredondamento inteiro. A ficha já contém base e runas. No modo livre, Guilda SPD é sempre zero. Alterar o slot 1, artefatos ou cenário recalcula a escada completa. A enumeração crescente do slot 2 testa apenas escadas inteiras representáveis (ficha até 1000), mantém o abridor mais rápido e valida a ordem real por ticks; cascatas também exigem barra completa dos DPS após o último puxador. Falhas preservam as fichas anteriores e limpam todas as metas/validações. O algoritmo flexível anterior permanece para planos explicitamente avançados com AUTO; o seletor da UI entra no avançado com todos os seguidores manuais.
 
 Validação: 199 testes; build Vite; Playwright (Browser plugin indisponível),
 input numérico e evento de teclado no range mestre atualizando os três pares
@@ -189,9 +183,16 @@ exemplo acima, a escada é217→216→215. Um caso Tiana400 versus inimigo399 pr
 340→339→338 para a fila completa; 339→338→337 permite corte. Se um alvo não puder
 ser representado por uma ficha inteira ou não houver fila segura, mostramos
 aviso em vez de arredondar uma escada falsa. Sliders/inputs de seguidores ficam
-bloqueados enquanto o toggle está ativo e acompanham o abridor em um estado único.
+bloqueados por padrão e acompanham o abridor em um estado único. A única saída da trava é selecionar “Avançado / Desordenado”; não há switches AUTO por monstro.
 
 Sem inimigo configurado, cascata e Perfect Tune usam um inimigo de referência com
 SPD do abridor menos1; a interface informa essa suposição. Isso não garante
 segurança contra inimigos mais rápidos, passivas, dano ou procs não modelados.
 A garantia é sempre relativa ao cenário resolvido e às regras discretas existentes.
+
+
+## Ordem travada e artefatos — validação de 2026-10-23
+
+O campo fixo “Artefatos · +SPD” fica diretamente no card. Os bônus condicionais permanecem recolhidos. O valor é aplicado uma vez no motor de ticks e descontado na conversão Runagem. Com Tiana 400 e inimigo 399, a fila Arena é 400 → 340 → 339 → 338; +20 SPD de artefato no terceiro slot reduz a exigência de runas em 20 sem alterar a meta de combate. Cairos estende a mesma regra ao quinto slot. Falta de solução produz “Ordem travada inviável”, com a explicação no tooltip, e nunca o selo de fila validada. A indicação de segurança continua relativa ao cenário informado.
+
+Regressões cobrem migração de planos antigos, tamanhos 3/4/5, mínimo do slot 2, identidade dos slots, trava contra edição de seguidores, troca explícita para avançado, artefatos sem dupla contagem, inimigo rápido, abridor incapacitado, ausência de boost e escadas não representáveis com multiplicadores/arredondamentos. Os testes anteriores de mínimos flexíveis usam explicitamente o modo avançado.

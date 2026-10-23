@@ -1,4 +1,3 @@
-import {speedLeaderBonus as quickLeaderSpeed} from './leaders.js';
 import {openerRequirements} from './opener-tune.js';
 import {goalReport} from './optimizer.js';
 import {blankConfig,makeTeam,STATS,FOUR} from './data.js';
@@ -10,8 +9,8 @@ export function quickConfig(master=null,name='Escolher monstro'){
  const base={...(monsterBase(master)||fallback)};
  return {...blankConfig(null,name),masterId:master,sets:[],basis:'total',manual:{base,sheet:{...base}}};
 }
-export function quickTeam(area='siege'){return {...makeTeam(area),towerSpd:15,guildSpd:0,sheetSpeedFormula:true,autoEnemyPassives:true,autoOpener:true,configs:Array.from({length:{siege:3,arena:4,cairos:5}[area]||3},()=>quickConfig())};}
-export function selectQuickMonster(config,option){return {...quickConfig(option?.master,option?.name),key:config.key};}
+export function quickTeam(area='siege'){return {...makeTeam(area),towerSpd:15,guildSpd:0,sheetSpeedFormula:true,autoEnemyPassives:true,autoOpener:true,orderMode:'locked',perfectTune:true,configs:Array.from({length:{siege:3,arena:4,cairos:5}[area]||3},()=>quickConfig())};}
+export function selectQuickMonster(config,option){return {...quickConfig(option?.master,option?.name),key:config.key,autoSpeed:config.autoSpeed};}
 export function quickPreview(input,{captureCheckpoints=false,actorCache=null}={}){
  const team={...input,guildSpd:0,sheetSpeedFormula:true};
  const active=team.configs.filter(c=>c.enabled!==false),actors=[];
@@ -23,16 +22,25 @@ export function quickPreview(input,{captureCheckpoints=false,actorCache=null}={}
   actors.push({key:c.key,will:(counts[15]||0)>=2,master:c.masterId,name:c.label,spd:combat.spd,rawSpd:combat.rawSpd,combat:c.combat,attributes:combat,leaderBonus:leaderImpact(unit,stats,counts,team,c.combat).bonus,goals:goalReport({...stats,combat},c),nemesisSets:Math.floor((counts[14]||0)/2)});if(actorCache)actorCache.set(c,actors.at(-1));
  }
  if(!actors.length)return {complete:false,missing:[],actors:[],turns:[],cut:null};
- const configured=scenarioForTeam(team,actors),enemy=Number(team.enemyCombatSpd)||0,foes=configured.actors.some(a=>a.enemy);const cascade=cascadingBoostPlan(team,configured.events),referenceEnemy=!foes&&!enemy&&(cascade||team.perfectTune)?Math.max(1,actors[0].spd-1):0;const scenario=simulateCombat([...configured.actors,...(!foes&&(enemy||referenceEnemy)>0?[{key:'quick-enemy',name:referenceEnemy?'Inimigo de referência':'Inimigo',spd:enemy||referenceEnemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true,captureCheckpoints});
+ const configured=scenarioForTeam(team,actors),enemy=Number(team.enemyCombatSpd)||0,foes=configured.actors.some(a=>a.enemy);const cascade=cascadingBoostPlan(team,configured.events),referenceEnemy=!foes&&!enemy&&(cascade||quickOrderLocked(team))?Math.max(1,actors[0].spd-1):0;const scenario=simulateCombat([...configured.actors,...(!foes&&(enemy||referenceEnemy)>0?[{key:'quick-enemy',name:referenceEnemy?'Inimigo de referência':'Inimigo',spd:enemy||referenceEnemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true,captureCheckpoints});
  return {complete:true,missing:[],actors,turns:scenario.firstTurns,scenario,cut:scenario.cut,referenceEnemy,source:'manual'};
 }
 export function quickLeader(master){return catalogLeader(master);}
 
+// Old plans without a mode migrate to locked order. Only an explicit advanced
+// choice may bypass it; legacy perfectTune/autoSpeed flags cannot opt out.
+export function quickOrderLocked(team){return team.orderMode!=='advanced';}
+export function autoTuneQuickTeam(input){
+ const locked=quickOrderLocked(input),team={...input,orderMode:locked?'locked':'advanced',perfectTune:locked,syncAudit:null,perfectTuneAudit:null};
+ if(team.configs.some(c=>!c.masterId))return {...team,configs:team.configs.map((c,i)=>i?{...c,syncMinimum:null,syncCombatTarget:null}:c)};
+ try{return locked?autoTunePerfect(team):autoTuneFlexibleTeam({...team,configs:team.configs.map(c=>({...c,syncCombatTarget:null,...(c.autoSpeed===false?{syncMinimum:null}:{})}))});}
+ catch(error){return {...team,perfectTuneAudit:locked?{safe:false,targets:null,reason:error.message}:null,configs:team.configs.map((c,i)=>i?{...c,syncMinimum:null,syncCombatTarget:null}:c)};}
+}
+
 // Exact integer sheet-SPD minimum within this first-rotation model. Unknown
 // procs/damage still remain conditional; this is not a win guarantee.
-export function autoTuneQuickTeam(team){
+function autoTuneFlexibleTeam(team){
  if(team.configs.some(c=>!c.masterId))return team;
- if(team.perfectTune)return autoTunePerfect(team);
  if(cascadingBoostPlan(team))return autoTuneCascade(team);
  let working={...team,syncAudit:null,towerSpd:15,guildSpd:0,configs:team.configs.map(c=>({...c,manual:{...c.manual,sheet:{...c.manual.sheet}}}))};
  // Seed all boosted followers together before testing any prefix: stale fast
@@ -55,7 +63,8 @@ export function autoTuneQuickTeam(team){
 // One atomic transition shared by the number input and range control.
 export function updateQuickSheetSpeed(team,key,value,tune=true){
  const master=team.configs[0]?.key===key;
- const next={...team,configs:team.configs.map(c=>c.key===key?{...c,autoSpeed:false,manual:{...c.manual,sheet:{...c.manual.sheet,spd:value}}}:master?{...c,autoSpeed:true}:c)};
+ if(quickOrderLocked(team)&&!master)return tune?autoTuneQuickTeam(team):team;
+ const next={...team,configs:team.configs.map(c=>c.key===key?{...c,autoSpeed:false,manual:{...c.manual,sheet:{...c.manual.sheet,spd:value}}}:master&&quickOrderLocked(team)?{...c,autoSpeed:true}:c)};
  return tune?autoTuneQuickTeam(next):next;
 }
 
@@ -76,7 +85,7 @@ export function autoTuneCascade(input){
   const seed=working;let found=false;
   for(let combatTarget=1;combatTarget<=1000;combatTarget++){
    working=seed;
-   for(let i=plan.lastIndex+1;i<keys.length;i++)if(auto[i]){const c=working.configs[i],unit={master:c.masterId,element:c.masterId%10,base:c.manual.base};const bonus=c.manual.base.spd*(15+Number(quickLeaderSpeed(unit,working)))/100;set(i,requiredSheetSpeed(combatTarget,unit,{...working,sheetSpeedFormula:true},c.combat,{}, {},{conservative:true}));}
+   for(let i=plan.lastIndex+1;i<keys.length;i++)if(auto[i]){const c=working.configs[i],unit={master:c.masterId,element:c.masterId%10,base:c.manual.base};set(i,requiredSheetSpeed(combatTarget,unit,{...working,sheetSpeedFormula:true},c.combat,{}, {},{conservative:true}));}
    if(safeThrough(keys.length-1,true)){found=true;break;}
   }
   feasible=found;
@@ -87,25 +96,34 @@ export function autoTuneCascade(input){
  return {...output,syncAudit:{kind:'cascade',safe,readyAfterLastBoost:safe&&cascadeReady(final.scenario,plan,suffix),referenceEnemy:final?.referenceEnemy||0},configs:output.configs.map((c,i)=>({...c,syncMinimum:auto[i]&&safe?Number(c.manual.sheet.spd):i?null:c.syncMinimum,syncCascading:i>0}))};
 }
 
-function sheetForCombat(team,index,target){
+function combatSpeed(team,index,value){
  const c=team.configs[index],unit={master:c.masterId,element:c.masterId%10,base:c.manual.base};
- const speed=value=>combatAttributes(unit,{total:{...c.manual.sheet,spd:value}},{},{...team,sheetSpeedFormula:true,guildSpd:0},c.combat).spd;
- let lo=Math.ceil(Number(c.manual.base.spd)),hi=1000;if(speed(lo)>target||speed(hi)<target)return null;
+ return combatAttributes(unit,{total:{...c.manual.sheet,spd:value}},{},{...team,sheetSpeedFormula:true,towerSpd:15,guildSpd:0},c.combat).spd;
+}
+function sheetForCombat(team,index,target){
+ const speed=value=>combatSpeed(team,index,value);
+ let lo=Math.ceil(Number(team.configs[index].manual.base.spd)),hi=1000;if(speed(lo)>target||speed(hi)<target)return null;
  while(lo<hi){const mid=Math.floor((lo+hi)/2);if(speed(mid)>=target)hi=mid;else lo=mid+1;}return speed(lo)===target?lo:null;
 }
 export function autoTunePerfect(input){
- const baseline=autoTuneQuickTeam({...input,perfectTune:false,configs:input.configs.map((c,i)=>i?{...c,autoSpeed:true}:c)}),keys=input.configs.map(c=>c.key),plan=cascadingBoostPlan(baseline);
- let found=null,targets=null,referenceEnemy=0;const minimum=baseline.configs[1]?.syncMinimum;
- if(minimum!=null){for(let sheet=minimum;sheet<=1000;sheet++){
-  let candidate={...baseline,perfectTune:true,configs:baseline.configs.map((c,i)=>i===1?{...c,manual:{...c.manual,sheet:{...c.manual.sheet,spd:sheet}}}:c)};
-  let p;try{p=quickPreview(candidate);}catch{continue;}const second=p.actors[1].spd,expected=keys.slice(1).map((_,i)=>second-i);let representable=true;
+ const baseline={...input,orderMode:'locked',perfectTune:true,towerSpd:15,guildSpd:0},keys=input.configs.map(c=>c.key),plan=cascadingBoostPlan(baseline);
+ // Enumerate the whole ladder in ascending Slot 2 sheet speed, independently
+ // of stale follower inputs. A failed flexible tune is not a lower-bound oracle.
+ const floor=openerRequirements({...baseline,perfectTune:false})?.members.find(m=>m.key===keys[1])?.sheetExact;
+ const minimum=Math.max(Math.ceil(Number(input.configs[1]?.manual.base.spd)||0),floor||0);
+ let found=null,targets=null,referenceEnemy=0;
+ const openerSpd=combatSpeed(baseline,0,Number(baseline.configs[0].manual.sheet.spd)),actorCache=new WeakMap();
+ for(let sheet=minimum;keys.length>1&&sheet<=1000;sheet++){
+  const second=combatSpeed(baseline,1,sheet);if(second>=openerSpd)break;
+  const expected=keys.slice(1).map((_,i)=>second-i);
+  let candidate={...baseline,configs:baseline.configs.map((c,i)=>i===1?{...c,manual:{...c.manual,sheet:{...c.manual.sheet,spd:sheet}}}:c)},representable=true;
   for(let i=2;i<keys.length;i++){const value=sheetForCombat(candidate,i,expected[i-1]);if(value===null){representable=false;break;}candidate={...candidate,configs:candidate.configs.map((c,j)=>j===i?{...c,manual:{...c.manual,sheet:{...c.manual.sheet,spd:value}}}:c)};}
   if(!representable)continue;
-  try{p=quickPreview(candidate,{captureCheckpoints:true});}catch{continue;}
+  let p;try{p=quickPreview(candidate,{captureCheckpoints:true,actorCache});}catch{continue;}
   if(firstRotationSafe(p.scenario,keys)&&(!plan||cascadeReady(p.scenario,plan,keys.slice(plan.lastIndex+1)))){found=candidate;targets=expected;referenceEnemy=p.referenceEnemy||0;break;}
- }}
- const output=found||input;
- return {...output,perfectTune:true,perfectTuneAudit:{safe:!!found,targets,referenceEnemy,reason:found?'':'Não há escada inteira segura de 1 SPD no cenário e intervalo calculados.'},configs:output.configs.map((c,i)=>i?{...c,autoSpeed:true,syncMinimum:found?Number(c.manual.sheet.spd):null,syncCombatTarget:found?targets[i-1]:null}:c)};
+ }
+ const output=found||baseline;
+ return {...output,syncAudit:null,perfectTuneAudit:{safe:!!found,targets,referenceEnemy,reason:found?'':'Sem fila segura com diferença exata de 1 SPD no cenário e intervalo calculados.'},configs:output.configs.map((c,i)=>i?{...c,autoSpeed:true,syncMinimum:found?Number(c.manual.sheet.spd):null,syncCombatTarget:found?targets[i-1]:null}:c)};
 }
 
 export function quickSpeedTarget(team,config){
