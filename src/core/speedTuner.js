@@ -49,13 +49,13 @@ export function simulateFirstTurns(actors){
  if(!actors.length)return [];
  return simulateCombat(actors,{stopAfterFirst:true}).firstTurns.map(({key,tick,spd,atb})=>({key,tick,spd,atb}));
 }
-export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=30}={}){
+export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=30,captureCheckpoints=false}={}){
  if(!Array.isArray(actors)||actors.length>20||!actors.length)throw new Error('Use de 1 a 20 unidades.');
  if(events.length>100||!Number.isInteger(maxTurns)||maxTurns<1||maxTurns>100)throw new Error('Cenário excede o limite.');
  const keys=new Set(),state=actors.map((a,index)=>{if(keys.has(a.key))throw new Error('Unidade repetida no cenário.');keys.add(a.key);const c=normalizeCombat(a.combat);return {...a,index,baseSpd:number(a.rawSpd??a.spd,0,.01,100000,'SPD'),spd:number(a.spd,0,.01,100000,'SPD'),atb:number(a.initialAtb,0,0,100,'Barra inicial'),hp:c.hpPercent,combat:c,passive:c.oblivion?null:PASSIVES[a.master],turns:0,dead:c.hpPercent<=0,nemesisRemainder:0};});
  const order=(a,b)=>(Math.abs(b.atb-a.atb)>1e-9?b.atb-a.atb:0)||b.spd-a.spd||Number(b.enemy||false)-Number(a.enemy||false)||a.index-b.index;
  const alive=()=>state.filter(a=>!a.dead),same=(a,b)=>!!a.enemy===!!b.enemy;
- const turns=[],firstTurns=[],seen=new Set(),log=[],risks=[],forced=[];
+ const turns=[],firstTurns=[],seen=new Set(),log=[],risks=[],forced=[],checkpoints=[];
  for(const a of state)if(!a.combat.oblivion&&!a.passive&&passiveNotices[a.master])risks.push(`${a.name||a.key}: ${passiveNotices[a.master].join(', ')} exige eventos/regras adicionais; resultado condicional.`);
  for(const a of state)if(a.passive==='antares')risks.push(`${a.name||a.key}: Antares pode interromper por RNG; cenário sem proc não garante segurança.`);
  const tls=()=>alive().filter(a=>a.passive==='tian_lang');
@@ -112,12 +112,13 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
   if(!skipped)for(const e of events.filter(e=>e.afterKey===actor.key&&Number(e.occurrence??1)===actor.turns))apply(e,actor,tick);
   if(skipped&&actor.disabledFor){actor.disabledFor--;if(!actor.disabledFor)actor.combat.disabled=false;}
   for(const am of alive().filter(a=>a.passive==='amduat'&&!same(a,actor)))skillBoost([am],25,am);
+  if(captureCheckpoints)checkpoints.push({key:actor.key,occurrence:actor.turns,tick,disabled:skipped,bars:state.map(a=>({key:a.key,atb:a.atb,dead:a.dead}))});
   if(stopAfterFirst&&alive().every(a=>seen.has(a.key)))break;
  }
  if(stopAfterFirst&&alive().some(a=>!seen.has(a.key)))throw new Error('Simulação de turnos excedeu o limite.');
  const ei=firstTurns.findIndex(t=>t.enemy),deadAllies=state.some(a=>a.dead&&!a.enemy&&!seen.has(a.key)),cut=deadAllies?true:state.some(a=>a.enemy)?ei>=0&&firstTurns.slice(ei+1).some(t=>!t.enemy):null;
  if(deadAllies)risks.push('Um aliado foi eliminado antes da primeira ação no cenário de dano informado.');
- return {turns,firstTurns,log,risks:[...new Set(risks)],cut,state:state.map(a=>({key:a.key,hp:a.hp,atb:a.atb,dead:a.dead,spd:a.spd})),assumptions:'Eventos informados como resolvidos; sem sorteio de procs, resistência, dano ou seleção automática de habilidade.'};
+ return {turns,firstTurns,log,checkpoints,risks:[...new Set(risks)],cut,state:state.map(a=>({key:a.key,hp:a.hp,atb:a.atb,dead:a.dead,spd:a.spd})),assumptions:'Eventos informados como resolvidos; sem sorteio de procs, resistência, dano ou seleção automática de habilidade.'};
 }
 export const COMBAT_EVENTS={tiana:'Tiana S3 · remoção de efeitos + 30% ATB',boost:'Boost de barra',reduce:'Redução de barra',damage:'Dano (% HP máximo por alvo/hit)',heal:'Cura resolvida (% HP máximo)',tablo:'Tablo · reset + buff SPD',buffs:'Quantidade global de buffs',speed_buff:'Aplicar buff SPD',slow:'Aplicar slow',antares:'Forçar proc Antares (RNG)',leo_attack:'Leo · ataque com redução 15%',cleanse:'Remover incapacidade/slow'};
 export function normalizeScenario(raw={}){
@@ -126,7 +127,13 @@ export function normalizeScenario(raw={}){
  return {enemies:(raw.enemies||[]).map(e=>{const spd=number(e.spd,0,0,10000,'SPD inimiga'),master=number(e.master??e.masterId,0,0,1000000,'Monstro'),nemesisSets=number(e.nemesisSets,0,0,3,'Nemesis');if(!Number.isInteger(master)||!Number.isInteger(nemesisSets))throw new Error('Monstro/Nemesis inválido.');return {will:e.will===true,master,label:String(e.label||'Inimigo').slice(0,80),spd,nemesisSets,combat:normalizeCombat(e.combat)};}),events:(raw.events||[]).map(e=>{if(!COMBAT_EVENTS[e.type])throw new Error('Evento inválido.');const occurrence=number(e.occurrence,1,1,100,'Turno');if(!Number.isInteger(occurrence)||!Array.isArray(e.targets||[])||(e.targets||[]).length>10)throw new Error('Alvos/turno inválidos.');return {afterKey:ref(e.afterKey),occurrence,type:e.type,targets:(e.targets||[]).map(ref),amount:number(e.amount,0,0,1000,'Valor'),critical:e.critical===true,glancing:e.glancing===true,enabled:e.enabled!==false};})};
 }
 export function scenarioForTeam(team,actors){
- const raw=normalizeScenario(team.combatScenario);if(team.autoEnemyPassives)raw.enemies.forEach((e,i)=>{if(e.master===16613&&!raw.events.some(v=>v.afterKey===`enemy:${i}`&&v.type==='leo_attack'))raw.events.push({afterKey:`enemy:${i}`,type:'leo_attack',occurrence:1,targets:[`ally:${team.leoTarget||0}`],amount:15,critical:false,glancing:false});});if(team.autoOpener){const opener=team.configs[0],skill=monsterOpener(opener?.masterId);if(skill&&!raw.events.some(e=>e.afterKey==='ally:0'&&Number(e.occurrence??1)===1&&['boost','tiana'].includes(e.type)))raw.events.push({afterKey:'ally:0',type:skill.type,occurrence:1,targets:[],amount:skill.boost});}const ref=k=>k.startsWith('ally:')?team.configs[Number(k.split(':')[1])]?.key:k;
+ const raw=normalizeScenario(team.combatScenario);if(team.autoEnemyPassives)raw.enemies.forEach((e,i)=>{if(e.master===16613&&!raw.events.some(v=>v.afterKey===`enemy:${i}`&&v.type==='leo_attack'))raw.events.push({afterKey:`enemy:${i}`,type:'leo_attack',occurrence:1,targets:[`ally:${team.leoTarget||0}`],amount:15,critical:false,glancing:false});});if(team.autoOpener){
+  team.configs.forEach((config,index)=>{const skill=monsterOpener(config.masterId),source=`ally:${index}`;if(!skill||!actors.some(a=>a.key===config.key)||raw.events.some(e=>e.afterKey===source&&Number(e.occurrence??1)===1&&['boost','tiana'].includes(e.type)))return;
+   const targets=actors.filter(a=>!a.enemy).map(a=>`ally:${team.configs.findIndex(c=>c.key===a.key)}`).filter(ref=>!ref.endsWith(':-1'));
+   raw.events.push({afterKey:source,type:skill.type,occurrence:1,targets,amount:skill.boost});
+   if(skill.speedBuff&&!raw.events.some(e=>e.afterKey===source&&Number(e.occurrence??1)===1&&e.type==='speed_buff'))raw.events.push({afterKey:source,type:'speed_buff',occurrence:1,targets,amount:0});
+  });
+ }const ref=k=>k.startsWith('ally:')?team.configs[Number(k.split(':')[1])]?.key:k;
  return {actors:[...actors,...raw.enemies.filter(e=>e.spd>0).map(e=>{const i=raw.enemies.indexOf(e);return {...e,key:`enemy:${i}`,rawSpd:e.spd,enemy:true,name:e.label};})],events:raw.events.map(e=>({...e,afterKey:ref(e.afterKey),targets:e.targets.map(ref)}))};
 }
 export function missingDefenseConditions(team){
@@ -139,4 +146,21 @@ export function leaderImpact(unit,stats,counts,team,combat={},effects={}){
  const withLeader=combatAttributes(unit,stats,counts,team,combat,effects);
  const without=combatAttributes(unit,stats,counts,{...team,leader:null,leaderSpd:0,raidLeaders:[]},combat,effects);
  return {combat:withLeader,bonus:Object.fromEntries(['hp','atk','def','spd','cr','res','acc'].map(k=>[k,withLeader[k]-without[k]]))};
+}
+
+// Inspect resolved first-turn actions, including explicit scenario overrides.
+export function cascadingBoostPlan(team,resolvedEvents){
+ const actors=team.configs.filter(c=>c.enabled!==false).map(c=>({key:c.key,master:c.masterId,spd:1})),events=resolvedEvents||scenarioForTeam(team,actors).events;
+ const sources=new Map();for(const e of events)if(Number(e.occurrence??1)===1&&(e.type==='tiana'||e.type==='boost'&&Number(e.amount)>0&&e.targets?.length)){const index=team.configs.findIndex(c=>c.key===e.afterKey);if(index>=0)sources.set(index,e.afterKey);}
+ const indices=[...sources.keys()].sort((a,b)=>a-b),lastIndex=indices.at(-1);
+ return indices.length>1&&indices[0]===0&&lastIndex<team.configs.length-1?{indices,lastIndex,lastKey:team.configs[lastIndex].key}:null;
+}
+export function cascadeReady(scenario,plan,keys){
+ const checkpoint=scenario.checkpoints.find(p=>p.key===plan.lastKey&&p.occurrence===1);
+ return !!checkpoint&&!checkpoint.disabled&&keys.every(key=>{const actor=checkpoint.bars.find(a=>a.key===key);return actor&&!actor.dead&&actor.atb>=100-1e-9;});
+}
+
+export function firstRotationSafe(scenario,keys){
+ const prefix=scenario.turns.slice(0,keys.length);
+ return prefix.length===keys.length&&prefix.every((t,i)=>t.key===keys[i]&&!t.disabled&&(i===0||t.tick===prefix[0].tick+i));
 }

@@ -13,11 +13,11 @@ test('deck extraction keeps original positions, account copies and only whitelis
  assert.equal(presets.length,2);assert.deepEqual(presets[0].unitIds,[2,null,1]);assert.deepEqual(presets[0].missingIds,[999]);assert.ok(!JSON.stringify(presets).includes('private'));
  const team=teamFromPreset(presets[0],{units:[unit,{...unit,id:2}]});
  assert.deepEqual(team.configs.map(c=>c.unitId),[2,null,1]);assert.equal(team.gameMode,'siege');assert.equal(team.configs[0].masterId,13413);assert.equal(team.configs[1].label,'Escolher monstro');
- assert.deepEqual(extractAccountPresets(null,[]),[]);assert.deepEqual(extractAccountPresets([{monster_ids:['garbage']}],[unit]),[]);
+ assert.deepEqual(extractAccountPresets(null,[]),[]);assert.deepEqual(extractAccountPresets([{monster_ids:['garbage']}],[unit])[0].unitIds,[null]);
 });
 test('normalized SWEX contains accountPresets without session/social properties',()=>{
  const raw={unit_list:[{unit_id:1,unit_master_id:13413,con:100,runes:[{rune_id:1,slot_no:1,pri_eff:[3,100],sec_eff:[]}]}],runes:[],deck_list:[{deck_name:'Meu deck',monster_ids:[1,0,777],social:'private'}],session_key:'private'};
- const a=normalizeAccount(raw);assert.equal(a.accountPresets[0].name,'Meu deck');assert.deepEqual(a.accountPresets[0].unitIds,[1,null,null]);assert.ok(!JSON.stringify(a).includes('private'));
+ const a=normalizeAccount(raw);assert.equal(a.accountPresets[0].name,'Meu deck');assert.deepEqual(a.accountPresets[0].unitIds,[1,null,null,null,null]);assert.ok(!JSON.stringify(a).includes('private'));
 });
 test('natural gauge timing is fixed and legacy speedTick cannot change integer turn timing',()=>{
  const actors=[{key:'a',spd:200}];

@@ -80,3 +80,34 @@ tela Cairos já montada, sete abas com miniaturas e seleção automática do Dra
 35 abas Siege com unidade ausente sem TypeError, 18 cards/144 sliders Raid e SPD
 161 nos 18 membros, viewport 390 sem overflow e sem erros JavaScript. Auth/REST foram
 simulados; não usamos senha/token real do proprietário nem afirmamos teste remoto.
+
+
+## All Decks: extração sem descartar presets PvE
+
+A extração agora usa pilha iterativa, mantendo a ordem sem um teto arbitrário de
+profundidade ou de quantidade de decks. Não truncamos as posições de unidades.
+Arrays simples, referências unit_id, unit_id_list e as três fontes nativas
+(deck_list, defense_deck_list, world_arena_deck_list) são lidas. O particionamento
+Raid em equipes de6 continua, sem perder IDs ou grupos adicionais.
+
+Metadados explícitos de Arena/Siege/RTA continuam tendo precedência, inclusive
+nas versões de SWEX que os incluem em deck_list. Sem metadados, deck_list recebe
+destino PvE. Uma masmorra conhecida é roteada normalmente; um destino desconhecido
+recebe pve-other, visível em Outros presets PvE, sem inventar um chefe ou metas de
+waves. Removido também o filtro de quantidade de posições na lista de presets.
+Os painéis respeitam os slots físicos de sua área; a lista e a view model preservam
+todas as posições originais, inclusive quando é necessário corrigir o destino.
+
+Vagas e unidades removidas viram null na posição original e slots faltantes são
+completados até o tamanho da área, sem deslocar a liderança. Nomes fornecidos
+pelo JSON para mestres fora do catálogo são preservados, sem atribuir um ID de
+outro monstro. A fixture Dragão Teon/Agrius valida nome fornecido, ordem, runas,
+status e cinco posições; Agrius é o nome informado na fixture, não uma identificação
+nova inferida do catálogo oficial. O backup compacto mantém esse nome de identidade
+nas unidades e conserva as cinco listas existentes: nenhuma migration nova.
+
+QA: 229 testes e build; Playwright (Browser plugin indisponível) com Auth/REST
+simulados verificou toggles de Perfect Tune, seguidores bloqueados, input/slider
+do abridor atualizando a escada, retorno a metas menores de cascata, upload
+Teon/Agrius com vazios, categoria PvE não identificada e 390px sem overflow ou
+exceções JavaScript. Os testes não usam senha nem tokens reais do proprietário.

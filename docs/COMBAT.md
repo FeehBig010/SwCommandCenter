@@ -137,3 +137,61 @@ Validação: 217 testes, incluindo rodada conjunta de 18 unidades com 108 runas
 de 1,8 s (inclui automação/foco/rolagem; não é benchmark de hardware universal).
 A simulação continua condicionada aos eventos informados; isso não implementa
 IA, fases, dano e sobrevivência completos do chefe Raid.
+
+
+## Cascading ATB e Perfect Tune
+
+As ações automáticas da primeira rotação incluem Bernard (30 ATB e buff SPD),
+Megan (20 ATB), Kabilla (30 ATB) e Tiana (30 ATB e remoção de efeitos). Os valores
+30/20 são os valores-base declarados; use eventos explícitos para variantes ou
+melhorias de habilidade diferentes. Uma ação explícita boost/tiana substitui a
+ação automática daquele monstro; não somamos duas vezes. Boosts genéricos agora
+têm alvos aliados reais, incluindo o lançador, sem afetar inimigos.
+
+Cascatas deixam de impor o piso proporcional do abridor a todos os DPS. O solver
+procura velocidades inteiras no intervalo de ficha base–1000, registra a barra
+imediatamente após o último puxador e exige >=100 ATB em todos os DPS, além da
+ordem completa sem turno intermediário do inimigo, repetição ou tick vazio.
+Buff SPD entra no ganho de barra dos ticks seguintes; boosts somam à barra atual,
+sem apagar overflow. Usamos a simulação e os eventos reais (incluindo supressão
+por Tian Lang), não apenas uma soma nominal de percentuais.
+
+A busca valida o prefixo dos puxadores, inicializa os DPS em conjunto e reduz as
+coordenadas verificando a fila completa. Não pressupõe monotonicidade global do
+predicado quando há mudança de tick/overflow. Um resultado inválido não substitui
+os inputs por valores de probes falhos. Para cenários exóticos, a ausência de meta
+significa ausência de solução na busca/modelo calculados, não prova universal de
+impossibilidade de toda estratégia do jogo. Checkpoints são opcionais e não vão
+para o armazenamento; atributos inalterados são reutilizados na busca local.
+
+Exemplo determinístico: base100, torre15, sem líder, Bernard com ficha285 (combate300)
+e inimigo299. Megan: ficha202 (combate217; 283 após buff). DPS: ficha174 cada
+(combate189; 246 após buff). Na primeira rotação:
+
+| Ação | Tick | ATB antes da ação |
+| --- | --- | --- |
+| Bernard | 5 | 105 |
+| Megan | 6 | 125,76 |
+| DPS 1 | 7 | 150,59 |
+| DPS 2 | 8 | 167,81 |
+| Inimigo | 9 | 188,37 |
+
+Após Megan, os dois DPS já têm 133,37 ATB. No Tick8, o inimigo tem 167,44 contra
+167,81 do último DPS. Reduzir cada meta em1 falha por corte ou ordem. Com o segundo
+boost reduzido a10, a meta de ficha dos DPS sobe para190; sem ele, para240 no modelo
+conservador de puxador único. A capacidade de causar procs por dano não é inferida.
+
+Perfect Tune trava os Combat SPD iniciais dos seguidores em S, S-1, S-2. O motor
+converte cada alvo para ficha, considerando base, torre e líder de cada monstro,
+e exige igualdade inteira exata. Buffs durante ações continuam na timeline.
+O piso de S2 é elevado apenas se necessário para sustentar a escada toda; no
+exemplo acima, a escada é217→216→215. Um caso Tiana400 versus inimigo399 precisa
+340→339→338 para a fila completa; 339→338→337 permite corte. Se um alvo não puder
+ser representado por uma ficha inteira ou não houver fila segura, mostramos
+aviso em vez de arredondar uma escada falsa. Sliders/inputs de seguidores ficam
+bloqueados enquanto o toggle está ativo e acompanham o abridor em um estado único.
+
+Sem inimigo configurado, cascata e Perfect Tune usam um inimigo de referência com
+SPD do abridor menos1; a interface informa essa suposição. Isso não garante
+segurança contra inimigos mais rápidos, passivas, dano ou procs não modelados.
+A garantia é sempre relativa ao cenário resolvido e às regras discretas existentes.

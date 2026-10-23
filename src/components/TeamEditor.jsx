@@ -37,7 +37,7 @@ export function MonsterEditor({config,index,slotCount,account,onChange,onMove,co
  const master=unit?.master||config.masterId||MONSTER_CATALOG.find(m=>m.name===config.label)?.master;
  const monster=unit||catalogMonster(master,config.label);
  const useCatalog=catalogMode||!account;
- const missing=!catalogMode&&account&&!unit;
+ const missing=!catalogMode&&account&&!unit&&(config.enabled!==false||config.unitId!=null);
  const candidates=useMemo(()=>(useCatalog?MONSTER_CATALOG:account.units).slice().sort((a,b)=>a.name.localeCompare(b.name)||(b.level||0)-(a.level||0)).map(u=>({value:useCatalog?`catalog:${u.master}`:`unit:${u.id}`,name:u.name,master:u.master,element:u.element,unitId:useCatalog?null:u.id,detail:useCatalog?'Catálogo':`Nv.${u.level} · #${String(u.id).slice(-5)}`})),[useCatalog,account]);
  const update=(key,value)=>onChange({...config,[key]:value});
  async function toggleLeader(checked){if(!onLeader)return;setLeaderNotice('');if(!checked){onLeader(null);return;}setLeaderBusy(true);try{const leader=catalogLeader(master);onLeader(leader);if(!leader)setLeaderNotice('Esta unidade não possui habilidade de líder.');}catch{setLeaderNotice('Não foi possível consultar a habilidade.');}finally{setLeaderBusy(false);}}

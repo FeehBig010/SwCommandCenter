@@ -7,6 +7,6 @@ export const PVE_AREAS={
 export const isPve=area=>Object.hasOwn(PVE_AREAS,area);
 export function pveArt(area,stage){const scene=area==='cairos'?({gb12:'giant',db12:'dragon',nb12:'necro',gbah:'giant',dbah:'dragon',nbah:'necro',sf10:'steel',pc10:'punisher'})[stage]||'giant':isPve(area)?area:null;return scene?`/art/pve-${scene}.png`:null;}
 export function cairosStagesForPresets(presets=[]){
- const legacy=[['gb12','Gigante B12','water'],['db12','Dragão B12','fire'],['nb12','Necrópolis B12','dark']];
+ const legacy=[['pve-other','Outros presets PvE','light'],['gb12','Gigante B12','water'],['db12','Dragão B12','fire'],['nb12','Necrópolis B12','dark']];
  return [...PVE_AREAS.cairos.stages,...legacy.filter(([id])=>presets.some(p=>p.gameMode==='cairos'&&p.dungeon===id))];
 }
