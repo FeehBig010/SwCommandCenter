@@ -111,3 +111,26 @@ simulados verificou toggles de Perfect Tune, seguidores bloqueados, input/slider
 do abridor atualizando a escada, retorno a metas menores de cascata, upload
 Teon/Agrius com vazios, categoria PvE não identificada e 390px sem overflow ou
 exceções JavaScript. Os testes não usam senha nem tokens reais do proprietário.
+
+## Diagnóstico da importação de decks
+
+O parser está em `src/core/data.js` / `src/core/decks.js`, não em
+`src/utils/jsonParser.js`. Além dos arrays, aceita listas de slots em objetos
+numéricos, referências com `pos_id` e registros por monstro agrupados por deck e
+masmorra. Mantém posições vazias, líder, runas equipadas e todos os decks distintos,
+mesmo com composições idênticas. Metadados Rift/ToA reconhecidos são encaminhados
+aos respectivos hubs; IDs elementais só indicam Rift dentro desse namespace.
+
+Dados SWEX mostra o diagnóstico de `deck_list`, `defense_deck_list` e
+`world_arena_deck_list`: chave ausente, lista vazia, quantidade importada e
+estruturas não reconhecidas. Os hubs exibem contagem por área e referências a
+unidades ausentes. Essas contagens não retêm árvores brutas, dados sociais ou
+credenciais. Um backup antigo com decks já descartados não pode reconstruí-los:
+reimporte o JSON original após a atualização.
+
+Upload preserva a área aberta quando ela contém presets; o botão Continuar e
+contas apenas de Rift/ToA também usam o destino correto. Restauração na nuvem
+continua atualizando o Context e a tela montada sem refresh. Verificados 236 testes,
+build e Playwright com Auth/REST simulados (1440/390 px). O arquivo real do usuário
+não está no ambiente: os casos Teon/Agrius usam uma fixture sintética e não
+comprovam a estrutura exata de seu export.

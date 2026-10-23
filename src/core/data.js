@@ -35,15 +35,22 @@ export function normalizeAccount(raw){
  const unitIds=new Set(units.map(u=>u.id));
  const siege=(raw.guildsiege_defense_deck_unit_list||[]).map((d,i)=>({name:`Defesa ${i+1}`,unitIds:(d.unit_id_list||[]).filter(id=>unitIds.has(id)),equipment:raw.guildsiege_defense_deck_equip_list?.[d.deck_id]?.equip?.map(e=>({unitId:e.unit_id,runeIds:e.rune_id_list||[],artifactIds:e.artifact_id_list||[]}))||[]}));
  if(!units.length||!runeMap.size)throw new Error('Não há monstros e runas válidos neste arquivo.');
- const presets=extractAccountPresets({pve:raw.deck_list},units,'pve-default');
- const typed=[...extractAccountPresets({r5:{raid:raw.raid_deck,party:raw.party_deck,raid_list:raw.raid_deck_list}},units,'pve'),...extractAccountPresets({siege:raw.siege_deck},units,'siege'),...extractAccountPresets({arena:raw.arena_deck},units,'arena'),...extractAccountPresets({dungeon:raw.dungeon_deck},units,'pve'),...extractAccountPresets({rta:raw.world_arena_deck},units,'rta'),...extractAccountPresets({rta_list:raw.world_arena_deck_list},units,'rta')];
- const supplemental=[...typed,...extractAccountPresets({native_defense:raw.defense_deck_list},units),...extractAccountPresets({siege_defense:raw.guildsiege_defense_deck_unit_list},units)];
+ const presetImport={sources:{}};
+ function nativeDecks(key,path,area=null){
+  const value=raw[key],detail={present:Object.hasOwn(raw,key),hasData:!!value&&typeof value==='object'&&Object.keys(value).length>0,imported:0,unrecognized:0};
+  const decks=extractAccountPresets({[path]:value},units,area,detail);detail.imported=decks.length;
+  if(detail.hasData&&!decks.length)detail.unrecognized=Math.max(1,detail.unrecognized);
+  presetImport.sources[key]=detail;return decks;
+ }
+ const presets=nativeDecks('deck_list','pve','pve-default');
+ const typed=[...extractAccountPresets({r5:{raid:raw.raid_deck,party:raw.party_deck,raid_list:raw.raid_deck_list}},units,'pve'),...extractAccountPresets({siege:raw.siege_deck},units,'siege'),...extractAccountPresets({arena:raw.arena_deck},units,'arena'),...extractAccountPresets({dungeon:raw.dungeon_deck},units,'pve'),...extractAccountPresets({rta:raw.world_arena_deck},units,'rta'),...nativeDecks('world_arena_deck_list','rta_list','rta')];
+ const supplemental=[...typed,...nativeDecks('defense_deck_list','native_defense'),...extractAccountPresets({siege_defense:raw.guildsiege_defense_deck_unit_list},units)];
  if(Array.isArray(raw.defense_unit_list)&&raw.defense_unit_list.length===4&&raw.defense_unit_list.every(u=>Number.isSafeInteger(Number(u.unit_id)))){
   const ordered=raw.defense_unit_list.slice().sort((a,b)=>Number(a.pos_id??0)-Number(b.pos_id??0));
   supplemental.push(...extractAccountPresets({arena_defense:{deck_name:'Defesa Arena',unit_id_list:ordered.map(u=>Number(u.unit_id))}},units));
  }
  for(const preset of supplemental)presets.push({...preset,id:`source-${preset.id}`});
- return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege,accountPresets:presets,towers:extractTowers(raw),crafts:normalizeCrafts(raw.rune_craft_item_list),equipmentPools:equipmentPools(raw,units,[...runeMap.values()])};
+ return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege,accountPresets:presets,presetImport,towers:extractTowers(raw),crafts:normalizeCrafts(raw.rune_craft_item_list),equipmentPools:equipmentPools(raw,units,[...runeMap.values()])};
 }
 export function blankConfig(unit=null,name='Escolher monstro'){
  return {key:crypto.randomUUID(),unitId:unit?.id||null,masterId:unit?.master||null,label:unit?.name||name,enabled:true,lockSpeedSync:false,artifacts:true,sets:[0,0],strictSets:true,mains:{2:0,4:0,6:0},goals:{hp:'',def:'',spd:'',atk:'',cr:'',cd:'',res:'',acc:''},basis:'bonus',objective:'balanced'};
