@@ -11,15 +11,16 @@ export function boostedFollowerMinimum(combatSpd,boost=30){
  if(amount!==30)throw new Error('Piso de sincronização disponível apenas para boost de 30.');
  return Math.ceil(speed*8475/10000-1e-10);
 }
-export function normalizeCombat(raw={}){const result={speedBuff:raw.speedBuff===true,slow:raw.slow===true,disabled:raw.disabled===true,oblivion:raw.oblivion===true,hpPercent:number(raw.hpPercent,100,0,100,'HP'),buffCount:number(raw.buffCount,0,0,100,'Buffs'),mashaStacks:number(raw.mashaStacks,0,0,5,'Stacks Masha'),targetTick:number(raw.targetTick,0,0,10000,'Tick alvo')};if(![result.targetTick,result.buffCount,result.mashaStacks].every(Number.isInteger))throw new Error('Buffs, stacks e ticks devem ser inteiros.');return result;}
-export function runtimeSpeed(raw,master,combat={},effects={}){
+export function normalizeCombat(raw={}){const result={speedBuff:raw.speedBuff===true,slow:raw.slow===true,disabled:raw.disabled===true,oblivion:raw.oblivion===true,hpPercent:number(raw.hpPercent,100,0,100,'HP'),buffCount:number(raw.buffCount,0,0,100,'Buffs'),mashaStacks:number(raw.mashaStacks,0,0,5,'Stacks Masha'),targetTick:number(raw.targetTick,0,0,10000,'Tick alvo'),artifactSpd:number(raw.artifactSpd,0,0,500,'SPD adicional de artefatos'),artifactSpdBuff:number(raw.artifactSpdBuff,0,0,100,'Buff SPD de artefatos'),artifactSpdLostHp:number(raw.artifactSpdLostHp,0,0,100,'SPD por HP perdido'),artifactSpdDisabled:number(raw.artifactSpdDisabled,0,0,100,'SPD sob incapacidade')};if(![result.targetTick,result.buffCount,result.mashaStacks].every(Number.isInteger))throw new Error('Buffs, stacks e ticks devem ser inteiros.');return result;}
+function runtimeSpeedValue(raw,master,combat={},effects={}){
  const c=normalizeCombat(combat),p=c.oblivion?null:PASSIVES[master],a=effects.totals||effects;
  const passive=p==='miles'?Math.min(1,c.buffCount*.05):p==='masha'?c.mashaStacks*.1:p==='masha_dismounted'?-.15:0;
  // Buff/slow and dynamic passive percentages add; artifact lost-HP/incapacity scales separately.
- const status=1+(c.speedBuff?.3*(1+Number(a.spdBuff||0)/100):0)-(c.slow?.3:0)+passive;
- const artifact=1+Number(a.spdLostHp||0)*(1-c.hpPercent/100)/100+(c.disabled?Number(a.spdDisabled||0)/100:0);
- return Math.max(1,Math.ceil(raw*status*artifact-1e-10));
+ const status=1+(c.speedBuff?.3*(1+(Number(a.spdBuff||0)+c.artifactSpdBuff)/100):0)-(c.slow?.3:0)+passive;
+ const artifact=1+(Number(a.spdLostHp||0)+c.artifactSpdLostHp)*(1-c.hpPercent/100)/100+(c.disabled?(Number(a.spdDisabled||0)+c.artifactSpdDisabled)/100:0);
+ return Math.max(1,(raw+c.artifactSpd)*status*artifact);
 }
+export function runtimeSpeed(raw,master,combat={},effects={}){return Math.ceil(runtimeSpeedValue(raw,master,combat,effects)-1e-10);}
 // Manual calculator inputs always represent sheet SPD, including equipped Swift.
 export function combatSpeedFromSheet(sheetSpd,unit,team={}){
  const sheet=number(sheetSpd,0,1,10000000,'SPD ficha');
@@ -163,4 +164,12 @@ export function cascadeReady(scenario,plan,keys){
 export function firstRotationSafe(scenario,keys){
  const prefix=scenario.turns.slice(0,keys.length);
  return prefix.length===keys.length&&prefix.every((t,i)=>t.key===keys[i]&&!t.disabled&&(i===0||t.tick===prefix[0].tick+i));
+}
+
+export function requiredSheetSpeed(target,unit,team={},combat={},effects={},counts={},{conservative=false}={}){
+ const desired=number(target,0,0,10000000,'SPD alvo');let lo=Math.ceil(unit.base.spd),hi=Math.max(lo,Math.ceil(desired));
+ const speed=spd=>{const value=combatAttributes(unit,{total:{...unit.base,spd}},counts,team,combat,effects);return conservative?runtimeSpeedValue(value.rawSpd,unit.master,combat,effects):value.spd;};
+ while(speed(hi)<desired&&hi<10000000)hi=Math.min(10000000,hi*2);
+ if(speed(hi)<desired)return null;
+ while(lo<hi){const mid=Math.floor((lo+hi)/2);if(speed(mid)>=desired)hi=mid;else lo=mid+1;}return lo;
 }

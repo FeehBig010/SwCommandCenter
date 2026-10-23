@@ -1,3 +1,4 @@
+import {MONSTER_FALLBACK} from './monsters.js';
 import {cardFileName,loadCardPortraits} from './team-card.js';
 
 export async function exportQuickCard(node,team,signal){
@@ -15,7 +16,7 @@ export async function exportQuickCard(node,team,signal){
    root.querySelectorAll('.monster-portrait').forEach(el=>{
     const card=el.closest('[data-png-master]'),master=card?.dataset.pngMaster||team.configs.find(c=>c.label===el.closest('[role=listitem]')?.querySelector('strong')?.textContent)?.masterId,name=card?.dataset.pngLabel||el.closest('[role=listitem]')?.querySelector('strong')?.textContent;
     if(portraits[master]){const img=doc.createElement('img');img.src=portraits[master];img.alt=name;img.width=64;img.height=64;el.replaceChildren(img);}
-    else{el.textContent=name?.[0]||'?';el.classList.add('portrait-fallback');}
+    else{const img=doc.createElement('img');img.src=MONSTER_FALLBACK;img.alt=`Retrato indisponível: ${name||'monstro'}`;img.width=64;img.height=64;el.replaceChildren(img);el.classList.add('portrait-fallback');}
    });
    root.querySelectorAll('input').forEach(input=>{
     const out=doc.createElement(input.type==='range'?'div':'strong');

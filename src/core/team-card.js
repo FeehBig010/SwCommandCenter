@@ -2,7 +2,7 @@ import {skillLevels} from './skill-levels.js';
 import {equippedBuild,calculateStats,artifactBonus} from './optimizer.js';
 import {STATS,FOUR} from './data.js';
 import {normalizeLeader} from './leaders.js';
-import { monsterImageSources } from './monsters.js';
+import { MONSTER_FALLBACK,resolveMonsterImageSources,monsterImageSources } from './monsters.js';
 
 const DUNGEONS={db12:"Dragon's Lair B12",gb12:"Giant's Keep B12",nb12:'Necropolis B12',dbah:"Dragon's Lair · Abyss Hard",gbah:"Giant's Keep · Abyss Hard",nbah:'Necropolis · Abyss Hard',sf10:'Steel Fortress B10',pc10:"Punisher's Crypt B10"};
 export function teamCardHeading(team){
@@ -56,7 +56,8 @@ function asDataUrl(blob){
 // Inline only CORS-readable images. A failed host never taints the export canvas.
 export async function loadCardPortraits(monsters,signal){
  const entries=await Promise.all([...new Set(monsters.map(m=>m.master))].map(async master=>{
-  for(const url of monsterImageSources(master)){
+  const known=monsterImageSources(master),sources=known.length?known:await resolveMonsterImageSources(master);
+  for(const url of [...sources,MONSTER_FALLBACK]){
    if(signal.aborted)return [master,null];
    try{
     const response=await fetch(url,{mode:'cors',credentials:'omit',referrerPolicy:'no-referrer',signal:AbortSignal.any([signal,AbortSignal.timeout(4000)])});

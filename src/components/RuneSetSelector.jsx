@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {SETS,FOUR} from '../core/data';
 import {setRuneSlot} from '../core/team-ux';
-function RuneIcon({id}){return id?<img className="rune-set-icon" src={`/game-icons/runes/${SETS[id].toLowerCase()}.png`} alt=""/>:<span className="rune-empty-slot" aria-hidden="true">+</span>;}
+function RuneIcon({id}){return id?<img className="rune-set-icon" src={`/game-icons/runes/${(SETS[id]||'energy').toLowerCase()}.png`} alt={SETS[id]||'Conjunto'} title={SETS[id]}/>:<span className="rune-empty-slot" aria-hidden="true">+</span>;}
 function Slot({index,selected,allowed,disabled,onChoose,monster}){
  const [open,setOpen]=useState(false),[query,setQuery]=useState('');const root=useRef();
  useEffect(()=>{const close=e=>{if(!root.current?.contains(e.target))setOpen(false);};document.addEventListener('pointerdown',close);return()=>document.removeEventListener('pointerdown',close);},[]);

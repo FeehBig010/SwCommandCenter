@@ -1,3 +1,4 @@
+import ArtifactBonuses from './ArtifactBonuses';
 import EquipmentInspector from './EquipmentInspector';
 import LeaderCrown from './LeaderCrown';
 import InfoTooltip from './InfoTooltip';
@@ -48,7 +49,7 @@ export function MonsterEditor({config,index,slotCount,account,onChange,onMove,co
    {onMove&&<div className="move-controls"><button type="button" className="icon-button" title="Mover para a esquerda" aria-label={`Mover ${config.label} para a esquerda`} disabled={index===0} onClick={()=>onMove(-1)}><ArrowLeft size={14}/></button><button type="button" className="icon-button" title="Mover para a direita" aria-label={`Mover ${config.label} para a direita`} disabled={index===slotCount-1} onClick={()=>onMove(1)}><ArrowRight size={14}/></button></div>}
   </div>
   <MonsterCombobox label={useCatalog?`Monstro do catálogo — posição ${index+1}`:`Unidade da conta — posição ${index+1}`} options={candidates} value={useCatalog&&master?`catalog:${master}`:config.unitId?`unit:${config.unitId}`:''} placeholder={config.label} onChange={u=>onChange({...config,unitId:u?.unitId||null,masterId:u?.master||null,label:u?.name||'Escolher monstro'})}/>
-  {useCatalog&&!catalogMode&&<p className="fineprint">Importe seu JSON para selecionar a cópia da conta e otimizar.</p>}
+  {useCatalog&&!catalogMode&&<InfoTooltip label="Inventário necessário">Importe seu JSON para selecionar a cópia da conta e otimizar.</InfoTooltip>}
   {missing&&<div className="inline-warning"><AlertCircle size={14}/><span>{config.label} não encontrado neste JSON. Selecione uma unidade ou desmarque “Incluir”.</span></div>}
   {leaderNotice&&<small role="status">{leaderNotice}</small>}
   {!catalogMode&&<CombatStatsPreview account={account} team={team} config={config} options={options} build={build}/>}
@@ -61,7 +62,7 @@ export function MonsterEditor({config,index,slotCount,account,onChange,onMove,co
   <div className="goal-presets" aria-label={`Presets de ${config.label}`}>{Object.entries(GOAL_PRESETS).map(([key,p])=><button key={key} className="preset-button" type="button" aria-pressed={normalizeFocuses(config.focuses).includes(key)} title="Focos podem ser combinados. Desmarcar preserva as metas editadas." onClick={()=>onChange(toggleGoalFocus(config,key,unit?.base||monsterBase(master)||{}))}>{p.label}</button>)}</div>
   <div className="section-label"><span>Metas mínimas</span><select aria-label={`Tipo de atributos de ${config.label}`} className="inline-select" value={config.basis} onChange={e=>update('basis',e.target.value)}><option value="bonus">Adicionais (+)</option><option value="total">{config.raidGoals?'Combate (Raid)':'Ficha total'}</option></select></div>
   <div className="stat-fields compact-stat-fields">{STATS.map(key=><StatGoalControl key={key} stat={key} label={['cr','cd','res','acc'].includes(key)?`${LABELS[key]} total %`:`${config.basis==='bonus'?'+ ':''}${LABELS[key]}`} monster={config.label} value={config.goals[key]} onChange={value=>update('goals',{...config.goals,[key]:value})}/>)}</div>
-  <CombatContext config={config} master={master} onChange={onChange}/>
+  <ArtifactBonuses config={config} onChange={onChange}/><CombatContext config={config} master={master} onChange={onChange}/>
   <details className="monster-advanced"><summary>Objetivo, artefatos e dano</summary>
   <Select label={`Objetivo após atingir as metas de ${config.label}`} value={config.objective} onChange={e=>update('objective',e.target.value)}><option value="balanced">Equilíbrio</option><option value="cr">Taxa crítica</option><option value="spd">Velocidade</option><option value="hp">Vida</option><option value="damage">Dano estimado / ATK médio sem cenário</option></Select>
   {!catalogMode&&<label className="check-label artifact-toggle"><input type="checkbox" role="switch" aria-label={`Artefatos de ${config.label}`} checked={config.artifacts!==false} onChange={e=>update('artifacts',e.target.checked)}/>Artefatos <strong>{config.artifacts!==false?'ON':'OFF'}</strong></label>}

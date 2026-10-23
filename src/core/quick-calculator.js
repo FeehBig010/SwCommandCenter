@@ -3,7 +3,7 @@ import {openerRequirements} from './opener-tune.js';
 import {goalReport} from './optimizer.js';
 import {blankConfig,makeTeam,STATS,FOUR} from './data.js';
 import {monsterBase} from './monster-search.js';
-import {leaderImpact,combatAttributes,scenarioForTeam,simulateCombat,cascadingBoostPlan,cascadeReady,firstRotationSafe} from './speedTuner.js';
+import {requiredSheetSpeed,leaderImpact,combatAttributes,scenarioForTeam,simulateCombat,cascadingBoostPlan,cascadeReady,firstRotationSafe} from './speedTuner.js';
 import {catalogLeader} from './leader-catalog.js';
 const fallback={hp:10000,atk:800,def:650,spd:100,cr:15,cd:50,res:15,acc:0};
 export function quickConfig(master=null,name='Escolher monstro'){
@@ -76,7 +76,7 @@ export function autoTuneCascade(input){
   const seed=working;let found=false;
   for(let combatTarget=1;combatTarget<=1000;combatTarget++){
    working=seed;
-   for(let i=plan.lastIndex+1;i<keys.length;i++)if(auto[i]){const c=working.configs[i],unit={master:c.masterId,element:c.masterId%10,base:c.manual.base};const bonus=c.manual.base.spd*(15+Number(quickLeaderSpeed(unit,working)))/100;set(i,Math.max(base(i),Math.ceil(combatTarget-bonus-1e-10)));}
+   for(let i=plan.lastIndex+1;i<keys.length;i++)if(auto[i]){const c=working.configs[i],unit={master:c.masterId,element:c.masterId%10,base:c.manual.base};const bonus=c.manual.base.spd*(15+Number(quickLeaderSpeed(unit,working)))/100;set(i,requiredSheetSpeed(combatTarget,unit,{...working,sheetSpeedFormula:true},c.combat,{}, {},{conservative:true}));}
    if(safeThrough(keys.length-1,true)){found=true;break;}
   }
   feasible=found;
@@ -106,4 +106,11 @@ export function autoTunePerfect(input){
  }}
  const output=found||input;
  return {...output,perfectTune:true,perfectTuneAudit:{safe:!!found,targets,referenceEnemy,reason:found?'':'Não há escada inteira segura de 1 SPD no cenário e intervalo calculados.'},configs:output.configs.map((c,i)=>i?{...c,autoSpeed:true,syncMinimum:found?Number(c.manual.sheet.spd):null,syncCombatTarget:found?targets[i-1]:null}:c)};
+}
+
+export function quickSpeedTarget(team,config){
+ if(!config.masterId)return null;
+ const sheetSpd=config.syncMinimum??Number(config.manual.sheet.spd);if(!Number.isFinite(sheetSpd)||sheetSpd<=0)return null;const unit={master:config.masterId,element:config.masterId%10,base:config.manual.base};
+ const combatSpd=combatAttributes(unit,{total:{...config.manual.sheet,spd:sheetSpd}},{},{...team,sheetSpeedFormula:true,guildSpd:0},config.combat).spd;
+ return {combatSpd,runeSpd:Math.max(0,sheetSpd-Number(unit.base.spd)),hasTarget:config.syncMinimum!=null};
 }

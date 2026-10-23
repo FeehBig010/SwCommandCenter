@@ -1,3 +1,4 @@
+import InfoTooltip from './InfoTooltip';
 import TurnTimeline from './TurnTimeline';
 import {useId,useState} from 'react';
 import { AlertTriangle, Compass, RefreshCw } from 'lucide-react';
@@ -13,7 +14,7 @@ export default function SpeedTuneCard({team,account,options,builds,onRecalc,manu
    <TurnTimeline preview={preview}/><ol>{preview.turns.filter(t=>!t.enemy).map((turn,i)=>{const actor=preview.actors.find(a=>a.key===turn.key);const cut=preview.cut===true&&preview.turns.findIndex(t=>t.key===turn.key)>preview.turns.findIndex(t=>t.enemy);return <li key={turn.key} className={cut?'turn-is-cut':''}><b className="turn-position">{i+1}</b><MonsterPortrait master={actor.master} name={actor.name} element={actor.master%10}/><span><strong>{actor.name}</strong><small>Tick {turn.tick} · posição do card {team.configs.findIndex(c=>c.key===turn.key)+1}</small>{turn.disabled&&<small className="turn-cut-label">⏸ Turno sem ação</small>}{cut&&<small className="turn-cut-label">⚠ Após o inimigo</small>}</span><b>{actor.spd}</b></li>;})}</ol>
    <p className={preview.cut===true?'speed-cut warning':preview.cut===false&&!preview.scenario?.risks.length?'speed-cut safe':'fineprint'}>{preview.cut===true?<><AlertTriangle size={15}/>Risco de corte na primeira rotação</>:preview.cut===false?(preview.scenario?.risks.length?'Sem corte neste ramo · risco condicional':'Sem corte no cenário informado'):'Informe a SPD inimiga para avaliar corte.'}</p>
   </>}
-  {preview?.scenario?.risks.map((risk,i)=><p className="speed-cut warning" key={i}>{risk}</p>)}
-  {preview?.complete&&<details className="combat-breakdown"><summary>Atributos e eventos</summary>{preview.actors.map(a=><p className="fineprint" key={a.key}>{a.name} · HP {a.attributes.hp} · DEF {a.attributes.def} · ATK {a.attributes.atk} · CR {a.attributes.cr}%</p>)}{preview.scenario?.log.map((e,i)=><p key={i} className="fineprint">Tick {e.tick} · {e.type} · {e.amount}%</p>)}</details>}
+  {preview?.scenario?.risks.length>0&&<InfoTooltip label="Riscos condicionais do cenário">{preview.scenario.risks.map((risk,i)=><span className="tooltip-line" key={i}>{risk}</span>)}</InfoTooltip>}
+  {preview?.complete&&<InfoTooltip label="Atributos e eventos">{preview.actors.map(a=><p className="fineprint" key={a.key}>{a.name} · HP {a.attributes.hp} · DEF {a.attributes.def} · ATK {a.attributes.atk} · CR {a.attributes.cr}%</p>)}{preview.scenario?.log.map((e,i)=><p key={i} className="fineprint">Tick {e.tick} · {e.type} · {e.amount}%</p>)}</InfoTooltip>}
  </aside>;
 }
