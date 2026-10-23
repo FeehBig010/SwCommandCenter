@@ -29,7 +29,20 @@ export function classifyDeck(node={},path='',slots=0){
  return {gameMode:null,dungeon:null};
 }
 const SLOT_FIELDS=['monster_ids','unit_id_list','unit_ids','unit_list'];
-const isReference=value=>value==null||['number','string'].includes(typeof value)||typeof value==='object'&&!Array.isArray(value)&&SLOT_FIELDS.every(k=>!Object.hasOwn(value,k))&&(Object.hasOwn(value,'unit_id')&&typeof value.unit_id!=='object'||Object.hasOwn(value,'id')&&!Object.hasOwn(value,'deck_id'));
+function isReference(value){
+ if(value==null||['number','string'].includes(typeof value))return true;
+ if(typeof value!=='object'||Array.isArray(value)||SLOT_FIELDS.some(k=>Object.hasOwn(value,k)))return false;
+ // Empty SWEX slots can be {}, {pos_id: n} or {unit_id: null}. They must not
+ // prevent recognition of an otherwise valid list of monster references.
+ if(Object.keys(value).every(key=>key==='pos_id'))return true;
+ if(Object.hasOwn(value,'unit_id'))return value.unit_id==null||['number','string'].includes(typeof value.unit_id);
+ return Object.hasOwn(value,'id')&&!Object.hasOwn(value,'deck_id');
+}
+function referenceId(value){
+ // unit_id is authoritative: a slot's own `id` is not a monster instance ID.
+ const id=value&&typeof value==='object'?(Object.hasOwn(value,'unit_id')?value.unit_id:value.id):value;
+ return ['number','string'].includes(typeof id)?Number(id):NaN;
+}
 // Some exports encode a list as an object keyed by slot. Preserve holes, rather
 // than compacting with filter(Boolean), so the leader and formation do not move.
 function positionedSlots(entries){
@@ -84,7 +97,7 @@ export function extractAccountPresets(deckList,units,forcedArea=null,diagnostics
   if(candidate){
    const rawIds=candidate.slots;
    if(isRaid&&rawIds.length&&(rawIds.length>6||rawIds.every(Array.isArray))){const rows=rawIds.every(Array.isArray)?rawIds:Array.from({length:Math.ceil(rawIds.length/6)},(_,i)=>rawIds.slice(i*6,i*6+6));for(let i=rows.length-1;i>=0;i--)pending.push({node:{...node,monster_ids:undefined,unit_ids:undefined,unit_list:undefined,unit_id_list:rows[i],raid_party_id:context.raid_party_id??node.deck_id??path,raid_team_index:i},path:`${path}/team/${i}`,inherited:context});continue;}
-   const ids=rawIds.map(v=>{const id=typeof v==='object'?v?.unit_id??v?.id:v;return ['number','string'].includes(typeof id)?Number(id):NaN;});
+   const ids=rawIds.map(referenceId);
    let inferred=classifyDeck({...context,...node},path,ids.length);
    if(!inferred.gameMode&&/\/native_defense(?:\/|$)/.test(path)&&[3,4].includes(ids.length))inferred={gameMode:ids.length===3?'siege':'arena',dungeon:null};
    let area=forcedArea==='pve'?(['cairos','dimensional','rift','toa'].includes(inferred.gameMode)?inferred:{gameMode:'cairos',dungeon:null}):['siege','arena','rta'].includes(forcedArea)?{gameMode:forcedArea,dungeon:null}:inferred;

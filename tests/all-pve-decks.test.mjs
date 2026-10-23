@@ -57,3 +57,16 @@ test('native PvE namespaces route Rift IDs and trial tower difficulty without co
  const plans=syncCairosPlans({id:'account',units:[{id:101,master:10914,name:'Teon',runeIds:[]}],runes:[],accountPresets:p});
  assert.ok(plans['fire-beast']);assert.ok(plans.toah);assert.ok(plans['pve-other']);
 });
+test('direct SWEX object-slot formations retain empty objects and null unit references through PvE hydration and cloud restore',()=>{
+ const r=raw();r.deck_list={9011:[[{unit_id:'101'},{unit_id:102},{},{unit_id:null},{pos_id:5}]],8011:{1:{unit_id:101},2:{unit_id:null},3:{unit_id:102},4:{}}};
+ const a=normalizeAccount(r),decks=hydrateAccountPresets(a);
+ assert.equal(a.presetImport.sources.deck_list.imported,2);
+ const dragon=decks.find(p=>p.dungeon==='dbah');assert.ok(dragon);
+ assert.deepEqual(dragon.unitIds,[101,102,null,null,null]);assert.equal(dragon.members[0].name,'Teon');assert.equal(dragon.members[1].name,'Agrius');assert.equal(dragon.members[0].runes[0].id,1);assert.ok(dragon.members[0].imageUrl);assert.equal(dragon.members[2],null);
+ const plans=syncCairosPlans(a);assert.deepEqual(plans.dbah.configs.map(c=>c.unitId),dragon.unitIds);assert.deepEqual(plans.gbah.configs.map(c=>c.unitId),[101,null,102,null,null]);
+ const restored=restoreAccountPayload(cleanAccountPayload(a),'owner');assert.deepEqual(syncCairosPlans(restored).dbah.configs.map(c=>c.unitId),dragon.unitIds);
+});
+test('explicit null unit_id is an empty slot even when the slot object also has its own id',()=>{
+ const p=extractAccountPresets({dbah:{unit_id_list:[{unit_id:101},{unit_id:null,id:102},{unit_id:102}]}},[{id:101},{id:102}],'pve-default');
+ assert.deepEqual(p[0].unitIds,[101,null,102,null,null]);
+});
