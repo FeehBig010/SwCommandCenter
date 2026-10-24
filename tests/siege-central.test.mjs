@@ -4,7 +4,7 @@ import {blankConfig,makeTeam} from '../src/core/data.js';
 import {equippedBuild} from '../src/core/optimizer.js';
 import {defenseCatalog} from '../src/core/defense-planner.js';
 import {accountStamp} from '../src/core/loadouts.js';
-import {personalSiegeTeams,siegeGuildRecords,copySiegeToPersonal,siegeRuneConflicts,canEditSiegeRecord,siegeComparisonRows,counterDefenseSeed} from '../src/core/siege-central.js';
+import {personalSiegeTeams,siegeGuildRecords,copySiegeToPersonal,siegeRuneConflicts,canEditSiegeRecord,siegeComparisonRows,counterDefenseSeed,runeConflictApplies} from '../src/core/siege-central.js';
 import {cleanSiegeCounter} from '../src/core/siege.js';
 import {newTemplate,cleanTemplate} from '../src/core/guild.js';
 import {pageFromLocation} from '../src/lib/auth.js';
@@ -44,6 +44,37 @@ test('guild records are scoped to active membership, and common members cannot m
  const {record}=fixture(),row={id:'cloud',name:'Shared',owner_id:'member',guild_id:'g1',visibility:'guild',kind:'template',payload:{version:1,team:record.team}};
  const local={id:'local',name:'Modelo local',team:record.team};const records=siegeGuildRecords([local],[],[row,{...row,id:'private',visibility:'private'},{...row,id:'other',guild_id:'g2'},{...row,id:'arena',payload:{team:makeTeam('arena')}}],'g1');
  assert.deepEqual(records.map(r=>r.key),['cloud:cloud','template:local']);assert.equal(canEditSiegeRecord(records[0],{isLeader:false},{user:{id:'member'}}),false);assert.equal(canEditSiegeRecord(records[0],{isLeader:true},{user:{id:'member'}}),true);assert.equal(canEditSiegeRecord(records[0],{isLeader:true},{user:{id:'other'}}),false);assert.equal(canEditSiegeRecord(records[1],{isLeader:true},{user:{id:'other'}}),true);assert.deepEqual(siegeGuildRecords(),[]);assert.equal(siegeGuildRecords([],[],[row],null).length,0);
+});
+
+test('rune warnings apply only to defenses or GvG; player labels cannot enable them',()=>{
+ const attack={...makeTeam('siege'),mode:'attack',name:'Guild War / GvG attack'};
+ assert.equal(runeConflictApplies(attack),false);
+ assert.equal(runeConflictApplies({...attack,mode:'defense'}),true);
+ assert.equal(runeConflictApplies(attack,null,'gvg'),true);
+ assert.equal(runeConflictApplies({...attack,gameMode:'gvg'}),true);
+ assert.equal(runeConflictApplies(null),false);
+});
+
+test('GvG warnings recognize saved and recent SWEX metadata without treating Siege as GvG',()=>{
+ const account={accountPresets:[
+  {id:'saved-gvg',sourceKey:'deck_list',sourceMeta:{deck_type:2}},
+  {id:'saved-siege',sourceKey:'deck_list',sourceMeta:{deck_type:22}},
+  {id:'recent-gvg',sourceKey:'deck_recent_list',sourceMeta:{type:6}},
+  {id:'recent-siege',sourceKey:'deck_recent_list',sourceMeta:{type:7}},
+ ]};
+ for(const [sourceDeckId,expected] of [['saved-gvg',true],['saved-siege',false],['recent-gvg',true],['recent-siege',false],['guild_battle_attack_deck:1',true],['world_guild_battle:1',true],['guildsiege_attack_deck:1',false]]){
+  assert.equal(runeConflictApplies({mode:'attack',gameMode:'siege',sourceDeckId},account),expected,sourceDeckId);
+ }
+});
+
+test('eligible conflict pool ignores ordinary attacks but retains conflicts between defenses and GvG',()=>{
+ const {account,record}=fixture(),attack=copySiegeToPersonal(record,account).team,defense={...copySiegeToPersonal(record,account).team,mode:'defense'};
+ const eligible=teams=>teams.filter(t=>runeConflictApplies(t,account));
+ assert.equal(siegeRuneConflicts(account,eligible([attack,defense])).length,0);
+ const secondDefense={...copySiegeToPersonal(record,account).team,mode:'defense'};
+ assert.equal(siegeRuneConflicts(account,eligible([attack,defense,secondDefense])).length,18);
+ const gvg={...attack,sourceDeckId:'guild_battle_attack_deck:1'};
+ assert.equal(siegeRuneConflicts(account,eligible([gvg,defense])).length,18);
 });
 test('legacy guild URLs resolve to the Central and template export preserves attack/defense role',()=>{
  assert.equal(pageFromLocation({hash:'#/guild'}),'siege');assert.equal(pageFromLocation({hash:'#/siege'}),'siege');const {record}=fixture(),draft=newTemplate();draft.team=record.team;draft.name='Ofensa';const clean=cleanTemplate(draft);assert.equal(clean.team.mode,'attack');assert.equal(defenseCatalog([],null,[clean]).length,0);assert.equal(defenseCatalog([],null,[{...clean,team:{...clean.team,mode:'defense'}}]).length,1);assert.equal(cleanTemplate({...draft,team:{...draft.team,mode:'defense'}}).team.mode,'defense');

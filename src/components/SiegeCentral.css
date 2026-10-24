@@ -112,3 +112,34 @@
 @media(max-width:1100px){.siege-offense-content{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){.siege-defense-header{gap:10px;padding:10px}.siege-defense-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%}.siege-defense-summary-unit{flex-direction:column;align-items:center;text-align:center;gap:4px}.siege-defense-summary-unit strong{font-size:10px;max-width:100%}.siege-offense-workspace .siege-counter-lineup{grid-template-columns:minmax(0,1fr)}.siege-offense-workspace .siege-attack-slot{flex-direction:row;align-items:center}.siege-offense-workspace .siege-attack-slot>.monster-portrait{width:48px;height:48px}.siege-counters-accordion{padding:10px}.siege-counter-toggle{font-size:12px}.siege-counters-stack{max-height:75vh}}
 .siege-counters-stack:focus-visible{outline:2px solid #eed08b;outline-offset:2px}
+
+/* Context belongs to the page header; presets are identified by their trio. */
+.siege-central-heading{flex-wrap:wrap;margin-bottom:18px}
+.siege-central-heading .siege-space-tabs{min-width:290px;max-width:100%;border:1px solid var(--siege-border);border-radius:11px}
+.siege-master-item{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px}
+.siege-master-lineup{justify-content:center;max-width:100%}
+.siege-master-item .siege-conflict-badge{display:inline-flex;align-items:center;gap:4px;color:#e6c58d;font-variant-numeric:tabular-nums}
+.siege-detail-toolbar{justify-content:flex-end;padding-bottom:8px;margin-bottom:10px;border-bottom:0}
+.siege-detail-toolbar:empty{display:none}
+.siege-detail .builder-controls.compact{display:flex;align-items:center;gap:6px;padding:8px;margin:12px 0}
+.siege-detail .builder-controls.compact .button-group{width:auto;margin-left:auto;gap:6px}
+.siege-detail .icon-button{flex-shrink:0}
+.siege-detail .builder-controls.compact .icon-button{width:34px;height:34px;padding:7px}
+.siege-detail .icon-button[aria-pressed=true]{background:#b99b4a26;border-color:#b99b4a99;color:#f0d698}
+.siege-detail .team-header{gap:8px;padding:10px 12px}
+.team-preset-portraits{display:flex;align-items:center;gap:7px;min-width:0}
+.team-preset-portraits .monster-portrait{width:44px;height:44px;flex:0 0 44px;border-radius:8px}
+.team-name-edit{position:relative}
+.team-name-edit summary{list-style:none;cursor:pointer}
+.team-name-edit summary::-webkit-details-marker{display:none}
+.team-name-edit[open]>.field{position:absolute;z-index:5;top:100%;left:0;width:240px;max-width:65vw;margin:6px 0;padding:8px;background:#172332;border:1px solid var(--siege-border);border-radius:8px;box-shadow:0 8px 24px #0008}
+.team-name-edit .team-name{width:100%}
+.team-name-edit summary:focus-visible,.siege-space-tabs button:focus-visible{outline:2px solid #e4cb8c;outline-offset:2px}
+@media(max-width:600px){
+ .siege-central-heading .siege-space-tabs{width:100%;min-width:0}
+ .siege-master-lineup{gap:5px}
+ .siege-master-lineup .monster-portrait{width:34px;height:34px;flex-basis:34px}
+ .siege-detail .team-meta{width:100%;justify-content:flex-end;margin-left:0}
+ .siege-detail .builder-controls.compact{flex-wrap:nowrap}
+ .team-name-edit[open]>.field{left:auto;right:0}
+}

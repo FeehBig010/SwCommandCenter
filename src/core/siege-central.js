@@ -6,6 +6,16 @@ import {currentRuneIds} from './loadouts.js';
 
 export const personalSiegeTeams=teams=>teamsForArea(teams,'siege');
 
+// Siege attacks reuse the global pool. Only defenses and explicitly identified
+// Guild War/GvG teams participate in the simultaneous rune warning.
+export function runeConflictApplies(team,account,area='siege'){
+ if(!team)return false;
+ if(team.mode==='defense'||area==='gvg'||team.gameMode==='gvg'||team.siegeMode==='gvg')return true;
+ const source=account?.accountPresets?.find(p=>p.id===team.sourceDeckId),meta=source?.sourceMeta||team.sourceMeta||{};
+ if(source?.sourceKey==='deck_list'&&Number(meta.deck_type)===2||source?.sourceKey==='deck_recent_list'&&Number(meta.type)===6)return true;
+ return /(?:^|[\/_:-])gvg(?:$|[\/_:-])|world.?guild.?battle|guild.?war|server.?guild|guild.?battle/i.test([team.sourceDeckId,source?.sourceKey,source?.sourcePath].filter(Boolean).join('/'));
+}
+
 // Guild records are portable goals. Account equipment is resolved only after a copy.
 export function siegeGuildRecords(templates=[],matchups=[],rows=[],guildId=null){
  const local=templates.map(t=>({key:`template:${t.id}`,id:t.id,kind:'template',name:t.name,description:t.description||'',team:{...t.team,name:t.name,gameMode:'siege',mode:t.team.mode||'defense'},local:t}));

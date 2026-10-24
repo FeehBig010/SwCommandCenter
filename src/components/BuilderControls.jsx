@@ -1,5 +1,10 @@
-import { Download, Save, Skull } from 'lucide-react';
-export default function BuilderControls({team,options,onOptions,onRecalc,onSave,onLoad,onClear,disabled=false}){
+import { Download, Save, Skull, Trash2, ShieldCheck, Hammer } from 'lucide-react';
+export default function BuilderControls({team,options,onOptions,onRecalc,onSave,onLoad,onClear,disabled=false,compact=false}){
+ if(compact)return <div className="builder-controls compact" role="group" aria-label="Ações do time">
+  <button type="button" className="icon-button" title="Modo estrito: exigir todas as metas" aria-label="Modo estrito" aria-pressed={options.strictMode===true} disabled={disabled} onClick={()=>onOptions({...options,strictMode:options.strictMode!==true})}><ShieldCheck size={17}/></button>
+  <button type="button" className="icon-button" title="Simular gems e grinds máximos" aria-label="Simular gems e grinds máximos" aria-pressed={options.maxGrindsGems===true} disabled={disabled} onClick={()=>onOptions({...options,maxGrindsGems:options.maxGrindsGems!==true})}><Hammer size={17}/></button>
+  <div className="button-group"><button type="button" className="icon-button" title="Salvar plano de times" aria-label="Salvar plano de times" disabled={disabled} onClick={onSave}><Save size={17}/></button><button type="button" className="icon-button" title="Carregar plano de times" aria-label="Carregar plano de times" disabled={disabled} onClick={onLoad}><Download size={17}/></button><button type="button" className="icon-button" title="Limpar seleção e metas do time" aria-label="Limpar time" disabled={disabled} onClick={onClear}><Trash2 size={17}/></button></div>
+ </div>;
  return <div className="builder-controls">
 
   <label className="check-label"><input type="checkbox" disabled={disabled} checked={options.strictMode===true} onChange={e=>onOptions({...options,strictMode:e.target.checked})}/>Strict Mode</label>
