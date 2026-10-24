@@ -4,7 +4,7 @@ import {hydrateAccountPresets,syncCairosPlans,accountPresetPage} from '../src/co
 import {cairosStagesForPresets} from '../src/core/pve.js';import {cleanAccountPayload,restoreAccountPayload} from '../src/core/clean-account-payload.js';
 function raw(){return {wizard_id:1,runes:[],unit_list:[{unit_id:101,unit_master_id:10914,con:700,atk:800,def:650,spd:100,runes:[{rune_id:1,slot_no:2,set_id:3,class:6,upgrade_curr:15,pri_eff:[8,42],sec_eff:[]}]},{unit_id:102,unit_master_id:99991,unit_name:'Agrius',con:700,atk:800,def:650,spd:99,runes:[{rune_id:2,slot_no:2,set_id:3,class:6,upgrade_curr:15,pri_eff:[8,42],sec_eff:[]}]}],deck_list:[{deck_id:1,name:'Dragão · Teon e Agrius',dungeon_id:9011,unit_id_list:[101,102,0,999]}],defense_deck_list:[{unit_id_list:[101,102,0]}],world_arena_deck_list:[{unit_id_list:[101,102]}]};}
 test('mandatory Dragon Teon/Agrius roster preserves provided identities, runes, order and five slots including nulls',()=>{const a=normalizeAccount(raw()),p=hydrateAccountPresets(a).find(p=>p.dungeon==='dbah');assert.equal(p.members[0].name,'Teon');assert.equal(p.members[1].name,'Agrius');assert.equal(p.members[0].runes[0].id,1);assert.equal(p.members[1].runes[0].id,2);assert.deepEqual(p.unitIds,[101,102,null,null,null]);assert.deepEqual(p.members.slice(2),[null,null,null]);assert.equal(syncCairosPlans(a).dbah.configs.length,5);const restored=restoreAccountPayload(cleanAccountPayload(a),'owner');assert.equal(restored.units[1].name,'Agrius');assert.deepEqual(restored.accountPresets.find(p=>p.dungeon==='dbah').unitIds,[101,102,null,null,null]);});
-test('untyped PvE decks remain visible as unclassified destination while explicit RTA remains isolated',()=>{const r=raw();r.deck_list.push([101,null,102],{name:'Meu outro PvE',unit_id_list:[101,102]},{mode:'world_arena',unit_id_list:[101]});const a=normalizeAccount(r);assert.ok(a.accountPresets.some(p=>p.dungeon==='pve-other'));assert.ok(cairosStagesForPresets(a.accountPresets).some(s=>s[0]==='pve-other'));assert.ok(a.accountPresets.some(p=>p.gameMode==='rta'));assert.ok(syncCairosPlans(a)['pve-other']);});
+test('untyped PvE decks stay in import diagnostics without creating an Other destination while explicit RTA remains isolated',()=>{const r=raw();r.deck_list.push([101,null,102],{name:'Meu outro PvE',unit_id_list:[101,102]},{mode:'world_arena',unit_id_list:[101]});const a=normalizeAccount(r);assert.ok(a.accountPresets.some(p=>p.dungeon===null));assert.ok(!cairosStagesForPresets(a.accountPresets).some(s=>s[0].endsWith('other')));assert.ok(a.accountPresets.some(p=>p.gameMode==='rta'));assert.equal(syncCairosPlans(a)['pve-other'],undefined);});
 test('iterative extraction keeps deep decks, arbitrary deck count and all unit positions without truncation',()=>{let nested={dungeon_name:'DBAH',unit_id_list:[1,2,3,4,5,6,7,8]};for(let i=0;i<40;i++)nested={child:nested};const presets=extractAccountPresets({nested,many:Array.from({length:75},(_,i)=>({name:`Deck${i}`,unit_id_list:[1,0]}))},Array.from({length:8},(_,i)=>({id:i+1})),'pve');assert.equal(presets.length,76);assert.deepEqual(presets[0].unitIds,[1,2,3,4,5,6,7,8]);assert.ok(presets.slice(1).every(p=>p.unitIds.length===5&&p.unitIds[1]===null));});
 
 test('object-encoded slot lists and positional references hydrate all sources without moving missing slots',()=>{
@@ -39,7 +39,7 @@ test('empty saved decks, populated alternative fields and inherited leader/name 
 });
 test('import diagnostics distinguish absent/empty sources and unsupported structures without retaining raw social data',()=>{
  const r=raw();r.deck_list=[{unit_id_list:[101,102],secret:'private'},{unit_id_list:'unsupported'}];delete r.defense_deck_list;r.world_arena_deck_list=[];
- const a=normalizeAccount(r);assert.deepEqual(a.presetImport.sources.deck_list,{present:true,hasData:true,imported:1,unrecognized:1});assert.equal(a.presetImport.sources.defense_deck_list.present,false);assert.equal(a.presetImport.sources.world_arena_deck_list.hasData,false);
+ const a=normalizeAccount(r);assert.deepEqual(a.presetImport.sources.deck_list,{present:true,hasData:true,imported:1,unrecognized:2});assert.equal(a.presetImport.sources.defense_deck_list.present,false);assert.equal(a.presetImport.sources.world_arena_deck_list.hasData,false);
  assert.ok(!JSON.stringify(a).includes('private'));assert.deepEqual(Object.keys(cleanAccountPayload(a)).sort(),['deck_list','defense_deck_list','runes','unit_list','world_arena_deck_list']);
 });
 test('account destination preserves active PvE area and handles Rift/ToA-only login and continuation',()=>{
@@ -53,9 +53,9 @@ test('direct numeric slot maps and malformed slot references keep the rest of ea
 });
 test('native PvE namespaces route Rift IDs and trial tower difficulty without confusing elemental Halls or PvP',()=>{
  const p=extractAccountPresets({elemental_rift_dungeon:{2001:{unit_id_list:[101]}},trial_tower:{difficulty:2,unit_id_list:[101]},hall:{dungeon_id:1001,unit_id_list:[101]},arena:{deck_name:'ToA Hard',unit_id_list:[101]}},[{id:101}],'pve-default');
- assert.deepEqual(p.map(p=>[p.gameMode,p.dungeon]),[['rift','fire-beast'],['toa','toah'],['cairos','pve-other'],['arena',null]]);
+ assert.deepEqual(p.map(p=>[p.gameMode,p.dungeon]),[['rift','fire-beast'],['toa','toah'],['cairos',null],['arena',null]]);
  const plans=syncCairosPlans({id:'account',units:[{id:101,master:10914,name:'Teon',runeIds:[]}],runes:[],accountPresets:p});
- assert.ok(plans['fire-beast']);assert.ok(plans.toah);assert.ok(plans['pve-other']);
+ assert.ok(plans['fire-beast']);assert.ok(plans.toah);assert.equal(plans['pve-other'],undefined);
 });
 test('direct SWEX object-slot formations retain empty objects and null unit references through PvE hydration and cloud restore',()=>{
  const r=raw();r.deck_list={9011:[[{unit_id:'101'},{unit_id:102},{},{unit_id:null},{pos_id:5}]],8011:{1:{unit_id:101},2:{unit_id:null},3:{unit_id:102},4:{}}};

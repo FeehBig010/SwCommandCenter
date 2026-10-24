@@ -5,7 +5,6 @@ import {blankConfig,makeTeam} from './data.js';
 import {MONSTER_CATALOG} from './monsters.js';
 import {artifactEffects} from './artifacts.js';
 import {validateWaveClear} from './optimizer.js';
-import {LEGACY_ACCURACY} from './pve-thresholds.js';
 
 // Starting compositions, not a guarantee of dungeon success or fastest clear time.
 export const CAIROS_PROFILES=[
@@ -15,13 +14,13 @@ export const CAIROS_PROFILES=[
  {id:'sf10',name:'SF10',title:'Fortaleza de Aço 10',members:['Loren','Zinc','Kro','Raoq','Fran'],accuracySlots:[0,1,2,3],speed:[210,200,180,170,220]},
  {id:'pc10',name:'PC10',title:'Cripta do Justiceiro 10',members:['Verdehile','Icaru','Icaru','Icaru','Lushen'],accuracySlots:[1,2,3],speed:[180,170,165,160,150]},
 ].map(profile=>({...profile,...waves[profile.id]}));
-export const LEGACY_CAIROS_PROFILES=[['gb12',0,'GB12','Gigante B12'],['db12',1,'DB12','Dragão B12'],['nb12',2,'NB12','Necro B12']].map(([id,index,name,title])=>({...CAIROS_PROFILES[index],id,name,title,accuracy:LEGACY_ACCURACY[id],waves:null}));
-export const ALL_CAIROS_PROFILES=[...CAIROS_PROFILES,...LEGACY_CAIROS_PROFILES,{id:'pve-other',name:'Outros presets PvE',title:'PvE · destino não identificado',members:[],speed:[],accuracySlots:[],accuracy:0,waves:null}];
+export const LOWER_CAIROS_PROFILES=[['gb10','GB10','Gigante B10'],['db10','DB10','Dragão B10'],['nb10','NB10','Necrópolis B10']].map(([id,name,title])=>({id,name,title,members:[],speed:[],accuracySlots:[],accuracy:null,waves:null}));
+export const ALL_CAIROS_PROFILES=[...CAIROS_PROFILES,...LOWER_CAIROS_PROFILES];
 export const WAVE_SKILLS={13413:{name:'Amputation Magic · Lushen',multiplier:.68,hits:3,ignoreDefense:true,maxSkillUps:30},13911:{name:'Thousand Shots · Julie (HP cheio)',multiplier:1.2,hits:6,ignoreDefense:false,maxSkillUps:15}};
 export function makeCairosTeam(profile,account){
  if(!profile)throw new Error('Masmorra inválida.');
  const preset=presetsForArea(account?.accountPresets,'cairos',profile.id)[0];
- if(!preset&&profile.id==='pve-other')return {...makeTeam('cairos'),dungeon:profile.id,name:profile.title};
+ if(!preset&&!profile.members.length)return {...makeTeam('cairos'),dungeon:profile.id,name:profile.title};
  if(preset)return {...teamFromGameDeck(preset,account),towerSpd:15,guildSpd:5};
  const used=new Set();
  return {...makeTeam('cairos'),suggestedTemplate:true,towerSpd:15,guildSpd:5,dungeon:profile.id,name:profile.name,configs:profile.members.map((name,i)=>{
@@ -33,7 +32,7 @@ export function makeCairosTeam(profile,account){
  })};
 }
 export function cairosWaveReport(account,builds,attackerKey,profile,settings={}){
- if(!profile.waves)throw new Error('Dados de waves B12 não incluídos neste snapshot; use o checklist e o cenário de chefe.');
+ if(!profile.waves)throw new Error('Dados de waves não incluídos para este andar; use o checklist e o cenário de chefe.');
  const build=builds.find(b=>b.key===attackerKey),unit=account.units.find(u=>u.id===build?.unitId);
  if(!build||!unit)throw new Error('Selecione um atacante presente na distribuição otimizada.');
  const skill=WAVE_SKILLS[unit.master];

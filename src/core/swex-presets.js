@@ -7,7 +7,7 @@ export function discoverDeckSources(raw){
  const sources=[],pending=[{node:raw,path:'',inherited:{}}],seen=new Set();
  while(pending.length){
   const {node,path,inherited}=pending.pop();if(!node||typeof node!=='object'||seen.has(node))continue;seen.add(node);
-  const context={...inherited,...Object.fromEntries([...ARENA_CONTEXT_FIELDS,'game_mode','area','mode','dungeon_id','dungeon_name','content_id','difficulty','deck_type','type','sub_type'].filter(key=>Object.hasOwn(node,key)).map(key=>[key,node[key]]))};
+  const context={...inherited,...Object.fromEntries([...ARENA_CONTEXT_FIELDS,'game_mode','area','mode','dungeon_id','dungeon_name','content_id','difficulty','floor','floor_no','stage','stage_id','deck_type','type','sub_type'].filter(key=>Object.hasOwn(node,key)).map(key=>[key,node[key]]))};
   if(path&&[...ARENA_CONTEXT_FIELDS,'game_mode','area','mode','dungeon_id','dungeon_name','content_id','deck_type','deck_id','leader_unit_id'].some(key=>Object.hasOwn(context,key)||Object.hasOwn(node,key))&&['unit_id_list','monster_ids','unit_ids'].some(key=>node[key]&&typeof node[key]==='object')){sources.push({key:path.split('/').at(-1),path,value:node,context});continue;}
   for(const [key,value] of Object.entries(node)){
    if(key==='unit_list'||!value||typeof value!=='object'||/equip|rune|artifact|craft|lock|chat|friend|mail|session|token/i.test(key))continue;

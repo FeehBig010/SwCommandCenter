@@ -1,3 +1,4 @@
+import {canonicalPveStage,pveSlots} from './pve-stages.js';
 import {arenaContextOf,hasArenaContext} from './arena-context.js';
 import {PVE_AREAS} from './pve.js';
 import {normalizeFocuses} from './team-ux.js';
@@ -11,7 +12,7 @@ const numeric=(value,max=1000000)=>{if(value===''||value==null)return '';const n
 const text=(v,max=100)=>{if(typeof v!=='string'||!v.trim()||v.length>max)throw new Error('Nome inválido.');return v.trim();};
 export function portableTeam(input,account){
  if(!input||!Array.isArray(input.configs)||![3,4,5,6].includes(input.configs.length))throw new Error('Use uma composição de 3 a 6 slots.');
- const declared=GAME_MODES[input.gameMode],gameMode=declared?.slots===input.configs.length?input.gameMode:{3:'siege',4:'arena',5:'cairos',6:'rift'}[input.configs.length];
+ const declared=GAME_MODES[input.gameMode],gameMode=(pveSlots(input.gameMode,input.dungeon)||declared?.slots)===input.configs.length?input.gameMode:{3:'siege',4:'arena',5:'cairos',6:'rift'}[input.configs.length];
  const arenaContext=gameMode==='arena'?(hasArenaContext(input)?arenaContextOf(input):'unknown'):null;if(arenaContext==='unknown'&&hasArenaContext(input)&&input.arenaContext!=='unknown')throw new Error('Contexto de Arena inválido.');
  const configs=input.configs.map(c=>{
   const unit=account?.units.find(u=>u.id===c.unitId),masterId=Number(unit?.master||c.masterId);
@@ -21,7 +22,7 @@ export function portableTeam(input,account){
   const mains=Object.fromEntries([2,4,6].map(s=>{const v=Number(c.mains?.[s]||0);if(!SLOT_MAINS[s].includes(v))throw new Error('Main stat inválido.');return [s,v];}));
   return {...(c.focuses?{focuses:normalizeFocuses(c.focuses)}:{}),...(c.combat?{combat:normalizeCombat(c.combat)}:{}),masterId,label:text(unit?.name||c.label,80),sets,strictSets:c.strictSets!==false,mains,goals:Object.fromEntries(STATS.map(k=>[k,numeric(c.goals?.[k])])),basis:c.basis==='bonus'?'bonus':'total',artifacts:c.artifacts!==false,lockSpeedSync:c.lockSpeedSync===true,objective:['balanced','hp','spd','cr','damage'].includes(c.objective)?c.objective:'balanced',damage:normalizeDamageSettings(c.damage),...(c.combatSpd!==undefined?{combatSpd:numeric(c.combatSpd,10000)||0}:{}),...(c.maxTick!==undefined?{maxTick:numeric(c.maxTick,10000)||0}:{})};
  });
- const stage=PVE_AREAS[gameMode]?.stages.find(s=>s[0]===(input.sourceDungeon||input.dungeon))?.[0];
+ const stage=PVE_AREAS[gameMode]?.stages.find(s=>s[0]===canonicalPveStage(input.sourceDungeon||input.dungeon))?.[0];
  return {...(stage?{dungeon:stage}:{}),...(input.autoOpener!==undefined?{autoOpener:input.autoOpener===true}:{}),...(input.exportContext?.title?{exportContext:{kind:input.exportContext.kind==='pve'?'pve':'pvp',title:text(input.exportContext.title,200)}}:{}),...(Object.hasOwn(input,'leader')?{leader:normalizeLeader(input.leader)}:{}),name:text(input.name||'Composição'),...(input.description?{description:text(input.description,1000)}:{}),...(input.combatScenario?{combatScenario:normalizeScenario(input.combatScenario)}:{}),...(input.autoName!==undefined?{autoName:input.autoName===true}:{}),...(input.guildSpd!==undefined?{guildSpd:numeric(input.guildSpd,100)||0}:{}),gameMode,...(arenaContext?{arenaContext}:{}),mode:input.mode==='attack'?'attack':'defense',towerSpd:numeric(input.towerSpd,100)||0,leaderSpd:numeric(input.leaderSpd,100)||0,enemyCombatSpd:numeric(input.enemyCombatSpd,1000)||0,leaderIndex:Math.min(configs.length-1,Math.max(0,Number.isInteger(input.leaderIndex)?input.leaderIndex:input.configs.findIndex(c=>c.key===input.leaderKey))),configs};
 }
 export function copyTeamToOptimizer(input,account){

@@ -1,3 +1,4 @@
+import {canonicalPveStage,pveSlots} from './pve-stages.js';
 import {equipmentPools} from './equipment-pools.js';
 import {normalizeCrafts} from './rune-crafts.js';
 import {skillLevels} from './skill-levels.js';
@@ -75,7 +76,7 @@ export const GAME_MODES = {
  toa:{label:'5 Slots (Torre da Ascensão)',slots:5},
 };
 export function changeGameMode(team, gameMode) {
- const slots=GAME_MODES[gameMode]?.slots;
+ const slots=pveSlots(gameMode,team.dungeon)||GAME_MODES[gameMode]?.slots;
  if(!slots)return team;
  const configs=[...team.configs,...(team.inactiveConfigs||[])];
  while(configs.length<slots)configs.push(blankConfig());
@@ -83,7 +84,7 @@ export function changeGameMode(team, gameMode) {
 }
 // Legacy three-slot plans default to Siege. Stored hidden slots never enter a search.
 export function restoreTeam(team) {
- return changeGameMode(team, GAME_MODES[team.gameMode]?team.gameMode:'siege');
+ return changeGameMode({...team,...(pveSlots(team.gameMode,team.dungeon)?{dungeon:canonicalPveStage(team.dungeon),sourceDungeon:canonicalPveStage(team.sourceDungeon)}:{})}, GAME_MODES[team.gameMode]?team.gameMode:'siege');
 }
 
 export function teamFromPreset(preset,account,team=makeTeam(preset.gameMode||'siege')){

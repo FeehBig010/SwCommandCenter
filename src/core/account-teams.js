@@ -1,3 +1,4 @@
+import {canonicalPveStage,isPveStage,pveSlots} from './pve-stages.js';
 import {arenaContextOf} from './arena-context.js';
 import {monsterImageSources} from './monsters.js';
 import {combatAttributes} from './speedTuner.js';
@@ -16,7 +17,7 @@ export function accountPresetPage(account,current='portal'){
  return first||'siege';
 }
 export function teamFromGameDeck(preset,account,previous){
- const mode=preset.gameMode||previous?.gameMode||'siege';assertPresetArea(preset,mode,preset.dungeon,arenaContextOf(preset));if(previous&&mode==='arena'&&arenaContextOf(previous)!==arenaContextOf(preset))throw new Error('Este deck pertence a outro contexto de Arena.');if(previous&&(previous.gameMode||'siege')!==mode)throw new Error('Não é possível carregar um deck de outra área.');const slots=GAME_MODES[mode]?.slots||3;
+ const mode=preset.gameMode||previous?.gameMode||'siege';assertPresetArea(preset,mode,preset.dungeon,arenaContextOf(preset));if(previous&&mode==='arena'&&arenaContextOf(previous)!==arenaContextOf(preset))throw new Error('Este deck pertence a outro contexto de Arena.');if(previous&&(previous.gameMode||'siege')!==mode)throw new Error('Não é possível carregar um deck de outra área.');const slots=pveSlots(mode,preset.dungeon)||GAME_MODES[mode]?.slots||3;
  const oldByUnit=new Map((previous?.configs||[]).map(c=>[c.unitId,c]));
  const configs=Array.from({length:slots},(_,i)=>{
   const original=account.units.find(u=>Number(u.id)===Number(preset.unitIds[i])),equipment=preset.equipment?.find(e=>e.unitId===original?.id),unit=original&&equipment?{...original,runeIds:equipment.runeIds,artifactIds:equipment.artifactIds}:original,old=unit&&oldByUnit.get(unit.id);
@@ -27,7 +28,7 @@ export function teamFromGameDeck(preset,account,previous){
   return {...c,...(!unit?{enabled:false,missingUnitId:null}:{}),sets,strictSets:false,basis:'total',lockSpeedSync:mode==='cairos',mains:Object.fromEntries([2,4,6].map(s=>[s,account.runes.find(r=>unit?.runeIds?.includes(r.id)&&r.slot===s)?.main[0]||0]))};
  });
  const leaderIndex=Math.max(0,Math.min(slots-1,Number(preset.leaderIndex)||0)),leader=catalogLeader(configs[leaderIndex]?.masterId);
- const next={...makeTeam(mode),...previous,gameMode:mode,...(mode==='arena'?{arenaContext:arenaContextOf(preset)}:{}),mode:preset.mode||previous?.mode||'defense',configs,inactiveConfigs:[],leader,leaderIndex,leaderKey:leader?configs[leaderIndex]?.key:null,leaderSpd:0,towerSpd:previous?.towerSpd??account.towers?.glorySpd??0,guildSpd:previous?.guildSpd??account.towers?.guildSpd??0,sourceDeckId:preset.id,sourceAccountId:account.id,sourceDungeon:preset.dungeon||null,dungeon:preset.dungeon||previous?.dungeon||null,sourceDeckName:preset.name,sourceImportedAt:account.importedAt};
+ const next={...makeTeam(mode),...previous,gameMode:mode,...(mode==='arena'?{arenaContext:arenaContextOf(preset)}:{}),mode:preset.mode||previous?.mode||'defense',configs,inactiveConfigs:[],leader,leaderIndex,leaderKey:leader?configs[leaderIndex]?.key:null,leaderSpd:0,towerSpd:previous?.towerSpd??account.towers?.glorySpd??0,guildSpd:previous?.guildSpd??account.towers?.guildSpd??0,sourceDeckId:preset.id,sourceAccountId:account.id,sourceDungeon:canonicalPveStage(preset.dungeon)||null,dungeon:canonicalPveStage(preset.dungeon||previous?.dungeon)||null,sourceDeckName:preset.name,sourceImportedAt:account.importedAt};
  delete next.plannedRunes;
  if(preset.equipment?.length)next.plannedRunes={accountStamp:`${account.id}:${account.importedAt||''}`,byConfig:Object.fromEntries(configs.flatMap(c=>{const e=preset.equipment.find(e=>e.unitId===c.unitId);return e?[[c.key,e.runeIds.filter(id=>account.runes.some(r=>r.id===id))]]:[];}))};
  return {...next,autoName:previous?.autoName!==false,name:previous?.autoName===false?previous.name:automaticTeamName(configs)};
@@ -54,8 +55,8 @@ function* syncCairosPlansSteps(account,previous={},sameAccount=false){
  const presetById=new Map((account.accountPresets||[]).map(p=>[p.id,p]));
  const next=sameAccount?Object.fromEntries(Object.entries(previous).map(([key,t])=>[key,{...refreshManualTeam(account,t),sourceDeckId:null,sourceDeckName:null}])):{},selected=new Set();
  let completed=0;const total=(account.accountPresets||[]).length;
- for(const p of account.accountPresets||[])if(['cairos','dimensional','rift','toa'].includes(p.gameMode)&&p.dungeon){
-  const stage=p.dungeon,first=!selected.has(stage);selected.add(stage);
+ for(const p of account.accountPresets||[])if(['cairos','dimensional','rift','toa'].includes(p.gameMode)&&isPveStage(p.gameMode,p.dungeon)){
+  const stage=canonicalPveStage(p.dungeon),first=!selected.has(stage);selected.add(stage);
   const old= sameAccount?oldByDeck.get(p.id):null;
   const team=teamFromGameDeck(p,account,old);
   if(first){const chosen=sameAccount?previous[stage]?.sourceDeckId:null;const candidate=presetById.get(chosen),preset=candidate?.dungeon===stage&&candidate?.gameMode===p.gameMode?candidate:null;next[stage]=preset?teamFromGameDeck(preset,account,previous[stage]):team;}

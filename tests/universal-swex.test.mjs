@@ -10,7 +10,7 @@ test('all formation namespaces coexist; null/object holes and nested WGB/RTA rou
  const a=normalizeAccount(r),teams=syncAccountTeams(a),pve=syncCairosPlans(a);
  assert.deepEqual(new Set(a.accountPresets.map(p=>p.gameMode)),new Set(['arena','siege','cairos','rift','dimensional','rta','toa']));
  assert.ok(teams.filter(t=>t.gameMode==='siege').every(t=>t.configs.length===3&&t.configs[1].unitId===null));assert.equal(teams.find(t=>t.gameMode==='arena').configs.length,4);assert.equal(teams.find(t=>t.gameMode==='rta').configs.length,4);
- assert.equal(pve.dbah.configs.length,5);assert.equal(pve['ice-beast'].configs.length,6);assert.equal(pve['dimensional-other'].configs.length,4);assert.equal(pve.toah.configs.length,5);
+ assert.equal(pve.dbah.configs.length,5);assert.equal(pve['ice-beast'].configs.length,6);assert.equal(pve['karzhan-runes'].configs.length,4);assert.equal(pve.toah.configs.length,5);
  assert.deepEqual(pve.dbah.configs.map(c=>c.unitId),[1,null,3,4,5]);
  const restored=restoreAccountPayload(cleanAccountPayload(a),'user');assert.equal(restored.accountPresets.length,a.accountPresets.length);assert.equal(syncAccountTeams(restored).length,teams.length);assert.deepEqual(restored.accountPresets.map(p=>[p.gameMode,p.dungeon]).sort(),a.accountPresets.map(p=>[p.gameMode,p.dungeon]).sort());
 });

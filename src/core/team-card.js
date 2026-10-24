@@ -1,3 +1,4 @@
+import {PVE_STAGES,canonicalPveStage} from './pve-stages.js';
 import {orderRuneSets} from './rune-sets.js';
 import {skillLevels} from './skill-levels.js';
 import {equippedBuild,calculateStats,artifactBonus} from './optimizer.js';
@@ -5,12 +6,12 @@ import {STATS,FOUR} from './data.js';
 import {normalizeLeader} from './leaders.js';
 import { MONSTER_FALLBACK,resolveMonsterImageSources } from './monsters.js';
 
-const DUNGEONS={db12:"Dragon's Lair B12",gb12:"Giant's Keep B12",nb12:'Necropolis B12',dbah:"Dragon's Lair · Abyss Hard",gbah:"Giant's Keep · Abyss Hard",nbah:'Necropolis · Abyss Hard',sf10:'Steel Fortress B10',pc10:"Punisher's Crypt B10"};
+const DUNGEONS=Object.fromEntries(Object.values(PVE_STAGES).flat().map(([id,label])=>[id,label]));
 export function teamCardHeading(team){
  const pve=['cairos','dimensional','pve','rift','raid','toa','labyrinth'].includes(team.gameMode)||team.exportContext?.kind==='pve';
  const explicit=String(team.exportContext?.title||team.objectiveName||'').trim().slice(0,200);
  if(explicit)return {kind:pve?'pve':'pvp',title:explicit};
- if(pve){const target=[team.bossName,team.stageName].filter(Boolean).join(' - ');return {kind:'pve',title:target||DUNGEONS[team.sourceDungeon||team.dungeon]||team.dungeonTitle||team.name||'Objetivo PvE'};}
+ if(pve){const target=[team.bossName,team.stageName].filter(Boolean).join(' - ');return {kind:'pve',title:target||DUNGEONS[canonicalPveStage(team.sourceDungeon||team.dungeon)]||team.dungeonTitle||team.name||'Objetivo PvE'};}
  const enemies=(team.enemyDefense||[]).map(m=>m.label||m.name).filter(Boolean);
  return {kind:'pvp',title:enemies.length?`Counter · ${enemies.join(' / ')}`:team.mode==='defense'?`Defesa · ${team.gameMode==='arena'?'Arena':'Siege / GvG'}`:team.gameMode==='arena'?'Counter · Arena':'Counter Meta Siege Defense'};
 }
