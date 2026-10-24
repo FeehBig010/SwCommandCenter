@@ -5,6 +5,7 @@ import {blankConfig,makeTeam} from './data.js';
 import {MONSTER_CATALOG} from './monsters.js';
 import {artifactEffects} from './artifacts.js';
 import {validateWaveClear} from './optimizer.js';
+import {LEGACY_ACCURACY} from './pve-thresholds.js';
 
 // Starting compositions, not a guarantee of dungeon success or fastest clear time.
 export const CAIROS_PROFILES=[
@@ -14,7 +15,7 @@ export const CAIROS_PROFILES=[
  {id:'sf10',name:'SF10',title:'Fortaleza de Aço 10',members:['Loren','Zinc','Kro','Raoq','Fran'],accuracySlots:[0,1,2,3],speed:[210,200,180,170,220]},
  {id:'pc10',name:'PC10',title:'Cripta do Justiceiro 10',members:['Verdehile','Icaru','Icaru','Icaru','Lushen'],accuracySlots:[1,2,3],speed:[180,170,165,160,150]},
 ].map(profile=>({...profile,...waves[profile.id]}));
-export const LEGACY_CAIROS_PROFILES=[['gb12',0,'GB12','Gigante B12'],['db12',1,'DB12','Dragão B12'],['nb12',2,'NB12','Necro B12']].map(([id,index,name,title])=>({...CAIROS_PROFILES[index],id,name,title,accuracy:45,waves:null}));
+export const LEGACY_CAIROS_PROFILES=[['gb12',0,'GB12','Gigante B12'],['db12',1,'DB12','Dragão B12'],['nb12',2,'NB12','Necro B12']].map(([id,index,name,title])=>({...CAIROS_PROFILES[index],id,name,title,accuracy:LEGACY_ACCURACY[id],waves:null}));
 export const ALL_CAIROS_PROFILES=[...CAIROS_PROFILES,...LEGACY_CAIROS_PROFILES,{id:'pve-other',name:'Outros presets PvE',title:'PvE · destino não identificado',members:[],speed:[],accuracySlots:[],accuracy:0,waves:null}];
 export const WAVE_SKILLS={13413:{name:'Amputation Magic · Lushen',multiplier:.68,hits:3,ignoreDefense:true,maxSkillUps:30},13911:{name:'Thousand Shots · Julie (HP cheio)',multiplier:1.2,hits:6,ignoreDefense:false,maxSkillUps:15}};
 export function makeCairosTeam(profile,account){
@@ -23,7 +24,7 @@ export function makeCairosTeam(profile,account){
  if(!preset&&profile.id==='pve-other')return {...makeTeam('cairos'),dungeon:profile.id,name:profile.title};
  if(preset)return {...teamFromGameDeck(preset,account),towerSpd:15,guildSpd:5};
  const used=new Set();
- return {...makeTeam('cairos'),towerSpd:15,guildSpd:5,dungeon:profile.id,name:profile.name,configs:profile.members.map((name,i)=>{
+ return {...makeTeam('cairos'),suggestedTemplate:true,towerSpd:15,guildSpd:5,dungeon:profile.id,name:profile.name,configs:profile.members.map((name,i)=>{
   const master=MONSTER_CATALOG.find(m=>m.name===name)?.master;
   const unit=account?.units.filter(u=>u.name===name&&!used.has(u.id)).sort((a,b)=>b.level-a.level||b.master-a.master)[0];
   if(unit)used.add(unit.id);

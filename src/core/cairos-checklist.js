@@ -1,8 +1,8 @@
-import waves from './cairos-waves.json' with {type:'json'};
 import {equippedTeamBuilds,teamTurnPreview} from './optimizer.js';
 import {simulateCombat} from './speedTuner.js';
 import {artifactEffects} from './artifacts.js';
-export function cairosAccuracyTarget(team){return Math.max(45,waves[team.sourceDungeon||team.dungeon]?.accuracy||45);}
+import {bossAccuracyTarget} from './pve-thresholds.js';
+export function cairosAccuracyTarget(team){return bossAccuracyTarget(team.sourceDungeon||team.dungeon)??45;}
 export function normalizeBoss(raw={}){
  const n=(key,max)=>{const v=Number(raw[key]??0);if(!Number.isFinite(v)||v<0||v>max)throw new Error('Parâmetro do chefe inválido.');return v;};
  if(!Number.isInteger(n('element',5)))throw new Error('Elemento do chefe inválido.');
@@ -21,5 +21,5 @@ export function cairosChecklist(account,team,profile,options={}){
  const simulation=simulateCombat([...preview.actors,...(boss.spd?[{key:'cairos-boss',spd:boss.spd,enemy:true,boss:true}]:[])],{stopAfterFirst:true});
  const allyTurns=simulation.firstTurns.filter(t=>!t.enemy),active=team.configs.filter(c=>c.enabled!==false),order=active.every((c,i)=>allyTurns[i]?.key===c.key&&!allyTurns[i]?.disabled);
  const bossIndex=simulation.firstTurns.findIndex(t=>t.enemy),beforeBoss=boss.spd?bossIndex===active.length:null;
- return {complete:true,order,beforeBoss,risks:simulation.risks,members:active.map((c,i)=>{const build=builds.find(b=>b.key===c.key),unit=account.units.find(u=>u.id===c.unitId),combat=build.stats.combat,accuracy=Math.max(45,Number(c.goals.acc)||0,profile.accuracy||0),turn=allyTurns.find(t=>t.key===c.key);return {key:c.key,name:c.label,position:allyTurns.findIndex(t=>t.key===c.key)+1,tick:turn?.tick,spd:combat.spd,accuracy,acc:combat.acc,accMet:c.requireAccuracy===false||combat.acc>=accuracy,cr:combat.cr,crMet:c.requireCritical===false||combat.cr>=100,...effectiveSurvival(combat.hp,combat.def,boss,artifactEffects(account,unit,options.artifacts!==false&&c.artifacts!==false)),expectedPosition:i+1};})};
+ return {complete:true,order,beforeBoss,risks:simulation.risks,members:active.map((c,i)=>{const build=builds.find(b=>b.key===c.key),unit=account.units.find(u=>u.id===c.unitId),combat=build.stats.combat,accuracy=Math.max(Number(c.goals.acc)||0,profile.accuracy??45),turn=allyTurns.find(t=>t.key===c.key);return {key:c.key,name:c.label,position:allyTurns.findIndex(t=>t.key===c.key)+1,tick:turn?.tick,spd:combat.spd,accuracy,acc:combat.acc,accMet:c.requireAccuracy===false||combat.acc>=accuracy,cr:combat.cr,crMet:c.requireCritical===false||combat.cr>=100,...effectiveSurvival(combat.hp,combat.def,boss,artifactEffects(account,unit,options.artifacts!==false&&c.artifacts!==false)),expectedPosition:i+1};})};
 }

@@ -26,13 +26,13 @@ import CombatScenarioEditor from './CombatScenarioEditor';
 import CombatContext from './CombatContext';
 import SpeedTuneWidget from './SpeedTuneCard';
 
-function EditorDetails({compact,children}){return compact?<details className="compact-edit-details"><summary>Metas & combate</summary>{children}</details>:<>{children}</>;}
+function EditorDetails({compact,goalsOpen,children}){return compact?<details className="compact-edit-details" open={goalsOpen||undefined}><summary>Metas & combate</summary>{children}</details>:<>{children}</>;}
 
 function Select({label,visibleLabel,children,...props}){
  return <label className="field"><span>{visibleLabel||label}</span><select aria-label={label} {...props}>{children}</select></label>;
 }
 
-export function MonsterEditor({config,index,slotCount,account,onChange,onMove,compact=false,catalogMode=false,team={},options={},build=null,onLeader,leaderActive=false}){
+export function MonsterEditor({config,index,slotCount,account,onChange,onMove,compact=false,goalsOpen=false,catalogMode=false,team={},options={},build=null,onLeader,leaderActive=false}){
  const [leaderBusy,setLeaderBusy]=useState(false),[leaderNotice,setLeaderNotice]=useState('');
  const unit=account?.units.find(u=>u.id===config.unitId);
  const master=unit?.master||config.masterId;
@@ -58,7 +58,7 @@ export function MonsterEditor({config,index,slotCount,account,onChange,onMove,co
 
   {!catalogMode&&<label className="check-label small"><input type="checkbox" checked={config.strictSets} onChange={e=>update('strictSets',e.target.checked)}/>Sets obrigatórios</label>}
   <div className="three-fields">{[2,4,6].map(slot=><Select key={slot} label={`Slot ${slot} de ${config.label}`} visibleLabel={`Slot ${slot}`} value={config.mains[slot]} onChange={e=>update('mains',{...config.mains,[slot]:Number(e.target.value)})}>{SLOT_MAINS[slot].map(id=><option key={id} value={id}>{id?STAT_NAMES[id]:'Livre'}</option>)}</Select>)}</div>
-  <EditorDetails compact={compact}>
+  <EditorDetails compact={compact} goalsOpen={goalsOpen}>
   <div className="goal-presets" aria-label={`Presets de ${config.label}`}>{Object.entries(GOAL_PRESETS).map(([key,p])=><button key={key} className="preset-button" type="button" aria-pressed={normalizeFocuses(config.focuses).includes(key)} title="Focos podem ser combinados. Desmarcar preserva as metas editadas." onClick={()=>onChange(toggleGoalFocus(config,key,unit?.base||monsterBase(master)||{}))}>{p.label}</button>)}</div>
   <div className="section-label"><span>Metas mínimas</span><select aria-label={`Tipo de atributos de ${config.label}`} className="inline-select" value={config.basis} onChange={e=>update('basis',e.target.value)}><option value="bonus">Adicionais (+)</option><option value="total">{config.raidGoals?'Combate (Raid)':'Ficha total'}</option></select></div>
   <div className="stat-fields compact-stat-fields">{STATS.map(key=><StatGoalControl key={key} stat={key} label={['cr','cd','res','acc'].includes(key)?`${LABELS[key]} total %`:`${config.basis==='bonus'?'+ ':''}${LABELS[key]}`} monster={config.label} value={config.goals[key]} onChange={value=>update('goals',{...config.goals,[key]:value})}/>)}</div>

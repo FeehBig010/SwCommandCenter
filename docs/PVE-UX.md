@@ -1,4 +1,28 @@
-# PvE command desk and proportional Speed Tune
+# Central PvE · presets e metas reais
+
+## Fluxo atual
+
+Cairos, Dimensional, Rift/R5 e ToA usam um Master-Detail comum: destinos com ícones oficiais e contagem de presets na lateral; o painel central monta somente a masmorra/time em edição. Os atalhos da lateral alternam as quatro áreas. B12 e Abissal permanecem destinos distintos, e GB12/DB12/NB12 agora ficam disponíveis mesmo sem preset salvo. Presets desconhecidos continuam em Outros presets PvE, quando encontrados. No celular, a lista de destinos vira uma régua rolável e os cards ficam em uma coluna.
+
+Selecionar um preset do SWEX carrega as instâncias exatas da conta, suas runas/artefatos e preenche HP, ATK, DEF, SPD, TC, DC, RES e ACC. Campos numéricos e sliders usam o mesmo estado e ficam abertos inicialmente no PvE. Valores gerados são marcados em `autoFilledGoals`: trocar de equipamento/conta, aplicar um plano ou mudar a base total/adicional pode atualizá-los, enquanto metas numéricas editadas manualmente são preservadas. Digitar ou limpar uma meta não dispara hidratação a cada tecla. `cairosPlans` no Context/IndexedDB continua guardando cada masmorra e cada preset separadamente. Não há alteração de schema ou migração Supabase nesta refatoração.
+
+`core/pve-intelligence.js`, `core/team-autofill.js` e `usePveHydration` compartilham o preenchimento com a Central de Siege. Usam o equipamento do preset/plano vigente e seus artefatos, inclusive quando diferem do equipamento principal. Slots vazios continuam vazios. Presets continuam com tamanhos nativos: Cairos/ToA 5, Dimensional 4, Rift/Raid 6. A timeline usa ticks inteiros e os seletores mantêm os ícones de elementos e conjuntos existentes.
+
+## Referências de chefe
+
+`core/pve-thresholds.js` centraliza os caps: GB12 65% ACC, DB12 85%, NB12 45%; Abissais usam os perfis específicos existentes (por exemplo GBAH 35% e DBAH 65%). O painel mostra a ACC real de cada unidade que exige a checagem, sem substituir metas editadas. O checklist e o diagnóstico usam a mesma referência da etapa. É uma referência para aplicadores de debuffs; suportes podem dispensar a checagem. A resistência mínima de 15% não é removida.
+
+No R5, a formação de oito posições do SWEX permite recuperar Frente (quatro primeiras posições de origem) e Retaguarda, conservando os seis monstros. Sem essa informação, os dois primeiros slots são sugeridos para a frente; o aviso solicita revisão. O usuário pode ajustar os seletores e manter essa formação local. Novos dados de formação do JSON atualizam posições importadas, preservando um ajuste explicitamente manual.
+
+O painel calcula `EHP = HP × (1140 + 3,5 × DEF) / 1000`, a partir dos HP/DEF de combate modelados e líderes Raid aplicáveis. O valor frontal padrão é **150.000 EHP, uma referência editável de planejamento, não um limite oficial do chefe**. Abaixo dele, há um alerta; equipamento parcial nunca recebe indicação positiva. O modelo não comprova sobrevivência: não simula partilha de dano, mecânicas/rupturas de defesa ou várias rotações do chefe. Alterar metas HP/DEF não altera o equipamento real nem falsifica o EHP apresentado.
+
+O R5 conserva três times de seis e a otimização conjunta. Somente o time selecionado monta seu editor; os três recebem hidratação e mantêm seus líderes compartilhados e rascunhos. A exportação do time selecionado usa os seis slots.
+
+## Verificação desta atualização
+
+Testes de importação/hidratação, metas manuais, artefatos do preset, conversão total/adicional, caps, formação nativa, EHP, líderes e equipamento parcial. QA Playwright/Chromium com SWEX sintético e Auth/REST simulados, em 1600×1100 e 390×844: input/slider em ambos os sentidos, alternância de masmorra/preset sem perder edições, destinos sem times, ToA/Dimensional/Rift, três equipes Raid com somente um editor montado, referência EHP e posição frontal editáveis. Não há gravações em produção nem uso do JSON privado do proprietário.
+
+As seções seguintes registram etapas anteriores; as descrições de layout/preenchimento acima representam o fluxo atual.
 
 ## Implemented behavior
 
@@ -65,7 +89,7 @@ Os dados hidratados não duplicam o payload do backup.
 SiegeHub mostra a fila de times antes de Ataque/Defesa; ela compartilha o mesmo
 estado do Otimizador. Os Hubs PvE reagem à chegada de presets e escolhem uma etapa
 que contenha times, inclusive se a tela já estava montada aguardando a nuvem.
-Presets B12 legados expõem a etapa correta somente quando presentes na conta.
+Presets B12 legados preservam sua etapa correta; as três etapas B12 também ficam disponíveis na lista sem exigir um preset.
 A restauração em nuvem não troca uma área já aberta; cache local antigo também
 é reconciliado com os decks da conta.
 
