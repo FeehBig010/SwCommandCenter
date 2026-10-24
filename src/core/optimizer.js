@@ -1,3 +1,5 @@
+import {targetDistance} from './target-goals.js';
+import {monsterOpener} from './monsterDatabase.js';
 import {assertMainPool} from './equipment-pools.js';
 import {lockContext} from './locks.js';
 import {GOAL_PRESETS,normalizeFocuses} from './team-ux.js';
@@ -56,18 +58,19 @@ export function goalReport(stats,config){const rows=STATS.filter(k=>Number(confi
 function setRequirements(c){const req={};for(const id of c.sets.filter(Boolean))req[id]=(req[id]||0)+(FOUR.has(id)?4:2);return req;}
 function setsValid(counts,req){return Object.entries(req).every(([id,n])=>(counts[id]||0)>=n);}
 function objective(stats,c){const focuses=c.focuses?normalizeFocuses(c.focuses):[];if(focuses.length)return focuses.reduce((n,key)=>n+objective(stats,{...c,focuses:[],objective:GOAL_PRESETS[key].objective}),0)/focuses.length;const s=stats.total;switch(c.objective){case 'cr':return Math.min(s.cr,100)/100;case 'spd':return Math.min(s.spd/400,1.5);case 'hp':return Math.min(s.hp/70000,1.5);case 'damage':if(stats.damage)return stats.damage.total/100000;return Math.min((s.atk*(1+Math.min(100,s.cr)/100*s.cd/100))/10000,1.5);default:return Math.min(s.hp/60000+s.def/2500+s.spd/350,3)/3;}}
-function evaluate(stats,c,counts,progress=1){let deficit=Number(c.combatSpd)>0?Math.max(0,c.combatSpd*progress-stats.combat.spd)/c.combatSpd:0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0){const desired=target*progress;const actual=goalValue(stats,c,k);deficit+=Math.max(0,desired-actual)/Math.max(target,1);}}
+function evaluate(stats,c,counts,progress=1){if(c.matchTarget){const distance=targetDistance(stats,c,counts,progress);return {deficit:distance,utility:1/(1+distance)};}let deficit=Number(c.combatSpd)>0?Math.max(0,c.combatSpd*progress-stats.combat.spd)/c.combatSpd:0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0){const desired=target*progress;const actual=goalValue(stats,c,k);deficit+=Math.max(0,desired-actual)/Math.max(target,1);}}
  let preference=0;if(!c.strictSets){const req=setRequirements(c);preference=Object.entries(req).reduce((s,[id,n])=>s+Math.min((counts[id]||0)/n,1),0)*0.03;}
  return {deficit,utility:objective(stats,c)+preference};
 }
 function compare(a,b){return a.deficit-b.deficit||b.utility-a.utility;}
-function rankRune(r,unit,c){const s=statsFromVector(unit,r.vector,{},{}),v=s.bonus;let n=0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0)n+=v[k]/target;}return n+(Number(c.combatSpd)>0?v.spd/c.combatSpd:0)+objective(s,c)*0.35;}
+function rankRune(r,unit,c){const s=statsFromVector(unit,r.vector,{},{}),v=s.bonus;if(c.matchTarget){let distance=0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0){const desired=c.basis==='total'||['cr','cd','res','acc'].includes(k)?target-unit.base[k]:target;distance+=Math.abs(v[k]-desired/6)/target;}}return 1/(1+distance);}let n=0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0)n+=v[k]/target;}return n+(Number(c.combatSpd)>0?v.spd/c.combatSpd:0)+objective(s,c)*0.35;}
 function pickPool(pool,unit,c,depth){
  const score=r=>rankRune(r,unit,c);const sorted=pool.slice().sort((a,b)=>score(b)-score(a));const chosen=new Map();
  const take=rs=>rs.forEach(r=>chosen.set(variantKey(r),r));take(sorted.slice(0,depth));
  for(const id of c.sets.filter(Boolean))take(sorted.filter(r=>r.set===id).slice(0,depth));
  // Keep distinct stat extremes, so a balanced scalar ranking does not erase useful trades.
  for(const k of STATS.filter(k=>Number(c.goals[k])>0||k==='spd'&&Number(c.combatSpd)>0||k===c.objective||(c.objective==='damage'&&c.damage?.enabled)))take(pool.slice().sort((a,b)=>statsFromVector(unit,b.vector,{},{}).bonus[k]-statsFromVector(unit,a.vector,{},{}).bonus[k]).slice(0,Math.ceil(depth/2)));
+ if(c.matchTarget){take(pool.slice().sort((a,b)=>a.vector[8]-b.vector[8]).slice(0,Math.ceil(depth/2)));take(pool.filter(r=>unit.runeIds.includes(r.id)));}
  return [...chosen.values()];
 }
 export function generateCandidates(account,unit,c,options,reserved=new Set(),progress=()=>{}){
@@ -79,7 +82,7 @@ export function generateCandidates(account,unit,c,options,reserved=new Set(),pro
   const build=equippedBuild(account,{...options.combat,plannedRunes:null},c,options);
   if(!build||build.runeIds.some(id=>reserved.has(id)))return {candidates:[],reason:'Monstro travado sem seis runas livres do SWEX.'};
   if(c.strictSets&&!setsValid(build.counts,req)||build.runeIds.some(id=>{const r=account.runes.find(r=>r.id===id);return Number(c.mains[r.slot])&&r.main[0]!==Number(c.mains[r.slot]);})||options.strictMode&&build.goals.some(g=>!g.met))return {candidates:[],reason:'A build travada não atende aos requisitos; ajuste metas ou libere a trava.'};
-  return {candidates:[{...build,upgrades:[]}],reason:''};
+  return {candidates:[{...build,...(c.matchTarget?evaluate(build.stats,c,build.counts):{}),upgrades:[]}],reason:''};
  }
  const forced=new Map(account.runes.filter(r=>locks.runes.has(r.id)&&(r.owner===unit.id||unit.runeIds.includes(r.id))).map(r=>[r.slot,r.id]));
  const setting={fast:{width:90,depth:9,passes:2},balanced:{width:180,depth:15,passes:3},deep:{width:350,depth:23,passes:4}}[options.depth]||{width:180,depth:15,passes:3};
@@ -121,11 +124,12 @@ export function generateCandidates(account,unit,c,options,reserved=new Set(),pro
 export function speedSyncValid(assignments,teams){
  for(const team of teams){
   const active=team.configs.filter(c=>c.enabled),chain=active.filter(c=>c.lockSpeedSync===true);
-  const eventDriven=!!team.combatScenario?.events?.length||active.some(c=>Number(c.masterId)===16613);
+  const eventDriven=!!team.combatScenario?.events?.length||active.some(c=>Number(c.masterId)===16613)||team.cloneTiming&&team.autoOpener&&active.some(c=>monsterOpener(c.masterId));
   if(!eventDriven)for(let i=0;i<chain.length;i++)for(let j=i+1;j<chain.length;j++){
    const a=assignments[chain[i].key],b=assignments[chain[j].key];if(!a||!b)continue;
    const sa=a.stats.combat?.spd??a.stats.total.spd,sb=b.stats.combat?.spd??b.stats.total.spd;
-   if(sa<sb||sa===sb&&(!a.stats.combat||!b.stats.combat))return false;
+   if(team.cloneTiming){const rawA=a.stats.combat?.rawSpd??sa,rawB=b.stats.combat?.rawSpd??sb;if(rawA-rawB<1-1e-9)return false;}
+   else if(sa<sb||sa===sb&&(!a.stats.combat||!b.stats.combat))return false;
   }
   if(active.length&&active.every(c=>assignments[c.key])&&(chain.length||active.some(c=>Number(c.maxTick)>0))){
    const actors=active.map(c=>{const a=assignments[c.key];return {key:c.key,master:a.stats.combat?.master??c.masterId,spd:a.stats.combat?.spd??a.stats.total.spd,rawSpd:a.stats.combat?.rawSpd,combat:c.combat,effects:a.stats.combat?.effects,will:(a.counts?.[15]||0)>=2,nemesisSets:Math.floor((a.counts?.[14]||0)/2)};});
@@ -173,7 +177,8 @@ export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[],
   const cacheKey=candidateCache?JSON.stringify([job.team,job.config,job.unit.id,options,[...reserved]]):null;
   const result=candidateCache?.get(cacheKey)||generateCandidates(account,job.unit,job.config,{...options,combat:job.team},reserved,(pass,total)=>onProgress({percent:Math.round((i+pass/total)/jobs.length*75),message:`Buscando combinações para ${job.unit.name}…`}));
   if(candidateCache&&!candidateCache.has(cacheKey))candidateCache.set(cacheKey,result);
-  job.candidates=result.candidates.slice();if(!result.candidates.length)failures.push({key:job.config.key,name:job.unit.name,reason:result.reason});
+  job.candidates=result.candidates.slice();
+  if(job.config.matchTarget&&job.candidates.length>25){const ranked=job.candidates,bySpeed=ranked.slice().sort((a,b)=>(a.stats.combat?.rawSpd??a.stats.total.spd)-(b.stats.combat?.rawSpd??b.stats.total.spd)),seeds=[...ranked.slice(0,20),...Array.from({length:15},(_,i)=>bySpeed[Math.round(i*(bySpeed.length-1)/14)])];job.candidates=[...new Set([...seeds,...ranked])];}if(!result.candidates.length)failures.push({key:job.config.key,name:job.unit.name,reason:result.reason});
  }
  if(failures.length)return {status:'no_assignment',failures,builds:[],elapsed:Date.now()-started,checked:jobs.reduce((s,j)=>s+j.candidates.length,0)};
  onProgress({percent:80,message:'Distribuindo runas entre todos os times…'});

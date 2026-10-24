@@ -1,4 +1,5 @@
-import {copyTeamToOptimizer,cloudTeam} from './hub.js';
+import {snapshotTargetGoals} from './target-goals.js';
+import {copyTeamToOptimizer,cloudTeam,portableTeam} from './hub.js';
 import {teamsForArea} from './deckManager.js';
 import {cleanSiegeCounter} from './siege.js';
 import {currentRuneIds} from './loadouts.js';
@@ -50,11 +51,12 @@ export function copySiegeToPersonal(record,account){
  if(!personalSiegeTeams([record.team]).length)throw new Error('A Central de Siege aceita composições de três slots.');
  // The portable whitelist drops foreign unit IDs, planned runes and manual sheets.
  const team=copyTeamToOptimizer({...record.team,name:record.name,description:record.description||record.team.description,configs:record.team.configs.map(c=>({...c,unitId:null}))},account);
+ if(team.mode==='attack')team.target_goals=snapshotTargetGoals(portableTeam({...record.team,name:record.name}),team);
  team.autoName=false;
  team.sourceAccountId=account.id;
  team.towerSpd=account.towers?.glorySpd??0;
  team.guildSpd=account.towers?.guildSpd??0;
- if(record.counter)team.enemyDefense=structuredClone(record.counter.enemyDefense);
+ if(record.counter){team.enemyDefense=structuredClone(record.counter.enemyDefense);if(record.counter.siege)team.siege=structuredClone(record.counter.siege);}
  return {team,missing:team.configs.filter(c=>!c.unitId).map(c=>c.label)};
 }
 
