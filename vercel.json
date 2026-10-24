@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "api/game-updates.js": {
+      "includeFiles": "node_modules/@sparticuz/chromium/bin/**",
+      "maxDuration": 60
+    }
+  }
+}

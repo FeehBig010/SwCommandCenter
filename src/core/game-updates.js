@@ -18,6 +18,8 @@ export function normalizeNewsFeed(input){
   if(!url||!title||seen.has(url))continue;seen.add(url);
   items.push({id:url,url,title,category:Object.hasOwn(NEWS_CATEGORIES,row.category)?row.category:'notice',publishedAt:Number.isFinite(Date.parse(row.publishedAt))?new Date(row.publishedAt).toISOString():null,thumbnail:newsThumbnail(row.thumbnail)});
  }
- items.sort((a,b)=>(Date.parse(b.publishedAt)||0)-(Date.parse(a.publishedAt)||0));
+ const articleId=item=>Number(new URL(item.url).pathname.split('/').filter(Boolean).at(-1));
+ // Hive article IDs retain upstream order even when a tile omits its date.
+ items.sort((a,b)=>articleId(b)-articleId(a));
  return {version:1,source:'WithHive / Com2uS',fetchedAt:new Date(input.fetchedAt).toISOString(),partial:input.partial===true,items:items.slice(0,60)};
 }

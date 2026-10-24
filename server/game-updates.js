@@ -29,6 +29,6 @@ export function newsMiddleware(service,{allowedOrigin=process.env.NEWS_ALLOWED_O
  };
 }
 export function gameUpdatesPlugin(){
- let root;const attach=server=>server.middlewares.use(newsMiddleware(createNewsService({root})));
+ let root;const attach=server=>{server.middlewares.use(newsMiddleware(createNewsService({root})));};
  return {name:'official-game-updates',configResolved(config){root=config.root;},configureServer:attach,configurePreviewServer:attach};
 }

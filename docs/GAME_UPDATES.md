@@ -31,6 +31,18 @@ O repositório é privado: o navegador não consulta arquivos privados do GitHub
 
 ## Servidor Node e desenvolvimento
 
+### Vercel (deploy atual)
+
+`api/game-updates.js` publica a API no mesmo domínio do frontend. O executável
+serverless de `@sparticuz/chromium` é incluído nas dependências e descompactado em
+armazenamento temporário. Não exige instalar Chrome no host ou configurar
+segredos. `vercel.json` reserva até 60 segundos para a primeira coleta; instâncias
+ativas reutilizam o cache por 5 minutos. A função importa o navegador somente ao
+coletar; ele não entra no bundle do frontend. O snapshot agendado é uma alternativa
+para indisponibilidades da API e para builds puramente estáticos.
+
+### Node persistente e Vite
+
 Instale o navegador do coletor no host Node (não na máquina de cada jogador):
 
 ```sh

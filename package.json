@@ -16,6 +16,7 @@
     "images:update": "node scripts/update-monster-images.mjs"
   },
   "dependencies": {
+    "@sparticuz/chromium": "^153.0.0",
     "@supabase/supabase-js": "^2.118.0",
     "cheerio": "^1.2.0",
     "html-to-image": "^1.11.13",

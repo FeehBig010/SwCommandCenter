@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {NEWS_API_PATH,normalizeNewsFeed,officialNewsUrl} from '../src/core/game-updates.js';
 import {cachedGameUpdates,fetchGameUpdates} from '../src/lib/game-updates.js';
-import {HIVE_SOURCES,parseHiveListing,collectHiveNews,hiveDate,fetchHiveNews} from '../server/hive-news.js';
-import {createNewsService,newsMiddleware} from '../server/game-updates.js';
+import {HIVE_SOURCES,parseHiveListing,collectHiveNews,hiveDate,fetchHiveNews,hiveArticleDate} from '../server/hive-news.js';
+import {createNewsService,newsMiddleware,gameUpdatesPlugin} from '../server/game-updates.js';
 import {requiresLogin} from '../src/core/navigation-access.js';
 import {pageFromLocation} from '../src/lib/auth.js';
+import {createVercelNewsHandler} from '../api/game-updates.js';
 
 const feed=()=>({version:1,fetchedAt:'2026-10-24T15:00:00Z',items:[{url:'https://www.withhive.com/notice/313/100',title:'v9.0.0 Update Notice',category:'update',publishedAt:'2026-10-23T00:00:00Z',thumbnail:'https://image-glb.qpyou.cn/news.jpg'}]});
 const noticeHTML=`<ul id="notice_list_ul">
@@ -23,10 +24,12 @@ test('official Hive listings extract JS navigation IDs, dates, categories and ev
  assert.equal(notices.length,2);assert.equal(notices[0].title,'v9.0.0 Update & improvements');assert.equal(notices[0].url,'https://www.withhive.com/notice/313/100');assert.equal(notices[0].category,'update');assert.equal(notices[1].category,'developer');assert.equal(notices[0].publishedAt,'2026-10-23T00:00:00.000Z');
  assert.equal(events[0].url,'https://www.withhive.com/event/313/200');assert.equal(events[0].thumbnail,'https://image-glb.qpyou.cn/2026/event.jpg');assert.equal(events[0].category,'event');assert.equal(events[0].publishedAt,'2026-10-24T00:00:00.000Z');
  assert.equal(hiveDate('2026-02-30'),null);assert.equal(hiveDate('No date supplied'),null);
+ assert.equal(hiveDate('Oct 23, 2026'),'2026-10-23T00:00:00.000Z');assert.equal(hiveDate('2 days ago',new Date('2026-10-24T12:00:00Z')),'2026-10-22T00:00:00.000Z');
+ assert.equal(hiveArticleDate('<meta property="article:published_time" content="2026-10-23T14:00:00Z">'),'2026-10-23T00:00:00.000Z');assert.equal(hiveArticleDate('<p>Event runs 2026-10-23 to 2026-11-01</p>'),null);
 });
 test('feed validation rejects forged URLs, duplicates, invalid images and dates without inventing content',()=>{
  const raw=feed();raw.items.push({...raw.items[0]},...['javascript:alert(1)','https://withhive.com.evil.test/notice/100','https://evil@www.withhive.com/notice/100','https://www.withhive.com:3000/notice/100','https://www.withhive.com/notice/999/100'].map(url=>({...raw.items[0],url})),{url:'https://m.withhive.com/notice/101',title:'Missing data',category:'unknown',thumbnail:'data:image/svg+xml,test',publishedAt:'invalid'});
- const normalized=normalizeNewsFeed(raw);assert.equal(normalized.items.length,2);assert.equal(normalized.items[1].thumbnail,null);assert.equal(normalized.items[1].publishedAt,null);assert.equal(normalized.items[1].category,'notice');assert.equal(officialNewsUrl('http://withhive.com/notice/1'),null);assert.throws(()=>normalizeNewsFeed({items:[]}),/inválido/);
+ const normalized=normalizeNewsFeed(raw);assert.equal(normalized.items.length,2);assert.equal(normalized.items.find(i=>i.title==='Missing data').thumbnail,null);assert.equal(normalized.items.find(i=>i.title==='Missing data').publishedAt,null);assert.equal(normalized.items.find(i=>i.title==='Missing data').category,'notice');assert.equal(officialNewsUrl('http://withhive.com/notice/1'),null);assert.throws(()=>normalizeNewsFeed({items:[]}),/inválido/);
 });
 test('collector merges live pages with earlier entries, sorts and tolerates one failed source',async()=>{
  const previous=feed(),before=structuredClone(previous),complete=await collectHiveNews({loadPage:async source=>source.kind==='notice'?noticeHTML:eventHTML,previous,logger});
@@ -38,6 +41,10 @@ test('browser collector waits for Hive JavaScript lists and closes all pages and
  let pagesClosed=0,browserClosed=false;const urls=[];
  const collected=await fetchHiveNews({logger,launch:async()=>({newPage:async()=>{let source;return {goto:async url=>{urls.push(url);source=HIVE_SOURCES.find(s=>s.url===url);return {ok:()=>true};},locator:selector=>{assert.equal(selector,source.selector);return {first:()=>({waitFor:async()=>{}})};},content:async()=>source.kind==='notice'?noticeHTML:eventHTML,close:async()=>{pagesClosed++;}};},close:async()=>{browserClosed=true;}})});
  assert.equal(collected.items.length,3);assert.deepEqual(urls,HIVE_SOURCES.map(s=>s.url));assert.equal(pagesClosed,2);assert.equal(browserClosed,true);
+});
+test('publication dates missing from tiles are read from article metadata within the collection budget',async()=>{
+ const result=await fetchHiveNews({logger,launch:async()=>({newPage:async()=>{let url;return {goto:async value=>{url=value;return {ok:()=>true};},locator:()=>({first:()=>({waitFor:async()=>{}})}),content:async()=>url.includes('/game/')?(url.includes('/event/')?eventHTML.replace('2026/10/24 ~ 2026/11/01',''):noticeHTML):'<meta property="article:published_time" content="2026-10-24T09:30:00Z">',close:async()=>{}};},close:async()=>{}})});
+ assert.equal(result.items.find(item=>item.category==='event').publishedAt,'2026-10-24T00:00:00.000Z');
 });
 test('browser uses same-origin API, then the published snapshot, and never replaces good cache with an error',async()=>{
  const cache=storage(),calls=[];
@@ -63,4 +70,15 @@ test('same-origin news route returns JSON, supports HEAD, refuses POST and has a
 });
 test('game updates have a public direct route without account requirements',()=>{
  assert.equal(pageFromLocation({hash:'#/updates'}),'updates');assert.equal(requiresLogin('updates'),false);
+});
+test('Vite dev and preview register the news middleware without returning a Connect app as a post hook',()=>{
+ const plugin=gameUpdatesPlugin(),handlers=[];plugin.configResolved({root:'/tmp'});
+ const server={middlewares:{use(handler){handlers.push(handler);return ()=>{throw new Error('Connect app cannot run without a request');};}}};
+ assert.equal(plugin.configureServer(server),undefined);assert.equal(plugin.configurePreviewServer(server),undefined);assert.equal(handlers.length,2);
+});
+
+test('Vercel function serves official news at the existing public API path and reuses its cache',async t=>{
+ let collections=0;const handler=createVercelNewsHandler({logger,collect:async()=>{collections++;return feed();}}),server=createServer((req,res)=>handler(req,res));
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>new Promise(resolve=>{server.close(resolve);server.closeAllConnections();}));const url=`http://127.0.0.1:${server.address().port}${NEWS_API_PATH}`;
+ for(let i=0;i<2;i++){const response=await fetch(url);assert.equal(response.status,200);assert.equal((await response.json()).items[0].url,feed().items[0].url);}assert.equal(collections,1);
 });

@@ -4,15 +4,34 @@ import {normalizeNewsFeed,officialNewsUrl,newsThumbnail} from '../src/core/game-
 export async function fetchHiveNews({previous=null,logger=console,launch}={}){
  const openBrowser=launch||(async options=>(await import('playwright')).chromium.launch(options));
  const browser=await openBrowser({headless:true,...(process.env.NEWS_BROWSER_PATH?{executablePath:process.env.NEWS_BROWSER_PATH}:{})});
- try{return await collectHiveNews({previous,logger,loadPage:async source=>{
+ const deadline=Date.now()+45000;
+ try{const feed=await collectHiveNews({previous,logger,loadPage:async source=>{
   const page=await browser.newPage({locale:'en-US'});
   try{
+   await page.route?.('**/*',route=>['image','font','media'].includes(route.request().resourceType())?route.abort():route.fallback());
    const response=await page.goto(source.url,{waitUntil:'domcontentloaded',timeout:30000});
    if(!response?.ok())throw new Error(`Hive ${source.kind}: HTTP ${response?.status()}`);
    await page.locator(source.selector).first().waitFor({state:'attached',timeout:20000});
    return await page.content();
   }finally{await page.close();}
- }});}finally{await browser.close();}
+ }});
+ // Event tiles sometimes omit the publication date. Read the original article's
+ // metadata rather than treating the event period or image upload as publication.
+ const missing=feed.items.filter(item=>!item.publishedAt);let cursor=0;
+ await Promise.all(Array.from({length:Math.min(3,missing.length)},async()=>{
+  while(cursor<missing.length&&Date.now()<deadline-1000){
+   const item=missing[cursor++],page=await browser.newPage({locale:'en-US'});
+   try{
+    await page.route?.('**/*',route=>['image','font','media'].includes(route.request().resourceType())?route.abort():route.fallback());
+    const response=await page.goto(item.url,{waitUntil:'domcontentloaded',timeout:Math.min(8000,deadline-Date.now())});
+    if(!response?.ok())continue;
+    await page.locator('time[datetime], .date, .regdate, .notice_date, meta[property="article:published_time"]').first().waitFor({state:'attached',timeout:Math.min(2000,Math.max(1,deadline-Date.now()))}).catch(()=>{});
+    item.publishedAt=hiveArticleDate(await page.content());
+   }catch{/* Date metadata is optional; a slow article must not discard the feed. */}finally{await page.close();}
+  }
+ }));
+ return normalizeNewsFeed(feed);
+ }finally{await browser.close();}
 }
 
 export const HIVE_SOURCES=[
@@ -26,12 +45,24 @@ export function newsCategory(title,type=''){
  if(/event|evento/.test(text))return 'event';
  return 'notice';
 }
-export function hiveDate(text){
+export function hiveDate(text,now=new Date()){
  // Hive's date-only values have no time zone; do not shift their calendar day.
- const iso=String(text||'').match(/\b(20\d{2})[.\/-](\d{1,2})[.\/-](\d{1,2})\b/);
- if(!iso)return null;
+ const iso=String(text||'').match(/(?<!\d)(20\d{2})[.\/-](\d{1,2})[.\/-](\d{1,2})(?!\d)/);
+ if(!iso){
+  const value=String(text||'').trim(),relative=value.match(/\b(\d+)\s*(day|hour|minute|second)s?\s+ago\b/i);
+  if(relative||/^(today|yesterday)$/i.test(value)){
+   const days=relative&&relative[2].toLowerCase()==='day'?Number(relative[1]):/^yesterday$/i.test(value)?1:0;
+   const date=new Date(now);date.setUTCDate(date.getUTCDate()-days);date.setUTCHours(0,0,0,0);return date.toISOString();
+  }
+  const english=value.match(/\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{1,2},?\s+20\d{2}\b/i)?.[0];
+  return english&&Number.isFinite(Date.parse(english))?new Date(Date.parse(english)).toISOString():null;
+ }
  const value=`${iso[1]}-${iso[2].padStart(2,'0')}-${iso[3].padStart(2,'0')}T00:00:00.000Z`,date=new Date(value);
  return Number.isFinite(+date)&&date.toISOString()===value?value:null;
+}
+export function hiveArticleDate(html){
+ const $=load(html),meta=$('meta[property="article:published_time"],meta[name="date"],meta[itemprop="datePublished"]').first().attr('content');
+ return hiveDate(meta)||hiveDate($('time[datetime]').first().attr('datetime'))||hiveDate($('.date, .regdate, .notice_date, .view_date').first().text());
 }
 export function parseHiveListing(html,{kind,selector}){
  const $=load(html),items=[];
