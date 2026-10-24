@@ -1,5 +1,8 @@
 # CONTEXT.md — Clã D8stino - Euro · Siege & Guild Command Center
 
+**Atualizações do Jogo:** notícias oficiais da Hive em `#/updates`, com coleta
+automática, categorias, miniaturas e cache. [Integração e operação](docs/GAME_UPDATES.md).
+
 ## 1. Project Overview & Product Vision
 **Clã D8stino - Euro · Siege & Guild Command Center** is a private, client-side web application built for the **Clã D8stino - Euro** Guild in *Summoners War*.
 It empowers guild leaders and members to plan, optimize, and execute team builds across multiple game modes (Siege, World Guild Battle, Arena, and Cairos Dungeons) against an imported SWEX (Summoners War Exporter) JSON account file.

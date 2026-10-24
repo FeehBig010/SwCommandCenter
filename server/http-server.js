@@ -1,3 +1,4 @@
+import {createNewsService,newsMiddleware} from './game-updates.js';
 import {createServer} from 'node:http';
 import {createReadStream} from 'node:fs';
 import {stat,realpath} from 'node:fs/promises';
@@ -5,9 +6,10 @@ import path from 'node:path';
 import {PROJECT_ROOT,IMAGE_URL,MANIFEST_URL,assetPaths,CHECKOUT_RELATIVE} from './asset-paths.js';
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif','.svg':'image/svg+xml','.woff2':'font/woff2','.woff':'font/woff','.ttf':'font/ttf','.txt':'text/plain; charset=utf-8','.wasm':'application/wasm','.ico':'image/x-icon'};
 const inside=(target,base)=>target===base||target.startsWith(`${base}${path.sep}`);
-export function createAppServer({root=PROJECT_ROOT,logger=console}={}){
- const dist=path.join(root,'dist'),assets=assetPaths(root);
+export function createAppServer({root=PROJECT_ROOT,logger=console,newsService=createNewsService({root,logger})}={}){
+ const dist=path.join(root,'dist'),assets=assetPaths(root),news=newsMiddleware(newsService);
  return createServer(async(req,res)=>{
+  if((req.url||'').split('?')[0]==='/api/game-updates'){await news(req,res,()=>{});return;}
   try{
    if(!['GET','HEAD'].includes(req.method)){res.writeHead(405,{'Allow':'GET, HEAD'});res.end();return;}
    let urlPath;try{urlPath=decodeURIComponent((req.url||'/').split('?')[0]);}catch{res.writeHead(400);res.end();return;}

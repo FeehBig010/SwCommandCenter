@@ -1,0 +1,41 @@
+name: Sync official Summoners War news
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/game-news.yml'
+      - 'scripts/update-game-news.mjs'
+      - 'server/hive-news.js'
+      - 'src/core/game-updates.js'
+permissions:
+  contents: write
+concurrency:
+  group: official-game-news
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run news:update
+      - name: Publish the generated feed
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/game-updates.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: synchronize official Hive news'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
