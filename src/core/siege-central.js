@@ -18,7 +18,31 @@ export function siegeGuildRecords(templates=[],matchups=[],rows=[],guildId=null)
 }
 
 export function canEditSiegeRecord(record,cloud,session){
- return !!record&&!!cloud?.isLeader&&(!record.cloud||record.row.owner_id===session?.user?.id);
+ return !!record&&(record.counter?(!record.cloud||record.row.owner_id===session?.user?.id):!!cloud?.isLeader&&(!record.cloud||record.row.owner_id===session?.user?.id));
+}
+
+// Keep the leader and its position in the key: the same trio with a different
+// leader is a different defense. Never infer an enemy from a free-text label.
+export function siegeComparisonRows(records=[]){
+ const groups=new Map(),unassigned=[];
+ for(const record of records){
+  const counter=record.counter,isDefense=!counter&&record.team.mode==='defense';
+  const members=counter?.enemyDefense||(isDefense?record.team.configs:null);
+  if(!members){unassigned.push({key:record.key,name:record.name,members:[],leader:null,attacks:[record],record});continue;}
+  const index=counter?.siege.defenseLeaderIndex??record.team.leaderIndex??0;
+  const leader=counter?counter.siege.defenseLeader:record.team.leader;
+  const leaderKey=leader?[leader.stat,leader.value,leader.scope,leader.element||null,Number(members[index]?.masterId)]:null;
+  const key=JSON.stringify([members.map(m=>Number(m.masterId)).sort((a,b)=>a-b),leaderKey]);
+  let group=groups.get(key);
+  if(!group){group={key,name:isDefense?record.name:'Defesa inimiga',members,leader,attacks:[],record};groups.set(key,group);}
+  if(isDefense){group.name=record.name;group.members=members;group.record=record;}
+  else group.attacks.push(record);
+ }
+ return [...groups.values(),...unassigned];
+}
+
+export function counterDefenseSeed(group){
+ return {enemyDefense:structuredClone(group.members.map(m=>({masterId:m.masterId,label:m.label,sets:m.sets||[],...(m.combat?{combat:m.combat}:{}),...(Number(m.bonusSpd??(m.basis==='bonus'?m.goals?.spd:0))>0?{bonusSpd:Number(m.bonusSpd??m.goals.spd)}:{}),...(Number(m.maxTick)>0?{maxTick:Number(m.maxTick)}:{})}))),defenseLeader:structuredClone(group.leader||null),defenseLeaderIndex:group.record.counter?.siege.defenseLeaderIndex??group.record.team.leaderIndex??0};
 }
 
 export function copySiegeToPersonal(record,account){

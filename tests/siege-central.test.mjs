@@ -4,7 +4,8 @@ import {blankConfig,makeTeam} from '../src/core/data.js';
 import {equippedBuild} from '../src/core/optimizer.js';
 import {defenseCatalog} from '../src/core/defense-planner.js';
 import {accountStamp} from '../src/core/loadouts.js';
-import {personalSiegeTeams,siegeGuildRecords,copySiegeToPersonal,siegeRuneConflicts,canEditSiegeRecord} from '../src/core/siege-central.js';
+import {personalSiegeTeams,siegeGuildRecords,copySiegeToPersonal,siegeRuneConflicts,canEditSiegeRecord,siegeComparisonRows,counterDefenseSeed} from '../src/core/siege-central.js';
+import {cleanSiegeCounter} from '../src/core/siege.js';
 import {newTemplate,cleanTemplate} from '../src/core/guild.js';
 import {pageFromLocation} from '../src/lib/auth.js';
 function fixture(){
@@ -46,4 +47,37 @@ test('guild records are scoped to active membership, and common members cannot m
 });
 test('legacy guild URLs resolve to the Central and template export preserves attack/defense role',()=>{
  assert.equal(pageFromLocation({hash:'#/guild'}),'siege');assert.equal(pageFromLocation({hash:'#/siege'}),'siege');const {record}=fixture(),draft=newTemplate();draft.team=record.team;draft.name='Ofensa';const clean=cleanTemplate(draft);assert.equal(clean.team.mode,'attack');assert.equal(defenseCatalog([],null,[clean]).length,0);assert.equal(defenseCatalog([],null,[{...clean,team:{...clean.team,mode:'defense'}}]).length,1);assert.equal(cleanTemplate({...draft,team:{...draft.team,mode:'defense'}}).team.mode,'defense');
+});
+
+test('comparison rows group counters with the matching trio and leader, preserving duplicates and unassigned attacks',()=>{
+ const {record}=fixture(),defense={...record,key:'defense',name:'Defesa alvo',team:{...record.team,mode:'defense',leader:null}};
+ const makeCounter=(key,members=defense.team.configs,leader=null,index=0)=>{
+  const counter=cleanSiegeCounter({name:key,offense:record.team,enemyDefense:members,siege:{defenseLeader:leader,defenseLeaderIndex:index}});
+  return {...record,key,counter,team:counter.offense};
+ };
+ const a=makeCounter('A'),b=makeCounter('B',[...defense.team.configs].reverse());
+ const leader={stat:'spd',value:24,scope:'guild',element:0},c=makeCounter('C',defense.team.configs,leader,0),d=makeCounter('D',defense.team.configs,leader,1);
+ const duplicate=makeCounter('Repeated',[defense.team.configs[0],defense.team.configs[0],defense.team.configs[2]]);
+ const source=[a,b,defense,c,d,duplicate,record],snapshot=structuredClone(source),rows=siegeComparisonRows(source);
+ assert.equal(rows.length,5);assert.deepEqual(rows[0].attacks.map(r=>r.key),['A','B']);assert.equal(rows[0].name,'Defesa alvo');
+ assert.equal(rows.at(-1).members.length,0);assert.equal(rows.at(-1).attacks[0],record);assert.deepEqual(source,snapshot);
+ assert.deepEqual(siegeComparisonRows([]),[]);
+});
+
+test('inline counter seeds preserve defense speed context and leader without sharing mutable data',()=>{
+ const {record}=fixture(),defense={...record,team:{...record.team,mode:'defense',leader:null,configs:record.team.configs.map(c=>({...c,basis:'bonus',goals:{...c.goals,spd:103},maxTick:6}))}};
+ const seed=counterDefenseSeed(siegeComparisonRows([defense])[0]);
+ assert.equal(seed.enemyDefense[0].bonusSpd,103);assert.equal(seed.enemyDefense[0].maxTick,6);
+ const counter=cleanSiegeCounter({name:'Inline',offense:record.team,enemyDefense:seed.enemyDefense,siege:seed});
+ assert.equal(counter.enemyDefense[0].bonusSpd,103);assert.equal(counter.enemyDefense[0].maxTick,6);
+ assert.equal(counter.siege.defenseLeader,null);seed.enemyDefense[0].sets.push(1);assert.deepEqual(defense.team.configs[0].sets,[13,15]);
+ counter.enemyDefense[0].maxTick=1.5;assert.throws(()=>cleanSiegeCounter(counter),/inteiros/);
+});
+
+test('counter authors may edit their attacks while members cannot edit another author or leadership templates',()=>{
+ const {record}=fixture(),counter={...record,counter:{},cloud:true,row:{owner_id:'author'}};
+ assert.ok(canEditSiegeRecord(counter,{isLeader:false},{user:{id:'author'}}));
+ assert.equal(canEditSiegeRecord(counter,{isLeader:true},{user:{id:'other'}}),false);
+ assert.ok(canEditSiegeRecord({...counter,cloud:false},{isLeader:false},null));
+ assert.equal(canEditSiegeRecord(record,{isLeader:false},{user:{id:'author'}}),false);
 });
