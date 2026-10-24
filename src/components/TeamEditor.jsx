@@ -35,7 +35,7 @@ function Select({label,visibleLabel,children,...props}){
 export function MonsterEditor({config,index,slotCount,account,onChange,onMove,compact=false,catalogMode=false,team={},options={},build=null,onLeader,leaderActive=false}){
  const [leaderBusy,setLeaderBusy]=useState(false),[leaderNotice,setLeaderNotice]=useState('');
  const unit=account?.units.find(u=>u.id===config.unitId);
- const master=unit?.master||config.masterId||MONSTER_CATALOG.find(m=>m.name===config.label)?.master;
+ const master=unit?.master||config.masterId;
  const monster=unit||catalogMonster(master,config.label);
  const useCatalog=catalogMode||!account;
  const missing=!catalogMode&&account&&!unit&&(config.enabled!==false||config.unitId!=null);

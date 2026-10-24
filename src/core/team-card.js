@@ -57,7 +57,7 @@ function asDataUrl(blob){
 // Inline only CORS-readable images. A failed host never taints the export canvas.
 export async function loadCardPortraits(monsters,signal){
  const entries=await Promise.all([...new Set(monsters.map(m=>m.master))].map(async master=>{
-  const member=monsters.find(m=>m.master===master),sources=await resolveMonsterImageSources(master,{name:member?.name,element:Number(master)%10});
+  const sources=await resolveMonsterImageSources(master);
   for(const url of [...sources,MONSTER_FALLBACK]){
    if(signal.aborted)return [master,null];
    try{

@@ -15,28 +15,24 @@ test('a shared local manifest resolves new IDs and changed filenames without con
 test('offline local manifests preserve bundled sources, and unknown units still use the existing API fallback',async()=>{
  const calls=[],fetcher=async url=>{calls.push(url);return url===LOCAL_MONSTER_MANIFEST?{ok:false}:{ok:true,json:async()=>({results:[{com2us_id:99993,image_filename:'unit_icon_api.png'}]})};};const known=await resolveMonsterImageSources(19615,{fetcher});assert.ok(known.length>0);assert.equal(calls.length,2);const newer=await resolveMonsterImageSources(99993,{fetcher});assert.equal(calls.length,3);assert.equal(newer[0],`${SWARFARM_MONSTER_CDN}unit_icon_api.png`);
 });
-test('compound names normalize accents/parentheses and explicit collaboration aliases resolve actual filenames',async()=>{
- const {monsterSlug,portraitNameKeys}=await import('../src/core/monster-assets.js');assert.equal(monsterSlug('Magic Order Swordsinger (Água)'),'magic_order_swordsinger_water');assert.ok(portraitNameKeys('Magic Order Swordsinger (Água)',1).includes('magic_order_swordsinger_water'));assert.deepEqual(portraitNameKeys('',1),[]);assert.deepEqual(monsterImageSources(null,{name:'CHUN-LI (Água)',element:1}),monsterImageSources(24911));
+test('compound labels remain normalized for metadata but cannot select a portrait without a master ID',async()=>{
+ const {monsterSlug,portraitNameKeys}=await import('../src/core/monster-assets.js');assert.equal(monsterSlug('Magic Order Swordsinger (Água)'),'magic_order_swordsinger_water');assert.ok(portraitNameKeys('Magic Order Swordsinger (Água)',1).includes('magic_order_swordsinger_water'));assert.deepEqual(portraitNameKeys('',1),[]);assert.deepEqual(monsterImageSources(null,{name:'CHUN-LI (Água)',element:1}),[]);
 });
 test('Portuguese element suffixes produce English filenames before slugification',async()=>{
  const {monsterSlug}=await import('../src/core/monster-assets.js');
  for(const [pt,en] of [['Água','water'],['Fogo','fire'],['Vento','wind'],['Luz','light'],['Escuridão','dark'],['Trevas','dark']]){
   assert.equal(monsterSlug(`Hellhound (${pt})`),`hellhound_${en}`);
-  assert.equal(monsterImageSources(null,{name:`Hellhound (${pt})`})[0],`${LOCAL_MONSTER_ROOT}hellhound_${en}.png`);
+  assert.deepEqual(monsterImageSources(null,{name:`Hellhound (${pt})`}),[]);
  }
  assert.equal(monsterSlug('  Hellhound ( ÁGUA )  '),'hellhound_water');
 });
-test('collaboration portraits always use originals by ID and localized name without changing the element',async()=>{
- const {collabPortraitTarget}=await import('../src/core/collab-mapping.js');
- for(const [source,target] of [[26311,26811],[26313,26813],[24012,24512],[24415,24915],[27411,27911]])assert.deepEqual(monsterImageSources(source),monsterImageSources(target));
- assert.deepEqual(monsterImageSources(null,{name:'Pure Vanilla Cookie'}),monsterImageSources(26811));
- assert.deepEqual(monsterImageSources(null,{name:'Pure Vanilla Cookie (Fogo)'}),monsterImageSources(26812));
- assert.deepEqual(monsterImageSources(null,{name:'Pure Vanilla Cookie',element:3}),monsterImageSources(26813));
- assert.deepEqual(monsterImageSources(99971,{name:'Magic Order Swordsinger (Água)'}),monsterImageSources(25201));
- assert.equal(collabPortraitTarget(19614,'Molly',4),null);
+test('collaboration portraits stay distinct from originals regardless of label or element hints',async()=>{
+ for(const [source,target] of [[26311,26811],[26313,26813],[24012,24512],[24415,24915],[27411,27911]])assert.notDeepEqual(monsterImageSources(source),monsterImageSources(target));
+ assert.deepEqual(monsterImageSources(null,{name:'Pure Vanilla Cookie'}),[]);
+ assert.deepEqual(monsterImageSources(99971,{name:'Magic Order Swordsinger (Água)'}),[]);
  const calls=[],fetcher=async url=>{calls.push(url);return {ok:true,json:async()=>url===MONSTER_IMAGE_INDEX_URL?{}:{version:1,monsters:{26314:'unit_icon_collab_should_not_render.png',26814:'unit_icon_original_light.png'}}};};
- const resolved=await resolveMonsterImageSources(26314,{name:'Pure Vanilla Cookie (Luz)',fetcher});assert.equal(resolved[0],`${LOCAL_MONSTER_ROOT}unit_icon_original_light.png`);assert.deepEqual(calls,[LOCAL_MONSTER_MANIFEST,MONSTER_IMAGE_INDEX_URL]);
- assert.deepEqual(monsterImageSources(29211,{name:'Geralt'}),monsterImageSources(29611));
+ const resolved=await resolveMonsterImageSources(26314,{name:'Pure Vanilla Cookie (Luz)',fetcher});assert.equal(resolved[0],`${LOCAL_MONSTER_ROOT}unit_icon_collab_should_not_render.png`);assert.deepEqual(calls,[LOCAL_MONSTER_MANIFEST,MONSTER_IMAGE_INDEX_URL]);
+ assert.notDeepEqual(monsterImageSources(29211,{name:'Geralt'}),monsterImageSources(29611));
 });
 test('new collaboration API portraits use a verified CDN filename if the local mirror does not contain it yet',async()=>{
  const urls=[],fetcher=async(url,opts)=>{urls.push({url,opts});if(url===LOCAL_MONSTER_MANIFEST)return {ok:true,json:async()=>({version:1,monsters:{},names:{}})};return {ok:true,json:async()=>({results:[{com2us_id:99994,image_filename:'unit_icon_recent_collab.png'}]})};};const sources=await resolveMonsterImageSources(99994,{name:'Collab (Luz)',element:4,fetcher});assert.equal(sources[0],'https://swarfarm.com/static/herders/images/monsters/unit_icon_recent_collab.png');assert.equal(urls.length,3);assert.ok(!urls.some(r=>r.opts?.method==='HEAD'));
