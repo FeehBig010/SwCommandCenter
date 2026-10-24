@@ -1,5 +1,5 @@
 import SiegeKillOrder from './SiegeKillOrder';
-import {Copy,Plus,Shield,Swords} from 'lucide-react';
+import {Copy,Plus,Shield,Swords,ChevronDown} from 'lucide-react';
 import {siegeComparisonRows} from '../core/siege-central';
 import {requiredTurnPlan} from '../core/siege';
 import {LABELS,SETS} from '../core/data';
@@ -21,6 +21,19 @@ function Lineup({members,turns=[]}){
  })}</div>;
 }
 
+function CounterAttack({record,feedback,onCopy,onInspect,onReact,account,busy,feedbackBusy}){
+ const f=record.counter?feedback(record):null,rate=f?.winRate??null;
+ return <article className="siege-row-attack" aria-label={`Ataque — ${record.name}`}>
+  <header><div><span className="eyebrow"><Swords size={14}/>ATAQUE / COUNTER</span><h3>{record.name}</h3></div><span className={`siege-rate-badge ${rate===null?'unknown':rate===100?'perfect':rate>=80?'good':'low'}`} title={f?`${f.total} relato(s) de vitória ou derrota · ${f.scope==='guild'?'Guilda':'Registro local'}`:'Sem resultados registrados'}>{rate===null?'Sem partidas':`${rate}% win`}</span></header>
+  <p className="siege-row-author">Registrado por {f?.author||'Membro da guilda'}{f?.scope==='device'?' · registro local':''}{record.cloud&&record.row?.moderation_status==='pending'?' · Pendente de aprovação':''}</p>
+  <LeaderLabel leader={record.team.leader}/><Lineup members={record.team.configs} turns={record.counter?requiredTurnPlan(record.counter):[]}/>
+  {record.counter&&<SiegeKillOrder defense={record.counter.enemyDefense} order={record.counter.siege.killOrder}/>}
+  <footer><button type="button" className="button primary" disabled={busy||!account} onClick={()=>onCopy(record)} title={!account?'Importe seu SWEX para sincronizar a composição':undefined}><Copy size={15}/>Copiar para Mim</button><button type="button" className="button small" onClick={()=>onInspect(record)}>Ver detalhes</button>
+  {f&&<div className="siege-row-results" aria-label={`Meu resultado — ${record.name}`}>{[['win','Vitória'],['loss','Derrota']].map(([value,label])=><button key={value} type="button" className="button small" aria-pressed={f.outcome===value} disabled={feedbackBusy||!f.available} onClick={()=>onReact(record,'outcome',f.outcome===value?null:value)}>{label}</button>)}<small>{f.total} relato(s){f.scope==='device'?' · local':''}</small></div>}</footer>
+ </article>;
+
+}
+
 export default function SiegeGuildRows({records,feedback,onCopy,onAdd,onInspect,onReact,account,busy,feedbackBusy}){
  const rows=siegeComparisonRows(records);
  return <section className="siege-comparisons" aria-label="Counters da guilda — Defesa versus Ataque">
@@ -34,17 +47,10 @@ export default function SiegeGuildRows({records,feedback,onCopy,onAdd,onInspect,
    </section>
    <section className="siege-row-attacks" aria-label="Ataques recomendados">
     {!row.attacks.length&&<div className="siege-row-no-counter"><Swords size={24}/><p>Nenhum counter registrado para esta defesa.</p></div>}
-    {row.attacks.map(record=>{
-     const f=record.counter?feedback(record):null,rate=f?.winRate??null;
-     return <article className="siege-row-attack" key={record.key} aria-label={`Ataque — ${record.name}`}>
-      <header><div><span className="eyebrow"><Swords size={14}/>ATAQUE / COUNTER</span><h3>{record.name}</h3></div><span className={`siege-rate-badge ${rate===null?'unknown':rate===100?'perfect':rate>=80?'good':'low'}`} title={f?`${f.total} relato(s) de vitória ou derrota · ${f.scope==='guild'?'Guilda':'Registro local'}`:'Sem resultados registrados'}>{rate===null?'Sem partidas':`${rate}% win`}</span></header>
-      <p className="siege-row-author">Registrado por {f?.author||'Membro da guilda'}{f?.scope==='device'?' · registro local':''}{record.cloud&&record.row?.moderation_status==='pending'?' · Pendente de aprovação':''}</p>
-      <LeaderLabel leader={record.team.leader}/><Lineup members={record.team.configs} turns={record.counter?requiredTurnPlan(record.counter):[]}/>
-      {record.counter&&<SiegeKillOrder defense={record.counter.enemyDefense} order={record.counter.siege.killOrder}/>}
-      <footer><button type="button" className="button primary" disabled={busy||!account} onClick={()=>onCopy(record)} title={!account?'Importe seu SWEX para sincronizar a composição':undefined}><Copy size={15}/>Copiar para Mim</button><button type="button" className="button small" onClick={()=>onInspect(record)}>Ver detalhes</button>
-      {f&&<div className="siege-row-results" aria-label={`Meu resultado — ${record.name}`}>{[['win','Vitória'],['loss','Derrota']].map(([value,label])=><button key={value} type="button" className="button small" aria-pressed={f.outcome===value} disabled={feedbackBusy||!f.available} onClick={()=>onReact(record,'outcome',f.outcome===value?null:value)}>{label}</button>)}<small>{f.total} relato(s){f.scope==='device'?' · local':''}</small></div>}</footer>
-     </article>;
-    })}
+    {row.attacks.length>1?<details className="siege-counters-accordion">
+     <summary className="button primary siege-counter-toggle"><span>Ver {row.attacks.length} Counters Disponíveis</span><ChevronDown size={18} aria-hidden="true"/></summary>
+     <div className="siege-counters-stack" role="region" tabIndex={0} aria-label="Counters disponíveis">{row.attacks.map(record=><CounterAttack key={record.key} record={record} feedback={feedback} onCopy={onCopy} onInspect={onInspect} onReact={onReact} account={account} busy={busy} feedbackBusy={feedbackBusy}/>)}</div>
+    </details>:row.attacks.map(record=><CounterAttack key={record.key} record={record} feedback={feedback} onCopy={onCopy} onInspect={onInspect} onReact={onReact} account={account} busy={busy} feedbackBusy={feedbackBusy}/>)}
    </section>
   </article>)}
  </section>;

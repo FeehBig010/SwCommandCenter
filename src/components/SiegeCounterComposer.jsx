@@ -32,25 +32,29 @@ export default function SiegeCounterComposer({initial,teams=[],account,onSave,on
  return <form className="siege-composer" onSubmit={submit}>
   <h2>{initial?'Editar counter':defenseSeed?'Adicionar Counter':'Novo counter · 3 contra 3'}</h2>
   <fieldset disabled={busy}>
+
+   <section className="siege-defense-header" aria-label="Defesa alvo">
+    <div className="siege-defense-caption"><h3>Defesa Inimiga</h3><LeaderLabel leader={draft.siege.defenseLeader}/></div>
+    <div className="siege-defense-summary">{draft.enemyDefense.map((m,i)=><div className="siege-defense-summary-unit" key={i}>
+     <MonsterPortrait unit_master_id={m?.masterId} name={m?.label||`Defesa ${i+1}`} element={m?.masterId%10}/><strong>{m?.label||`Defesa ${i+1}`}</strong>
+    </div>)}</div>
+   </section>
+   {!defenseSeed&&<details className="siege-defense-selectors" open={draft.enemyDefense.every(m=>m?.masterId)?undefined:true}>
+    <summary>{draft.enemyDefense.every(m=>m?.masterId)?'Alterar defesa inimiga':'Selecionar defesa inimiga'}</summary>
+    <fieldset className="siege-defense-picker" aria-label="Defesa inimiga">
+     <div className="siege-counter-lineup">{draft.enemyDefense.map((m,i)=><MonsterCombobox key={i} label={`Defesa ${i+1}`} options={SIEGE_CHOICES} value={String(m?.masterId||'')} onChange={choice=>selectDefender(i,choice)}/>)}</div>
+    </fieldset>
+   </details>}
    <div className="siege-counter-meta"><label className="field"><span>Nome do counter</span><input required maxLength={100} value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label><label className="field"><span>Preencher com meu time</span><select defaultValue="" onChange={e=>{const t=teams.find(t=>t.id===e.target.value);if(t)try{setOffense(hydrate(portableTeam(t,account)));setError('');}catch(e){setError(e.message);}}}><option value="">Criar do zero</option>{teams.filter(t=>t.configs.length===3).map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label></div>
-   <div className="siege-counter-comparison">
-    <section className="siege-counter-panel siege-counter-defense" aria-label="Painel de Defesa Inimiga">
-     <h3>Defesa Inimiga</h3>
-     <fieldset className="siege-defense-picker" aria-label="Defesa inimiga" disabled={!!defenseSeed}>
-      <div className="siege-counter-lineup">{draft.enemyDefense.map((m,i)=><div className="siege-defense-slot" key={i}>
-       <MonsterPortrait unit_master_id={m?.masterId} name={m?.label||`Defesa ${i+1}`} element={m?.masterId%10}/>
-       <MonsterCombobox label={`Defesa ${i+1}`} options={SIEGE_CHOICES} value={String(m?.masterId||'')} onChange={choice=>selectDefender(i,choice)}/>
-      </div>)}</div>
-     </fieldset>
-    </section>
+   <div className="siege-offense-workspace">
     <section className="siege-counter-panel siege-counter-attack" aria-label="Painel de Ataque / Counter">
      <h3>Ataque / Counter</h3>
 
-     <div className="siege-counter-lineup">{draft.offense.configs.map((c,i)=><div className="siege-attack-slot" key={c.key||i}>
+     <div className="siege-offense-content"><div className="siege-counter-lineup">{draft.offense.configs.map((c,i)=><div className="siege-attack-slot" key={c.key||i}>
       <MonsterPortrait unit_master_id={c.masterId} name={c.label} element={c.masterId%10}/>
       <MonsterCombobox label={`Ataque ${i+1}`} options={offenseChoices} value={account?c.unitId?`unit:${c.unitId}`:'':String(c.masterId||'')} onChange={choice=>selectAttacker(i,choice)}/>
      </div>)}</div>
-     <SiegeKillOrder defense={draft.enemyDefense} order={draft.siege.killOrder} onChange={killOrder=>setSpec({killOrder})}/>
+     <SiegeKillOrder defense={draft.enemyDefense} order={draft.siege.killOrder} onChange={killOrder=>setSpec({killOrder})}/></div>
     </section>
    </div>
    <label className="field siege-counter-strategy"><span>Descrição / Estratégia (Opcional)</span><textarea rows={3} maxLength={1000} placeholder="Ex.: foque o suporte primeiro e guarde a imunidade para a segunda rotação." value={draft.notes} onChange={e=>setDraft({...draft,notes:e.target.value})}/></label>
