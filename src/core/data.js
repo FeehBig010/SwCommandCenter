@@ -61,7 +61,7 @@ export function initialTeams(account){
  });
  return [{id:crypto.randomUUID(),name:configs.filter(c=>c.masterId).map(c=>c.label).join(' - ')||'Novo time',autoName:true,mode:'defense',priority:1,order:'soft',configs}];
 }
-export function makeTeam(gameMode='siege'){return {id:crypto.randomUUID(),name:'Novo time',autoName:true,gameMode,mode:'defense',priority:1,order:'off',configs:Array.from({length:GAME_MODES[gameMode]?.slots||3},()=>blankConfig())};}
+export function makeTeam(gameMode='siege'){return {...(gameMode==='arena'?{arenaContext:'regular'}:{}),id:crypto.randomUUID(),name:'Novo time',autoName:true,gameMode,mode:'defense',priority:1,order:'off',configs:Array.from({length:GAME_MODES[gameMode]?.slots||3},()=>blankConfig())};}
 export const DEFAULT_OPTIONS={equipped:true,respectLocks:false,artifacts:true,depth:'balanced',minLevel:12,maxGrindsGems:false,strictMode:false,speedTick:7};
 
 export const GAME_MODES = {

@@ -1,10 +1,11 @@
+import {arenaContextOf,ARENA_CONTEXT_FIELDS} from './arena-context.js';
 // SWEX deck layouts vary by exporter/game version. Unrecognized numeric types stay unclassified.
-export const DECK_SOURCE_KEYS=['deck_list','deck_recent_list','defense_deck_list','world_arena_deck_list','party_deck','raid_deck','raid_deck_list','dungeon_deck','defense_deck_info','server_arena_defense_deck_info','guildsiege_defense_deck_unit_list','siege_deck','arena_deck','world_arena_deck','defense_unit_list'];
+export const DECK_SOURCE_KEYS=['deck_list','deck_recent_list','defense_deck_list','world_arena_deck_list','party_deck','raid_deck','raid_deck_list','dungeon_deck','defense_deck_info','server_arena_defense_deck_info','interserver_defense_deck_info','interserver_deck_list','inter_server_defense_deck_list','guildsiege_defense_deck_unit_list','siege_deck','arena_deck','world_arena_deck','defense_unit_list'];
 const fold=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 export function classifyDeck(node={},path='',slots=0){
  const context=fold([path,node.area,node.mode,node.game_mode,node.content_name,node.deck_type].join(' '));
  if(/(?:^|[^a-z])rta(?:$|[^a-z])|world.?arena|arena.?world/.test(context))return {gameMode:'rta',dungeon:null};
- if(/arena/.test(context))return {gameMode:'arena',dungeon:null};
+ if(arenaContextOf(node,path)==='interserver'||/arena/.test(context))return {gameMode:'arena',dungeon:null};
  if(/siege|gvg|guild|cerco/.test(context))return {gameMode:'siege',dungeon:null};
  const pve=fold([context,node.dungeon_name,node.name,node.deck_name].join(' '));
  if(pve.includes('pve-other'))return {gameMode:'cairos',dungeon:'pve-other'};
@@ -90,7 +91,7 @@ function groupedDeckRows(node){
  const entries=Array.isArray(node)?node:Object.values(node);
  if(!entries.length||!entries.every(v=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.hasOwn(v,'deck_id')&&Object.hasOwn(v,'unit_id')&&!Array.isArray(v.unit_id)&&SLOT_FIELDS.every(k=>!Object.hasOwn(v,k))))return null;
  const groups=new Map();
- for(const row of entries){const key=JSON.stringify([row.deck_id,row.dungeon_id,row.content_id,row.deck_type,row.deck_seq,row.type,row.sub_type,row.game_mode,row.mode]);if(!groups.has(key))groups.set(key,{...row,unit_id_list:[]});groups.get(key).unit_id_list.push(row);}
+ for(const row of entries){const key=JSON.stringify([row.deck_id,row.dungeon_id,row.content_id,row.deck_type,row.deck_seq,row.type,row.sub_type,row.game_mode,row.mode,arenaContextOf(row)]);if(!groups.has(key))groups.set(key,{...row,unit_id_list:[]});groups.get(key).unit_id_list.push(row);}
  return [...groups.values()];
 }
 export function extractAccountPresets(deckList,units,forcedArea=null,diagnostics=null){
@@ -103,7 +104,7 @@ export function* extractAccountPresetsSteps(deckList,units,forcedArea=null,diagn
   if(++visited%128===0)yield {visited};
   const {node,path,inherited}=pending.pop();
   if(!node||typeof node!=='object'||seen.has(node))continue;seen.add(node);
-  const context={...inherited,...Object.fromEntries(['dungeon_id','content_id','dungeon_name','content_name','difficulty','area','mode','game_mode','deck_type','deck_seq','type','sub_type','sourceKey','sourcePath','raid_party_id','raid_team_index','party_id','name','deck_name','leader_unit_id','leader_index'].filter(key=>Object.hasOwn(node,key)).map(key=>[key,node[key]]))};
+  const context={...inherited,...Object.fromEntries([...ARENA_CONTEXT_FIELDS,'dungeon_id','content_id','dungeon_name','content_name','difficulty','area','mode','game_mode','deck_type','deck_seq','type','sub_type','sourceKey','sourcePath','raid_party_id','raid_team_index','party_id','name','deck_name','leader_unit_id','leader_index'].filter(key=>Object.hasOwn(node,key)).map(key=>[key,node[key]]))};
   const identified=classifyDeck({...context,...node},path),isRaid=identified.dungeon==='r5'||!identified.dungeon&&/r5|raid|party/.test(path);
   const grouped=groupedDeckRows(node);
   if(grouped){for(let i=grouped.length-1;i>=0;i--)pending.push({node:grouped[i],path:`${path}/group/${i}`,inherited:context});continue;}
@@ -132,6 +133,7 @@ export function* extractAccountPresetsSteps(deckList,units,forcedArea=null,diagn
    let area=forcedArea==='pve'?(['cairos','dimensional','rift','toa'].includes(inferred.gameMode)?inferred:{gameMode:'cairos',dungeon:null}):['siege','arena','rta'].includes(forcedArea)?{gameMode:forcedArea,dungeon:null}:inferred;
    if(forcedArea==='pve-default')area=inferred.gameMode?inferred:{gameMode:'cairos',dungeon:null};
    if(['pve','pve-default'].includes(forcedArea)&&area.gameMode==='cairos'&&!area.dungeon)area={...area,dungeon:'pve-other'};
+   if(area.gameMode==='arena')area={...area,arenaContext:arenaContextOf({...context,...node},path)};
    const base=`deck-${String(node.deck_id??node.id??path)}-${path.replace(/\/\d+(?=\/|$)/g,'')}`,occurrence=idsSeen.get(base)||0;idsSeen.set(base,occurrence+1);
    const leaderId=Number(node.leader_unit_id??context.leader_unit_id??0),leaderIndex=leaderId>0?Math.max(0,ids.indexOf(leaderId)):Math.max(0,Math.min(Math.max(0,ids.length-1),Math.floor(Number(node.leader_index??context.leader_index)||0)));
    const unitIds=ids.map(id=>Number.isSafeInteger(id)&&id>0?known.get(id)??null:null),slots=({siege:3,arena:4,cairos:5,dimensional:4,rift:6,toa:5,rta:4})[area.gameMode]||unitIds.length;while(unitIds.length<slots)unitIds.push(null);

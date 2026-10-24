@@ -1,3 +1,4 @@
+import {arenaContextOf} from './arena-context.js';
 import {monsterImageSources} from './monsters.js';
 import {combatAttributes} from './speedTuner.js';
 import {calculateStats,artifactBonus,setCounts,artifactEffects} from './optimizer.js';
@@ -15,7 +16,7 @@ export function accountPresetPage(account,current='portal'){
  return first||'siege';
 }
 export function teamFromGameDeck(preset,account,previous){
- const mode=preset.gameMode||previous?.gameMode||'siege';assertPresetArea(preset,mode,preset.dungeon);if(previous&&(previous.gameMode||'siege')!==mode)throw new Error('Não é possível carregar um deck de outra área.');const slots=GAME_MODES[mode]?.slots||3;
+ const mode=preset.gameMode||previous?.gameMode||'siege';assertPresetArea(preset,mode,preset.dungeon,arenaContextOf(preset));if(previous&&mode==='arena'&&arenaContextOf(previous)!==arenaContextOf(preset))throw new Error('Este deck pertence a outro contexto de Arena.');if(previous&&(previous.gameMode||'siege')!==mode)throw new Error('Não é possível carregar um deck de outra área.');const slots=GAME_MODES[mode]?.slots||3;
  const oldByUnit=new Map((previous?.configs||[]).map(c=>[c.unitId,c]));
  const configs=Array.from({length:slots},(_,i)=>{
   const original=account.units.find(u=>Number(u.id)===Number(preset.unitIds[i])),equipment=preset.equipment?.find(e=>e.unitId===original?.id),unit=original&&equipment?{...original,runeIds:equipment.runeIds,artifactIds:equipment.artifactIds}:original,old=unit&&oldByUnit.get(unit.id);
@@ -26,7 +27,7 @@ export function teamFromGameDeck(preset,account,previous){
   return {...c,...(!unit?{enabled:false,missingUnitId:null}:{}),sets,strictSets:false,basis:'total',lockSpeedSync:mode==='cairos',mains:Object.fromEntries([2,4,6].map(s=>[s,account.runes.find(r=>unit?.runeIds?.includes(r.id)&&r.slot===s)?.main[0]||0]))};
  });
  const leaderIndex=Math.max(0,Math.min(slots-1,Number(preset.leaderIndex)||0)),leader=catalogLeader(configs[leaderIndex]?.masterId);
- const next={...makeTeam(mode),...previous,gameMode:mode,mode:preset.mode||previous?.mode||'defense',configs,inactiveConfigs:[],leader,leaderIndex,leaderKey:leader?configs[leaderIndex]?.key:null,leaderSpd:0,towerSpd:previous?.towerSpd??account.towers?.glorySpd??0,guildSpd:previous?.guildSpd??account.towers?.guildSpd??0,sourceDeckId:preset.id,sourceAccountId:account.id,sourceDungeon:preset.dungeon||null,dungeon:preset.dungeon||previous?.dungeon||null,sourceDeckName:preset.name,sourceImportedAt:account.importedAt};
+ const next={...makeTeam(mode),...previous,gameMode:mode,...(mode==='arena'?{arenaContext:arenaContextOf(preset)}:{}),mode:preset.mode||previous?.mode||'defense',configs,inactiveConfigs:[],leader,leaderIndex,leaderKey:leader?configs[leaderIndex]?.key:null,leaderSpd:0,towerSpd:previous?.towerSpd??account.towers?.glorySpd??0,guildSpd:previous?.guildSpd??account.towers?.guildSpd??0,sourceDeckId:preset.id,sourceAccountId:account.id,sourceDungeon:preset.dungeon||null,dungeon:preset.dungeon||previous?.dungeon||null,sourceDeckName:preset.name,sourceImportedAt:account.importedAt};
  delete next.plannedRunes;
  if(preset.equipment?.length)next.plannedRunes={accountStamp:`${account.id}:${account.importedAt||''}`,byConfig:Object.fromEntries(configs.flatMap(c=>{const e=preset.equipment.find(e=>e.unitId===c.unitId);return e?[[c.key,e.runeIds.filter(id=>account.runes.some(r=>r.id===id))]]:[];}))};
  return {...next,autoName:previous?.autoName!==false,name:previous?.autoName===false?previous.name:automaticTeamName(configs)};
@@ -34,7 +35,7 @@ export function teamFromGameDeck(preset,account,previous){
 function refreshManualTeam(account,team){return {...team,plannedRunes:null,configs:team.configs.map(c=>{const unit=account.units.find(u=>u.id===c.unitId);return unit?{...c,masterId:unit.master,label:unit.name}:{...c,unitId:null};})};}
 export function syncAccountTeams(account,previous=[],sameAccount=false){return collectSteps(syncAccountTeamsSteps(account,previous,sameAccount));}
 function* syncAccountTeamsSteps(account,previous=[],sameAccount=false){
- const decks=(account.accountPresets||[]).filter(p=>['siege','arena','rta'].includes(p.gameMode));
+ const decks=(account.accountPresets||[]).filter(p=>['siege','arena','rta'].includes(p.gameMode)&&(p.gameMode!=='arena'||arenaContextOf(p)!=='unknown'));
  const kept=sameAccount?previous.filter(t=>!t.sourceDeckId).map(t=>refreshManualTeam(account,t)):[];
  const imported=[];for(let i=0;i<decks.length;i++){const p=decks[i];imported.push(teamFromGameDeck(p,account,sameAccount?previous.find(t=>t.sourceDeckId===p.id):null));if(i%8===0)yield {completed:i+1,total:decks.length};}
  return [...kept,...imported];
@@ -98,7 +99,8 @@ export function hydrateAccountPresets(account){
 export function reconcileStoredPresets(account,stored=[],pve={}){
  const imported=syncAccountTeams(account),seen=new Set(stored.map(t=>t.sourceDeckId).filter(Boolean));
  const kept=imported.length?stored.filter(t=>t.sourceDeckId||t.configs.some(c=>c.masterId||c.unitId)):stored;
- return {teams:[...kept,...imported.filter(t=>!seen.has(t.sourceDeckId))],pve:{...syncCairosPlans(account),...pve}};
+ const byDeck=new Map(imported.map(t=>[t.sourceDeckId,t]));
+ return {teams:[...kept.map(t=>t.gameMode==='arena'?{...t,arenaContext:arenaContextOf(byDeck.get(t.sourceDeckId)||t)}:t),...imported.filter(t=>!seen.has(t.sourceDeckId))],pve:{...syncCairosPlans(account),...pve}};
 }
 
 function collectSteps(iterator){let step=iterator.next();while(!step.done)step=iterator.next();return step.value;}
