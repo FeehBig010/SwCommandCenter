@@ -36,3 +36,13 @@
 .siege-comparisons .siege-leader{display:block;font-size:11px;overflow-wrap:anywhere}
 @media(max-width:1100px) and (min-width:851px){.siege-comparison-row{grid-template-columns:minmax(0,1fr)}.siege-row-defense{border-right:0;border-bottom:1px solid var(--siege-border)}}
 @media(max-width:600px){.siege-comparison-row{grid-template-columns:minmax(0,1fr)}.siege-row-defense{border-right:0;border-bottom:1px solid var(--siege-border)}.siege-row-defense,.siege-row-attack{padding:14px}.siege-row-lineup{gap:6px}.siege-row-unit .monster-portrait{width:52px;height:52px}.siege-row-attack footer>.button.primary{width:100%;justify-content:center}}
+
+/* The enemy registration captures only the composition; its portrait is keyed by master ID. */
+.siege-defense-picker{min-width:0;margin:0;padding:0;border:0}
+.siege-defense-slot{display:flex;align-items:center;gap:12px;min-width:0;padding:12px;border:1px solid var(--siege-border);border-radius:10px;background:#0a131dcc}
+.siege-defense-slot>.monster-portrait{width:64px;height:64px;flex-shrink:0}
+.siege-defense-slot>.monster-combobox{flex:1;min-width:0}
+.siege-defense-trio{align-items:start}
+.siege-counter-strategy{margin:0 0 18px}
+.siege-counter-strategy textarea{min-height:80px;resize:vertical}
+@media(max-width:1250px) and (min-width:851px){.siege-defense-slot{flex-direction:column;align-items:stretch}.siege-defense-slot>.monster-portrait{align-self:center}}
