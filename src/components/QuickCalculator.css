@@ -1,0 +1,48 @@
+/* Free calculator controls are scoped to avoid changing account editors. */
+.quick-calculator .quick-header{margin-bottom:12px}
+.quick-calculator .quick-header h1{margin:0}
+.quick-area-tabs{display:flex;gap:6px;padding:5px;margin-bottom:14px;background:rgba(15,20,25,.75);backdrop-filter:blur(10px);border:1px solid #b49a5e45;border-radius:10px}
+.quick-area-tabs [role=tab]{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:9px 12px;color:#bfc9ce;border:1px solid transparent;border-radius:7px;background:transparent;cursor:pointer;font:inherit;font-size:13px}
+.quick-area-tabs [role=tab] span{font-size:11px;color:#a2b1bc}
+.quick-area-tabs [aria-selected=true]{color:#ffe4a0;border-color:#d3b76a99;background:#b49a5e21;box-shadow:inset 0 -2px #d3b76a}
+.quick-area-tabs [aria-selected=true] span{color:#e2c783}
+.quick-calculator button:focus-visible,.quick-calculator [role=tabpanel]:focus-visible{outline:2px solid #5ee8f4;outline-offset:3px}
+.quick-calculator [role=tabpanel]{min-width:0;border-radius:8px}
+.quick-calculator .quick-command-bar{margin-bottom:14px;gap:8px}
+.quick-calculator .summary-team-grid{gap:12px}
+.quick-calculator .summary-monster-card{padding:23px 10px 10px;gap:8px;backdrop-filter:blur(10px)}
+.quick-calculator .summary-monster-card:focus-within{z-index:30}
+.quick-calculator .summary-portrait{padding:6px;border-radius:14px;background:rgba(15,20,25,.75)}
+.quick-element-icon{position:absolute;width:26px;height:26px;right:-7px;bottom:-5px;z-index:2;object-fit:contain;padding:2px;background:#0f1419;border:1px solid #b49a5e66;border-radius:50%}
+.quick-calculator .stat-goal-control{background:rgba(15,20,25,.75);backdrop-filter:blur(10px);border:1px solid #b49a5e2b;border-radius:7px;padding:6px;min-width:0}
+.quick-calculator .stat-goal-inline{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;gap:0 8px}
+.quick-calculator .stat-goal-inline .field{display:contents}
+.quick-calculator .stat-goal-inline .field>span{grid-column:1/-1;font-size:10px;margin-bottom:4px;overflow-wrap:anywhere}
+.quick-calculator .stat-goal-inline .field input{grid-column:1;grid-row:2;width:100%;min-width:0;min-height:32px;padding:5px;font-size:12px}
+.quick-calculator .stat-goal-inline .nautical-slider{grid-column:2;grid-row:2;margin:0;width:100%;min-width:0;min-height:28px}
+.quick-calculator .stat-goal-inline .slider-scale{grid-column:2;font-size:8px}
+.quick-calculator .stat-goal-master{border-color:#5ee8f499;box-shadow:0 0 14px #5ee8f417}
+.quick-calculator .stat-goal-master .field>span{color:#88f3fc}
+.quick-calculator .stat-goal-master .nautical-slider{accent-color:#5ee8f4}
+.quick-calculator .stat-goal-master .nautical-slider::-webkit-slider-runnable-track{background:linear-gradient(90deg,#5ee8f4 var(--slider-fill),#243540 var(--slider-fill));border-color:#5ee8f477;box-shadow:0 0 8px #5ee8f433}
+.quick-calculator .stat-goal-master .nautical-slider::-moz-range-track{background:linear-gradient(90deg,#5ee8f4 var(--slider-fill),#243540 var(--slider-fill));border-color:#5ee8f477;box-shadow:0 0 8px #5ee8f433}
+.quick-calculator .stat-goal-master .nautical-slider::-webkit-slider-thumb{width:20px;height:20px;margin-top:-7px;border-radius:50%;background:#88f3fc;border:2px solid #d0fcff;box-shadow:0 0 9px #5ee8f499}
+.quick-calculator .stat-goal-master .nautical-slider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#88f3fc;border:2px solid #d0fcff;box-shadow:0 0 9px #5ee8f499}
+.quick-calculator .summary-card-controls .stat-fields{grid-template-columns:1fr}
+.quick-calculator .smart-rune-sets{margin:3px 0;padding:6px;background:rgba(15,20,25,.75);border-radius:7px}
+.quick-calculator .smart-rune-sets legend{font-size:10px;margin-bottom:4px}
+.quick-calculator .rune-slot-grid{gap:4px}
+.quick-calculator .rune-slot-trigger{padding:4px;min-height:54px;background:#0f1419bf}
+.quick-calculator .rune-slot-trigger small{font-size:8px}
+.quick-calculator .rune-set-icon{width:26px;height:26px}
+.quick-calculator .automatic-sync-badge{font-size:10px;line-height:1.5;overflow-wrap:anywhere}
+.quick-calculator .energy-timeline-panel{margin:14px 0;padding:10px;background:rgba(15,20,25,.75)}
+.quick-export-footer{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #b49a5e55;margin-top:16px;padding-top:16px}
+.quick-export-footer .quick-export-action{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.quick-export-footer .export-card-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;white-space:normal}
+.quick-more-exports{font-size:11px;color:#b9c4cc}
+.quick-more-exports summary{cursor:pointer;padding:8px}
+.quick-more-exports[open] .quick-export-action{margin-top:8px}
+@media(max-width:1100px){.quick-calculator .summary-team-grid.slots-4,.quick-calculator .summary-team-grid.slots-5{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.quick-area-tabs [role=tab]{flex-direction:column;gap:4px;padding:8px 4px;font-size:12px}.quick-calculator .quick-header{gap:4px}.quick-export-footer,.quick-export-footer .quick-export-action{align-items:stretch;flex-direction:column}.quick-calculator .summary-team-grid,.quick-calculator .summary-team-grid.slots-4,.quick-calculator .summary-team-grid.slots-5{grid-template-columns:1fr}.quick-calculator .summary-portrait .avatar{width:72px;height:72px}.quick-calculator .summary-card-controls .stat-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.quick-calculator .stat-goal-inline{grid-template-columns:60px minmax(0,1fr);column-gap:6px}}
+@media(prefers-reduced-transparency:reduce){.quick-calculator .stat-goal-control,.quick-area-tabs{background:#0f1419;backdrop-filter:none}}
