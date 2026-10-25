@@ -1,6 +1,7 @@
 import {monsterOpener} from './monsterDatabase.js';
 import passiveNotices from './passive-notices.json' with {type:'json'};
 import {leaderApplies,speedLeaderBonus,raidLeaderBonuses} from './leaders.js';
+import {MAX_TOWERS} from './combat-towers.js';
 export const PASSIVES={20615:'amduat',25311:'miles',23512:'masha',23612:'masha_dismounted',26113:'sonia',21214:'tian_lang',16615:'ragdoll',22211:'abellio',22311:'abellio_beast',16312:'antares',16613:'leo',21314:'tablo'};
 const number=(v,fallback,min,max,label)=>{const n=Number(v??fallback);if(!Number.isFinite(n)||n<min||n>max)throw new Error(`${label} inválido.`);return n;};
 // Conservative requested 30-ATB floor, separate from the discrete scenario proof.
@@ -39,12 +40,13 @@ export function combatAttributes(unit,stats,counts={},team={},combat={},effects=
  const raw=team.sheetSpeedFormula===true?combatSpeedFromSheet(stats.total.spd,unit,team):stats.total.spd-Math.ceil(unit.base.spd*swift/100)+unit.base.spd*(swift+Number(team.towerSpd||0)+guild+speedLeaderBonus(unit,team))/100;
  if(!Number.isFinite(raw)||raw<=0)throw new Error('SPD de combate inválida.');
  const total={...stats.total,spd:runtimeSpeed(raw,unit.master,combat,effects)},leader=team.leader;
+ if(team.maxedTowers){for(const key of ['hp','atk','def'])total[key]+=Math.ceil(unit.base[key]*(MAX_TOWERS[key]+(team.gameMode==='siege'?MAX_TOWERS[`guild${key[0].toUpperCase()}${key.slice(1)}`]:0)+(key==='atk'?MAX_TOWERS.elementAtk:0))/100);total.cd+=MAX_TOWERS.cd;}
  if(team.raid){for(const [stat,value] of Object.entries(raidLeaderBonuses(unit,team)))if(stat!=='spd')total[stat]=Math.ceil(total[stat]+(['hp','atk','def'].includes(stat)?unit.base[stat]*value/100:value));}
  if(!team.raid&&leader&&leader.stat!=='spd'&&leaderApplies(leader,unit,team.gameMode||'siege')){
   const stat=leader.stat;total[stat]=Math.ceil(total[stat]+(['hp','atk','def'].includes(stat)?unit.base[stat]*leader.value/100:leader.value));
  }
  for(const key of ['cr','res','acc'])total[key]=Math.min(100,total[key]);
- return {...total,rawSpd:raw,master:unit.master};
+ return {...total,rawSpd:raw,master:unit.master,...(team.maxedTowers?{maxedTowers:true}:{})};
 }
 // Fixed SW natural gauge increment; callers select integer tick deadlines, never a rate.
 const NATURAL_GAUGE_STEP=7;

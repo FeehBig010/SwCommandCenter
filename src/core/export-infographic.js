@@ -1,3 +1,4 @@
+import {equivalentSkillIds} from './CollabMapping.js';
 import {orderRuneSets} from './rune-sets.js';
 import {SETS,FOUR} from './data.js';
 import {quickPreview,quickOrderLocked} from './quick-calculator.js';
@@ -43,7 +44,7 @@ export function createInfographic(team,account=null,{builds=null,options={}}={})
   const rows=statsOrder.map(key=>({key,base:base?finite(base[key]):null,bonus:stats?.total&&base?finite(stats.total[key])-finite(base[key]):null,total:stats?.total?finite(stats.total[key]):null}));
   const runes=Array.from({length:6},(_,slot)=>{const r=gear.find(r=>r.slot===slot+1);return r?{slot:slot+1,set:r.set,name:SETS[r.set]||'Runa',level:r.level,stars:r.stars,icon:SETS[r.set]?`/game-icons/runes/${SETS[r.set].toLowerCase()}.png`:null}:null;});
   const artifacts=Array.from({length:2},(_,i)=>{const a=artifactMap.get(artifactIds[i]);return a?{level:a.level,stat:({100:'HP',101:'ATK',102:'DEF'})[a.main?.[0]]||'Artefato',value:finite(a.main?.[1])}:null;});
-  const abilities=(skillCatalog.monsters[c.masterId]||[]).map(id=>skillCatalog.skills[id]).filter(Boolean).map(s=>({...s,level:unit?.skillLevels?.find(l=>l.slot===s.slot)?.level??c.skillLevels?.find(l=>l.slot===s.slot)?.level??null}));
+  const abilities=equivalentSkillIds(skillCatalog,c.masterId).map(id=>skillCatalog.skills[id]).filter(Boolean).map(s=>({...s,level:unit?.skillLevels?.find(l=>l.slot===s.slot)?.level??c.skillLevels?.find(l=>l.slot===s.slot)?.level??null}));
   const leader=monsterLeader(c.masterId),activeLeader=!!team.leader&&(team.leaderKey?team.leaderKey===c.key:team.configs.indexOf(c)===(team.leaderIndex||0));
   const setPieces=(gear.length?gear.map(r=>r.set):(c.sets||[]).filter(Boolean)).reduce((out,id)=>({...out,[id]:(out[id]||0)+1}),{});
   const sets=orderRuneSets(Object.keys(setPieces).map(Number)).map(id=>[id,setPieces[id]]).filter(([id])=>SETS[id]).map(([id,pieces])=>({name:SETS[id],count:gear.length?Math.floor(pieces/(FOUR.has(Number(id))?4:2)):pieces,partial:gear.length&&pieces<(FOUR.has(Number(id))?4:2)?`${pieces}/${FOUR.has(Number(id))?4:2}`:null,icon:`/game-icons/runes/${SETS[id].toLowerCase()}.png`}));

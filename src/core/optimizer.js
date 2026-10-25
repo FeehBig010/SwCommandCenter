@@ -57,7 +57,7 @@ export function goalValue(stats,config,key){if(config.raidGoals&&stats.combat){i
 export function goalReport(stats,config){const rows=STATS.filter(k=>Number(config.goals[k])>0).map(key=>{const target=Number(config.goals[key]);const actual=goalValue(stats,config,key);return {key,target,actual,missing:Math.max(0,target-actual),met:actual>=target};});if(Number(config.combatSpd)>0){const target=Number(config.combatSpd),actual=stats.combat?.spd??stats.total.spd;rows.push({key:'combatSpd',target,actual,missing:Math.max(0,target-actual),met:actual>=target});}return rows;}
 function setRequirements(c){const req={};for(const id of c.sets.filter(Boolean))req[id]=(req[id]||0)+(FOUR.has(id)?4:2);return req;}
 function setsValid(counts,req){return Object.entries(req).every(([id,n])=>(counts[id]||0)>=n);}
-function objective(stats,c){const focuses=c.focuses?normalizeFocuses(c.focuses):[];if(focuses.length)return focuses.reduce((n,key)=>n+objective(stats,{...c,focuses:[],objective:GOAL_PRESETS[key].objective}),0)/focuses.length;const s=stats.total;switch(c.objective){case 'cr':return Math.min(s.cr,100)/100;case 'spd':return Math.min(s.spd/400,1.5);case 'hp':return Math.min(s.hp/70000,1.5);case 'damage':if(stats.damage)return stats.damage.total/100000;return Math.min((s.atk*(1+Math.min(100,s.cr)/100*s.cd/100))/10000,1.5);default:return Math.min(s.hp/60000+s.def/2500+s.spd/350,3)/3;}}
+function objective(stats,c){const focuses=c.focuses?normalizeFocuses(c.focuses):[];if(focuses.length)return focuses.reduce((n,key)=>n+objective(stats,{...c,focuses:[],objective:GOAL_PRESETS[key].objective}),0)/focuses.length;const s=c.rawPower&&stats.combat?stats.combat:stats.total;if(c.rawPower&&!['spd','cr'].includes(c.objective)){const ehp=s.hp*(1140+3.5*s.def)/1000/300000,damage=stats.damage?stats.damage.total/100000:s.atk*(1+Math.min(100,s.cr)/100*s.cd/100)/10000;return c.objective==='hp'?ehp:c.objective==='damage'?damage:ehp+damage;}switch(c.objective){case 'cr':return Math.min(s.cr,100)/100;case 'spd':return Math.min(s.spd/400,1.5);case 'hp':return Math.min(s.hp/70000,1.5);case 'damage':if(stats.damage)return stats.damage.total/100000;return Math.min((s.atk*(1+Math.min(100,s.cr)/100*s.cd/100))/10000,1.5);default:return Math.min(s.hp/60000+s.def/2500+s.spd/350,3)/3;}}
 function evaluate(stats,c,counts,progress=1){if(c.matchTarget){const distance=targetDistance(stats,c,counts,progress);return {deficit:distance,utility:1/(1+distance)};}let deficit=Number(c.combatSpd)>0?Math.max(0,c.combatSpd*progress-stats.combat.spd)/c.combatSpd:0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0){const desired=target*progress;const actual=goalValue(stats,c,k);deficit+=Math.max(0,desired-actual)/Math.max(target,1);}}
  let preference=0;if(!c.strictSets){const req=setRequirements(c);preference=Object.entries(req).reduce((s,[id,n])=>s+Math.min((counts[id]||0)/n,1),0)*0.03;}
  return {deficit,utility:objective(stats,c)+preference};
@@ -123,6 +123,7 @@ export function generateCandidates(account,unit,c,options,reserved=new Set(),pro
 }
 export function speedSyncValid(assignments,teams){
  for(const team of teams){
+  if(team.optimizerSpeedSync===false)continue;
   const active=team.configs.filter(c=>c.enabled),chain=active.filter(c=>c.lockSpeedSync===true);
   const eventDriven=!!team.combatScenario?.events?.length||active.some(c=>Number(c.masterId)===16613)||team.cloneTiming&&team.autoOpener&&active.some(c=>monsterOpener(c.masterId));
   if(!eventDriven)for(let i=0;i<chain.length;i++)for(let j=i+1;j<chain.length;j++){
@@ -134,7 +135,8 @@ export function speedSyncValid(assignments,teams){
   if(active.length&&active.every(c=>assignments[c.key])&&(chain.length||active.some(c=>Number(c.maxTick)>0))){
    const actors=active.map(c=>{const a=assignments[c.key];return {key:c.key,master:a.stats.combat?.master??c.masterId,spd:a.stats.combat?.spd??a.stats.total.spd,rawSpd:a.stats.combat?.rawSpd,combat:c.combat,effects:a.stats.combat?.effects,will:(a.counts?.[15]||0)>=2,nemesisSets:Math.floor((a.counts?.[14]||0)/2)};});
    const configured=scenarioForTeam(team,actors),foes=configured.actors.some(a=>a.enemy),enemy=Number(team.enemyCombatSpd)||0;
-   const report=simulateCombat([...configured.actors,...(!foes&&enemy>0?[{key:'__enemy__',spd:enemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true});
+   const reference=team.optimizerSpeedSync===true&&!foes&&!enemy&&monsterOpener(active[0]?.masterId)?Math.max(1,actors[0].spd-1):enemy;
+   const report=simulateCombat([...configured.actors,...(!foes&&reference>0?[{key:'__enemy__',spd:reference,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true});
    const positions=chain.map(c=>report.firstTurns.findIndex(t=>t.key===c.key));
    if(positions.some((p,i)=>p<0||report.firstTurns[p]?.disabled||i>0&&p<positions[i-1]))return false;
    const enemyIndex=report.firstTurns.findIndex(t=>t.enemy);if(enemyIndex>=0&&positions.some(p=>p>enemyIndex))return false;

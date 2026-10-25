@@ -10,7 +10,7 @@ export function normalizeDamageSettings(raw={}){
  return result;
 }
 export function estimateRealDamage(unit,stats,settings={},effects={totals:{},unknown:[]}){
- const s=normalizeDamageSettings(settings),a=effects.totals||{},t=stats.total;
+ const maxed=stats.combat?.maxedTowers===true,s=normalizeDamageSettings(maxed?{...settings,towerAtk:0,leaderAtk:0,towerCd:0}:settings),a=effects.totals||{},t=maxed?stats.combat:stats.total;
  if(!t||!['hp','atk','def','spd','cr','cd'].every(k=>Number.isFinite(t[k])&&t[k]>=0))throw new Error('Atributos de dano incompletos ou inválidos.');
  const lost=1-s.selfHp/100;
  const atkBuff=s.attackBuff ? .5*(1+((a.atkBuff||0)+(a.atkDefBuff||0))/100):0;

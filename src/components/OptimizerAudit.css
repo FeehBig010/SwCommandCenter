@@ -1,0 +1,25 @@
+.optimizer-area-header{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:16px}
+.optimizer-area-header h1{font-size:22px;color:#ead392;margin:0 auto 0 0}
+.optimizer-area-tabs{display:flex;gap:6px}
+.optimizer-area-tabs .button[aria-pressed=true]{background:#245267;color:#9df4fa;border-color:#5ee8f4}
+.optimizer-area-header>.field{max-width:220px}
+.optimizer-team-context{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;margin:8px 12px;background:#0f1419bf;border:1px solid #b49a5e55;border-radius:8px}
+.optimizer-sync{font-size:13px;color:#e1e6eb;white-space:normal}
+.optimizer-sync input{accent-color:#5ee8f4;width:17px;height:17px;flex:none}
+.optimizer-origin-badge{border:1px solid #b49a5e66;padding:5px 8px;border-radius:5px;font-size:10px;color:#e2c98b}
+.optimizer-audit-report{margin:14px 0;padding:16px;border:1px solid #b49a5e77;border-radius:10px;background:#0f1924}
+.optimizer-audit-report>header{display:flex;align-items:center;gap:8px}
+.optimizer-audit-report h3{font-size:17px;margin:0;color:#ead392}
+.audit-summary{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.audit-summary>span{font-size:11px;color:#b7d6d7;background:#1b3039;border:1px solid #4f777a66;border-radius:6px;padding:6px 8px}
+.optimizer-audit-report article{padding:12px;margin:10px 0;background:#0b141f;border:1px solid #5b6f8255;border-radius:7px}
+.optimizer-audit-report article strong{font-size:12px;color:#dbe8ec}
+.audit-gain-badges{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.audit-gain-badges>span{color:#a4edc3;background:#15322b;border:1px solid #4c8e7366;border-radius:5px;padding:5px 8px;font-size:11px}
+.optimizer-audit-report p,.optimizer-audit-report small,.optimizer-audit-report summary{font-size:11px;color:#b3c3ce;line-height:1.6;overflow-wrap:anywhere}
+.audit-craft-projections{border-top:1px solid #b49a5e55;padding-top:14px;margin-top:14px}
+.audit-craft-projections h4{color:#e3c388;font-size:13px;margin:0 0 6px}
+.audit-craft-projections summary{cursor:pointer}
+@media(max-width:600px){.optimizer-area-header{align-items:stretch;flex-direction:column}.optimizer-area-tabs .button{flex:1;padding:9px;font-size:11px}.optimizer-team-context{margin-inline:8px}.optimizer-audit-report{padding:12px}}
+
+.audit-gain-badges>span[data-loss]{color:#f0b3a4;background:#3b2324;border-color:#bd6e6255}

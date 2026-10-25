@@ -1,12 +1,15 @@
 import {teamTurnPreview} from './optimizer.js';
 import {combatAttributes,simulateCombat} from './speedTuner.js';
+import {leaderApplies} from './leaders.js';
+import {catalogLeader} from './leader-catalog.js';
 export function normalizeArenaSettings(raw={}){
  const bounds={enemyBase: [0,300,0],enemyRuneSpd:[0,1000,0],enemyTower:[0,100,0],enemyLeader:[0,100,0],enemyMaster:[0,100000,0],healerSpd:[0,2000,0],healerMaster:[0,100000,0],nemesis:[0,3,0],damage:[0,100,0]};const out={};
  for(const [key,[min,max,fallback]] of Object.entries(bounds)){const n=Number(raw[key]??fallback);if(!Number.isFinite(n)||n<min||n>max||['enemyMaster','healerMaster','nemesis'].includes(key)&&!Number.isInteger(n))throw new Error('Cenário Arena inválido.');out[key]=n;}
  return {...out,swift:raw.swift===true,attacker:String(raw.attacker||'').slice(0,100)};
 }
 export function arenaContest(account,team,options={},raw={}){
- const settings=normalizeArenaSettings(raw),preview=teamTurnPreview(account,team,options);
+ const enemyLeader=catalogLeader(raw.enemyMaster);
+ const settings=normalizeArenaSettings(team.maxedTowers?{...raw,enemyTower:15,enemyLeader:enemyLeader?.stat==='spd'&&leaderApplies(enemyLeader,{element:Number(raw.enemyMaster)%10},'arena')?enemyLeader.value:0}:raw),preview=teamTurnPreview(account,team,options);
  if(!preview.complete||!settings.enemyBase)return {complete:false,message:'Informe a SPD base e as runas do booster inimigo e complete sua composição.'};
  const enemy={id:0,master:settings.enemyMaster,element:settings.enemyMaster%10,base:{hp:10000,atk:0,def:0,spd:settings.enemyBase,cr:0,cd:0,res:0,acc:0}};
  const enemyStats={total:{...enemy.base,spd:settings.enemyBase+settings.enemyRuneSpd+(settings.swift?Math.ceil(settings.enemyBase*.25):0)}};
