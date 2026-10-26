@@ -6,18 +6,13 @@ lateral, o cabeçalho de edição ou o tour. A Calculadora Livre abre diretament
 sem autenticação ou arquivo. Em telas muito baixas, o conteúdo do card pode rolar
 internamente para manter os campos acessíveis; o documento continua sem rolagem.
 
-## Imagem escolhida
+## Layout e guia
 
-A guia usa o endereço fornecido pelo usuário:
-
-`https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQtpF2QVfUo70CMtAanBrwQUlsOgO1Fn_vm4JUCEoBT8-cJWMCsZi5lePQ&s=10`
-
-O arquivo é carregado diretamente pelo navegador, sem enviar o inventário ao
-servidor de imagens. `VITE_PORTAL_GUIDE_URL` permite substituí-lo por um arquivo
-local em `public/` ou outra URL de imagem durante o build. Se a imagem falhar,
-o emblema local da guilda mantém a composição sem imagem quebrada. A aparência da
-miniatura remota não pôde ser inspecionada no ambiente de desenvolvimento, cuja
-política de rede bloqueia esse domínio.
+O portal usa três colunas com Ciri, comandos e cupons. A guia é agora um PNG
+local com transparência real (`/art/portal-ciri.png`), gerado para esta interface.
+A miniatura externa e a configuração `VITE_PORTAL_GUIDE_URL` foram removidas.
+A marca e o cenário locais foram preservados. Detalhes de responsividade,
+origem da arte e atualização automática dos cupons: [PORTAL.md](PORTAL.md).
 
 ## Upload e invocação
 
