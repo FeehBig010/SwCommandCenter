@@ -1,4 +1,5 @@
 import {canonicalPveStage,pveSlots} from './pve-stages.js';
+import {extractAccountResources} from './account-resources.js';
 import {equipmentPools} from './equipment-pools.js';
 import {normalizeCrafts} from './rune-crafts.js';
 import {skillLevels} from './skill-levels.js';
@@ -47,7 +48,8 @@ export function* normalizeAccountSteps(raw){
  if(!units.length||!runeMap.size)throw new Error('Não há monstros e runas válidos neste arquivo.');
  const {presets,presetImport}=yield* collectAccountPresetsSteps(raw,units);
  yield {percent:88,message:'Finalizando inventário'};
- return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege,accountPresets:presets,presetImport,towers:extractTowers(raw),crafts:normalizeCrafts(raw.rune_craft_item_list),equipmentPools:equipmentPools(raw,units,[...runeMap.values()])};
+ const resources=extractAccountResources(raw);
+ return {version:1,id:String(raw.wizard_info?.wizard_id||raw.wizard_id||'conta'),name:String(raw.wizard_info?.wizard_name||'Minha conta'),guild:String(raw.guild?.guild_info?.name||''),importedAt:new Date().toISOString(),units,runes:[...runeMap.values()],artifacts:[...artifactMap.values()],siege,accountPresets:presets,presetImport,towers:extractTowers(raw),crafts:normalizeCrafts(raw.rune_craft_item_list),equipmentPools:equipmentPools(raw,units,[...runeMap.values()]),...(resources.dimensionalEnergy?{resources}:{})};
 }
 export function blankConfig(unit=null,name='Escolher monstro'){
  return {key:crypto.randomUUID(),unitId:unit?.id||null,masterId:unit?.master||null,label:unit?.name||name,enabled:true,lockSpeedSync:false,artifacts:true,sets:[0,0],strictSets:true,mains:{2:0,4:0,6:0},goals:{hp:'',def:'',spd:'',atk:'',cr:'',cd:'',res:'',acc:''},basis:'bonus',objective:'balanced'};

@@ -3,6 +3,7 @@ import {Check,Copy,ExternalLink,Gift,RefreshCw} from 'lucide-react';
 import {activeCoupons,COUPON_SOURCE_PAGE,COUPON_EVENTS_URL,COUPON_MAX_AGE} from '../core/game-coupons';
 import {fetchActiveCoupons,visibleCoupons,copyCouponCode,couponRedeemUrl,COUPON_COPY_DURATION} from '../lib/coupons.js';
 import {supabase} from '../lib/supabase';
+import InfoTooltip from './InfoTooltip';
 import CouponReward from './CouponReward';
 import snapshot from '../core/coupon-snapshot.json';
 import './CouponModule.css';
@@ -20,7 +21,7 @@ function Coupon({coupon}){
   <label className="coupon-code-label"><span>Código</span><input ref={codeRef} className="coupon-code" aria-label={`Código ${coupon.code}`} value={coupon.code} readOnly onFocus={e=>e.target.select()}/></label>
   <div className="coupon-rewards" aria-label="Recompensas">{coupon.rewards.length?coupon.rewards.map(reward=><CouponReward key={reward.type} reward={reward}/>):<span className="coupon-reward"><Gift size={24}/>Recompensas no resgate</span>}</div>
   <button type="button" className={`coupon-copy${copied?' copied':''}`} disabled={copying} onClick={copy}>{copied?<Check size={16}/>:<Copy size={16}/>}<span>{copied?'Copiado! ✓':copying?'Copiando…':'Copiar Código'}</span></button>
-  <a className="coupon-redeem" href={couponRedeemUrl()} target="_blank" rel="noopener noreferrer"><ExternalLink size={14}/>Resgatar no Jogo</a>
+  <div className="coupon-redeem-row"><a className="coupon-redeem" href={couponRedeemUrl()} target="_blank" rel="noopener noreferrer"><ExternalLink size={14}/>Resgatar no Jogo</a><InfoTooltip label="Resgate no iPhone e iOS">Usa iPhone ou iPad (iOS)? Utilize este portal Web da Hive para informar sua conta e inserir o código do cupom.</InfoTooltip></div>
   <span className={`coupon-feedback${error?' copy-error':''}`} role="status">{error|| (copied?`${coupon.code} copiado!`:'')}</span>
  </article>;
 }

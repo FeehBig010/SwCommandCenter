@@ -39,9 +39,10 @@ function GoalPreview({record,onCopy,account}){
  </section>;
 }
 
-export default function SiegeCentral({account,filteredInventory=account,defensePolicy,onDefensePolicyChange,teams=EMPTY,onTeamsChange,allTeams=teams,templates=EMPTY,onTemplatesChange,matchups=EMPTY,onMatchupsChange,cloud,session,onAuth,options={},onOptions,onOptimizeTeam,onSavePlan,onLoadPlan,onApplyDiagnosis,builds=null,reservedIds=EMPTY,running=false,children}){
+export default function SiegeCentral({navigationIntent,account,filteredInventory=account,defensePolicy,onDefensePolicyChange,teams=EMPTY,onTeamsChange,allTeams=teams,templates=EMPTY,onTemplatesChange,matchups=EMPTY,onMatchupsChange,cloud,session,onAuth,options={},onOptions,onOptimizeTeam,onSavePlan,onLoadPlan,onApplyDiagnosis,builds=null,reservedIds=EMPTY,running=false,children}){
  const [space,setSpace]=useState('personal'),[personalId,setPersonalId]=useState(null),[guildKey,setGuildKey]=useState(null),[query,setQuery]=useState(''),[mode,setMode]=useState('all'),[defense,setDefense]=useState(['','','']),[notice,setNotice]=useState(''),[draft,setDraft]=useState(null),[composer,setComposer]=useState(null),[busy,setBusy]=useState(false),[tools,setTools]=useState(false),[planner,setPlanner]=useState(false);
  const [decision,setDecision]=useState(null),[inspecting,setInspecting]=useState(false),[debouncedQuery,setDebouncedQuery]=useState('');
+ useEffect(()=>{if(navigationIntent?.area!=='siege')return;const {view,teamId,sourceDeckId}=navigationIntent;setSpace(view==='counters'?'guild':'personal');setInspecting(false);setQuery('');setDebouncedQuery('');setDefense(['','','']);setMode(view==='defense'?'defense':'all');setDraft(null);setComposer(null);setTools(false);setPlanner(false);setNotice('');setPersonalId(teamId||teams.find(t=>sourceDeckId&&t.sourceDeckId===sourceDeckId)?.id||null);setDecision(view==='planner'?{kind:'defenses'}:null);},[navigationIntent?.id]);
  useEffect(()=>{const timer=setTimeout(()=>setDebouncedQuery(query),200);return()=>clearTimeout(timer);},[query]);
  const fileRef=useRef();
  useEffect(()=>{setDraft(null);setComposer(null);setGuildKey(null);setInspecting(false);},[cloud?.guildId,session?.user?.id]);

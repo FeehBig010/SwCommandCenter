@@ -53,3 +53,4 @@
 @media(min-width:1101px){.portal-primary{font-size:14px}}
 @media(min-width:768px) and (max-width:900px){.portal-guide>img{top:105px;bottom:auto;object-position:center top}.portal-login-panel fieldset{grid-template-columns:1fr}}
 @media(max-width:767px){.portal-guide>img{height:175px}}
+.portal-account-confirmed{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px 12px;min-height:95px;padding:18px;border:1px solid #d4af3755;border-radius:8px;background:#0b171ca6;text-align:left}.portal-account-confirmed>svg{color:#9dcea7;grid-row:span 2}.portal-account-confirmed strong{color:#e8d5a3;overflow-wrap:anywhere}.portal-account-confirmed>span{font-size:11px;color:#9db0b9;grid-column:2}.portal-account-confirmed>button{grid-column:3;grid-row:1 / 3}

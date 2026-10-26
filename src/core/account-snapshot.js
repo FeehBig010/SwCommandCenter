@@ -5,6 +5,7 @@ import {DECK_SOURCE_KEYS} from './decks.js';
 import {equipmentPools} from './equipment-pools.js';
 import {normalizeCrafts} from './rune-crafts.js';
 import {cleanTowers} from './towers.js';
+import {cleanAccountResources} from './account-resources.js';
 import {normalizeAccount,STATS} from './data.js';
 const fail=()=>{throw new Error('Backup de conta inválido ou incompatível.');};
 const num=(v,max=100000000)=>{const n=Number(v);if(!Number.isFinite(n)||n<0||n>max)fail();return n;};
@@ -25,5 +26,6 @@ export function accountSnapshot(input){
  result.crafts=normalizeCrafts((input.crafts||[]).map(c=>({craft_item_id:c.id,craft_type:c.ancient?(c.kind==='gem'?5:6):(c.kind==='gem'?1:2),craft_type_id:c.set*10000+c.stat*100+c.grade,quantity:c.quantity})));
  const assignments=input.equipmentPools?.rta?.assignments||{};result.equipmentPools=equipmentPools({world_arena_rune_equip_list:Object.entries(assignments).map(([unit_id,rune_id_list])=>({unit_id,rune_id_list}))},result.units,result.runes);
  if(input.towers)result.towers=cleanTowers(input.towers);
+ if(input.resources)result.resources=cleanAccountResources(input.resources);
  return upgradePveAccount(result);
 }
