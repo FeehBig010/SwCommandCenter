@@ -27,11 +27,10 @@ Planos salvos com `speedTick` e o campo SQL legado `default_speed_tick` continua
 
 ## Fórmula versionada do modelo
 
-A base estática recompõe a fração de Swift antes do arredondamento:
+A ficha já inclui Swift. O bônus combinado de torre, líder aplicável e totem recebe um único teto antes dos efeitos de combate:
 
 ```
-S = SPD_ficha - ceil(SPD_base × Swift/100)
-    + SPD_base × (Swift + Glória + Guilda_aplicável + Líder_aplicável)/100
+S = SPD_ficha + ceil(SPD_base × (Glória + Guilda_aplicável + Líder_aplicável)/100)
 D = 1 + BuffSPD × 0,30 × (1 + ArtefatoBuffSPD/100)
       - Slow × 0,30 + PassivaSPD
 A = 1 + ArtefatoSPDporHPperdido × fração_HP_perdido/100
@@ -84,7 +83,7 @@ A SPD inimiga automática é um **preset de planejamento**, calculado com base m
 
 ## Verified Tiana opener and strict leader catalog
 
-`monsterDatabase.js` centralizes leader/opener lookup. The manual calculator recognizes Tiana's first-slot S3, adds one first-turn modeled cleanse/strip plus 30% allied ATB action and respects an explicitly configured first-turn boost override. The proportional follower floor is `ceil(raw opener combat SPD × 0.70 − follower base bonuses)`; no premature rounding of raw opener speed. The manual sheet already includes Swift. The equipped-account engine retains its earlier Swift rounding rules. Guild SPD still applies only to Guild/Siege context, not Arena. Adriana / Water Pure Vanilla are explicitly Arena ATK 44%, SPD 0%.
+`monsterDatabase.js` centralizes leader/opener lookup. The manual calculator recognizes Tiana's first-slot S3, adds one first-turn modeled cleanse/strip plus 30% allied ATB action and respects an explicitly configured first-turn boost override. The proportional follower floor is `ceil(raw opener combat SPD × 0.70 − follower base bonuses)`; the combined external bonus is rounded once before combat buffs. The manual sheet already includes Swift. The equipped-account engine uses the same sheet formula, without recomputing Swift. Guild SPD still applies only to Guild/Siege context, not Arena. Adriana / Water Pure Vanilla are explicitly Arena ATK 44%, SPD 0%.
 
 The proportion badge is named `100% Sincronizado · regra 70%` and deliberately scoped to that formula. Integer ticks remain the separate anti-cut check; a proportional pass can coexist with a red cut from a faster defense. Sorting/reordering preserves leader and event identities. Read docs/PVE-UX.md for the numerical and browser-validation scope.
 
@@ -109,11 +108,11 @@ input/range, 1440 e 390 px sem overflow ou erros de execução.
 ## Fórmula automática da Calculadora Livre (atualização)
 
 O modo livre assume **sempre SPD de ficha** (base + runas, incluindo Swift).
-`combatSpeedFromSheet` calcula `ficha + base * (torreArena + líderAplicável)/100`;
+`combatSpeedFromSheet` calcula `ficha + ceil(base * (torre + líderAplicável + totemAplicável)/100)`;
 `runtimeSpeed` aplica buffs/passivas e arredonda a velocidade efetiva para cima.
 Não há seletor de tipo de velocidade, nem entrada manual de Combat SPD nessa tela.
 Bônus de Guilda persistido de versões antigas é ignorado no modo livre. O motor
-normal de equipamento Siege conserva seu bônus de Guilda e arredondamento Swift.
+normal de equipamento Siege conserva seu bônus de Guilda e também evita somar Swift novamente.
 O tick alvo continua sendo uma meta calculada, sem substituir a origem da ficha.
 
 Exemplo de UI: base 100, ficha 320, torre 15%, líder geral 19% → Combat SPD354;

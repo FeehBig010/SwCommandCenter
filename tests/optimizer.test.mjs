@@ -81,11 +81,11 @@ function upgradedRune(overrides={}){
  return {...rune(901,2,13,[2,63]),stars:6,subs:[[8,6,0,2],[4,8,0,3],[9,6,0,0],[11,8,0,0]],...overrides};
 }
 function assignment(spd,sheet=spd){return {stats:{total:{spd:sheet},combat:{spd}}};}
-test('combat SPD combines fractional Swift, tower and leader bonuses before one ceiling',()=>{
+test('combat SPD adds one rounded tower/leader bonus to the Swift-inclusive sheet',()=>{
  const u={...unit,base:{...unit.base,spd:101}};
  const counts={3:4};const stats=engine.statsFromVector(u,Array(13).fill(0),counts);
  assert.equal(stats.total.spd,127);
- assert.equal(combatSpeed(u,stats,counts,{towerSpd:15,leaderSpd:24}),166);
+ assert.equal(combatSpeed(u,stats,counts,{towerSpd:15,leaderSpd:24}),167);
  assert.equal(combatSpeed(u,stats,counts),127);
  assert.equal(stats.total.spd,127,'combat calculation must not mutate sheet stats');
  assert.equal(combatSpeed(unit,{total:{spd:150}},{},{towerSpd:15,leaderSpd:24}),189);

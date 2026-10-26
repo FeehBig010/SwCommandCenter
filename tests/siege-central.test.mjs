@@ -105,9 +105,10 @@ test('inline counter seeds preserve defense speed context and leader without sha
  counter.enemyDefense[0].maxTick=1.5;assert.throws(()=>cleanSiegeCounter(counter),/inteiros/);
 });
 
-test('counter authors may edit their attacks while members cannot edit another author or leadership templates',()=>{
+test('cloud counter edits require an author with leadership; local counters stay editable',()=>{
  const {record}=fixture(),counter={...record,counter:{},cloud:true,row:{owner_id:'author'}};
- assert.ok(canEditSiegeRecord(counter,{isLeader:false},{user:{id:'author'}}));
+ assert.equal(canEditSiegeRecord(counter,{isLeader:false},{user:{id:'author'}}),false);
+ assert.ok(canEditSiegeRecord(counter,{isLeader:true},{user:{id:'author'}}));
  assert.equal(canEditSiegeRecord(counter,{isLeader:true},{user:{id:'other'}}),false);
  assert.ok(canEditSiegeRecord({...counter,cloud:false},{isLeader:false},null));
  assert.equal(canEditSiegeRecord(record,{isLeader:false},{user:{id:'author'}}),false);

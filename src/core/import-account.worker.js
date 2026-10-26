@@ -1,3 +1,4 @@
+import {parseSwexJson,swexImportError} from './swex-json.js';
 import {normalizeAccountAsync} from './data.js';
 
 self.onmessage=async({data:file})=>{
@@ -7,9 +8,9 @@ self.onmessage=async({data:file})=>{
   const reader=file.stream().getReader(),decoder=new TextDecoder(),chunks=[];let bytes=0;
   for(;;){const {done,value}=await reader.read();if(done)break;bytes+=value.byteLength;chunks.push(decoder.decode(value,{stream:true}));progress({percent:1+Math.floor(bytes/Math.max(1,file.size)*12),message:'Lendo arquivo SWEX'});}
   chunks.push(decoder.decode());progress({percent:15,message:'Decodificando JSON'});
-  let raw;try{raw=JSON.parse(chunks.join(''));}catch(error){if(error instanceof SyntaxError)throw new Error('O arquivo não é um JSON válido.');throw error;}
+  const raw=parseSwexJson(chunks.join(''));
   chunks.length=0;progress({percent:18,message:'Preparando inventário'});
   const account=await normalizeAccountAsync(raw,{onProgress:progress});
   self.postMessage({type:'account',account});
- }catch(error){self.postMessage({type:'error',message:error.message||'Não foi possível processar o inventário.'});}
+ }catch(error){self.postMessage({type:'error',message:swexImportError(error)});}
 };

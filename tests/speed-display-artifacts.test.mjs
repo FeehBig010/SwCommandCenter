@@ -24,9 +24,9 @@ test('scenario recomputation does not add artifact SPD twice',()=>{
  const simulated=simulateCombat([{key:'a',master:unit.master,spd:initial.spd,rawSpd:initial.rawSpd,combat}],{maxTurns:1});
  assert.equal(simulated.state[0].spd,292);assert.ok(Number.isInteger(simulated.turns[0].tick));
 });
-test('exact display inversion and conservative opener floors remain distinct at fractional boundaries',()=>{
+test('rounded tower bonuses keep exact and conservative inversion consistent without combat buffs',()=>{
  const u={...unit,base:{...unit.base,spd:102}},t={...team,towerSpd:15};
- assert.equal(requiredSheetSpeed(267,u,t),251);assert.equal(requiredSheetSpeed(267,u,t,{}, {}, {},{conservative:true}),252);
+ assert.equal(requiredSheetSpeed(267,u,t),251);assert.equal(requiredSheetSpeed(267,u,t,{}, {}, {},{conservative:true}),251);
 });
 test('quick targets change view without changing tuning or double-counting base SPD',()=>{
  let t=quickTeam();t.configs=[18913,16512,16012].map((id,i)=>({...quickConfig(id),autoSpeed:i>0}));t.configs[0].manual.sheet.spd=300;t.configs[1].combat={artifactSpd:20};t=autoTuneQuickTeam(t);

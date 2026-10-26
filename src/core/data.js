@@ -25,26 +25,26 @@ export async function normalizeAccountAsync(raw,{onProgress=()=>{},yieldControl=
 export function* normalizeAccountSteps(raw){
  if(!raw||!Array.isArray(raw.unit_list)||!Array.isArray(raw.runes))throw new Error('Escolha um JSON original do SWEX com unit_list e runes.');
  if(raw.unit_list.length>10000||raw.runes.length>100000)throw new Error('Inventário acima do limite de importação.');
- const runeMap=new Map(),artifactMap=new Map(),locked=new Set((raw.rune_lock_list||[]).map(x=>number(typeof x==='object'?x.rune_id:x)));
+ const runeMap=new Map(),artifactMap=new Map(),locked=new Set((raw.rune_lock_list||[]).map(x=>number(typeof x==='object'?x?.rune_id:x)));
  function addRune(r,owner){
   if(!r||!Number.isSafeInteger(r.rune_id)||r.slot_no<1||r.slot_no>6||!Array.isArray(r.pri_eff))return;
   runeMap.set(r.rune_id,{id:r.rune_id,slot:r.slot_no,set:number(r.set_id),stars:number(r.class)%10,ancient:number(r.class)>10,level:number(r.upgrade_curr),owner:number(owner??r.occupied_id),main:effect(r.pri_eff),innate:effect(r.prefix_eff),subs:(r.sec_eff||[]).map(effect),locked:locked.has(r.rune_id)});
  }
  function addArtifact(a,owner){const id=a?.rid??a?.artifact_id;if(Number.isSafeInteger(id)&&id>0)artifactMap.set(id,{id,owner:number(owner??a.occupied_id),type:number(a.type),element:number(a.attribute),style:number(a.unit_style),main:effect(a.pri_effect??a.pri_eff),subs:normalizeArtifactSubstats(a),level:number(a.level)});}
  for(let i=0;i<raw.runes.length;i++){addRune(raw.runes[i]);if(i%256===0)yield {percent:20+Math.floor(i/Math.max(1,raw.runes.length)*15),message:'Extraindo runas'};}
- (raw.artifacts||[]).forEach(a=>addArtifact(a));
+ (Array.isArray(raw.artifacts)?raw.artifacts:[]).forEach(a=>addArtifact(a));
  const units=[];let unitIndex=0;for(const u of raw.unit_list){
   if(++unitIndex%32===0)yield {percent:35+Math.floor(unitIndex/Math.max(1,raw.unit_list.length)*18),message:'Extraindo monstros e equipamentos'};
   if(!u?.unit_id||!u.unit_master_id||!(u.con>0))continue;
-  (u.runes||[]).forEach(r=>addRune(r,u.unit_id));(u.artifacts||[]).forEach(a=>addArtifact(a,u.unit_id));
-  units.push({id:u.unit_id,master:u.unit_master_id,name:catalog[u.unit_master_id]||String(u.unit_name??u.name??monsterName(u.unit_master_id)),level:number(u.unit_level),stars:number(u.class),element:number(u.attribute,u.unit_master_id%10),base:{hp:number(u.con)*15,atk:number(u.atk),def:number(u.def),spd:number(u.spd),cr:number(u.critical_rate),cd:number(u.critical_damage),res:number(u.resist),acc:number(u.accuracy)},...(skillLevels(u.skills??u.skill_list).length?{skillLevels:skillLevels(u.skills??u.skill_list)}:{}),runeIds:(u.runes||[]).map(r=>r.rune_id),artifactIds:(u.artifacts||[]).map(a=>a.rid??a.artifact_id)});
+  (Array.isArray(u.runes)?u.runes:[]).forEach(r=>addRune(r,u.unit_id));(Array.isArray(u.artifacts)?u.artifacts:[]).forEach(a=>addArtifact(a,u.unit_id));
+  units.push({id:u.unit_id,master:u.unit_master_id,name:catalog[u.unit_master_id]||String(u.unit_name??u.name??monsterName(u.unit_master_id)),level:number(u.unit_level),stars:number(u.class),element:number(u.attribute,u.unit_master_id%10),base:{hp:number(u.con)*15,atk:number(u.atk),def:number(u.def),spd:number(u.spd),cr:number(u.critical_rate),cd:number(u.critical_damage),res:number(u.resist),acc:number(u.accuracy)},...(skillLevels(u.skills??u.skill_list).length?{skillLevels:skillLevels(u.skills??u.skill_list)}:{}),runeIds:(Array.isArray(u.runes)?u.runes:[]).filter(r=>r&&Number.isSafeInteger(r.rune_id)).map(r=>r.rune_id),artifactIds:(Array.isArray(u.artifacts)?u.artifacts:[]).filter(a=>a&&Number.isSafeInteger(a.rid??a.artifact_id)).map(a=>a.rid??a.artifact_id)});
  }
  const runesByOwner=new Map();for(const r of runeMap.values()){if(!runesByOwner.has(r.owner))runesByOwner.set(r.owner,[]);runesByOwner.get(r.owner).push(r.id);}for(const unit of units)if(!unit.runeIds.length)unit.runeIds=runesByOwner.get(unit.id)||[];
  const artifactsByOwner=new Map();
  for(const a of artifactMap.values()){if(!artifactsByOwner.has(a.owner))artifactsByOwner.set(a.owner,[]);artifactsByOwner.get(a.owner).push(a.id);}
  for(const unit of units)if(!unit.artifactIds.length)unit.artifactIds=artifactsByOwner.get(unit.id)||[];
  const unitIds=new Set(units.map(u=>u.id));
- const siege=(Array.isArray(raw.guildsiege_defense_deck_unit_list)?raw.guildsiege_defense_deck_unit_list:[]).filter(Boolean).map((d,i)=>({name:`Defesa ${i+1}`,unitIds:(d.unit_id_list||[]).map(id=>unitIds.has(id)?id:null),equipment:raw.guildsiege_defense_deck_equip_list?.[d.deck_id]?.equip?.map(e=>({unitId:e.unit_id,runeIds:e.rune_id_list||[],artifactIds:e.artifact_id_list||[]}))||[]}));
+ const siege=(Array.isArray(raw.guildsiege_defense_deck_unit_list)?raw.guildsiege_defense_deck_unit_list:[]).filter(Boolean).map((d,i)=>({name:`Defesa ${i+1}`,unitIds:(d.unit_id_list||[]).map(id=>unitIds.has(id)?id:null),equipment:raw.guildsiege_defense_deck_equip_list?.[d.deck_id]?.equip?.filter(Boolean).map(e=>({unitId:e.unit_id,runeIds:e.rune_id_list||[],artifactIds:e.artifact_id_list||[]}))||[]}));
  if(!units.length||!runeMap.size)throw new Error('Não há monstros e runas válidos neste arquivo.');
  const {presets,presetImport}=yield* collectAccountPresetsSteps(raw,units);
  yield {percent:88,message:'Finalizando inventário'};

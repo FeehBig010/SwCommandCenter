@@ -33,11 +33,13 @@ export function runtimeSpeed(raw,master,combat={},effects={}){return Math.ceil(r
 // Manual calculator inputs always represent sheet SPD, including equipped Swift.
 export function combatSpeedFromSheet(sheetSpd,unit,team={}){
  const sheet=number(sheetSpd,0,1,10000000,'SPD ficha');
- return sheet+unit.base.spd*(Number(team.towerSpd||0)+speedLeaderBonus(unit,team))/100;
+ const guild=(team.gameMode||'siege')==='siege'?Number(team.guildSpd||0):0;
+ return sheet+Math.ceil(unit.base.spd*(Number(team.towerSpd||0)+guild+speedLeaderBonus(unit,team))/100-1e-10);
 }
 export function combatAttributes(unit,stats,counts={},team={},combat={},effects={}){
- const swift=25*Math.floor((counts[3]||0)/4),guild=(team.gameMode||'siege')==='siege'?Number(team.guildSpd||0):0;
- const raw=team.sheetSpeedFormula===true?combatSpeedFromSheet(stats.total.spd,unit,team):stats.total.spd-Math.ceil(unit.base.spd*swift/100)+unit.base.spd*(swift+Number(team.towerSpd||0)+guild+speedLeaderBonus(unit,team))/100;
+ // Sheet SPD already includes Swift; round the combined tower/leader/totem
+ // bonus once before combat buffs and artifact conditions.
+ const raw=combatSpeedFromSheet(stats.total.spd,unit,team);
  if(!Number.isFinite(raw)||raw<=0)throw new Error('SPD de combate inválida.');
  const total={...stats.total,spd:runtimeSpeed(raw,unit.master,combat,effects)},leader=team.leader;
  if(team.maxedTowers){for(const key of ['hp','atk','def'])total[key]+=Math.ceil(unit.base[key]*(MAX_TOWERS[key]+(team.gameMode==='siege'?MAX_TOWERS[`guild${key[0].toUpperCase()}${key.slice(1)}`]:0)+(key==='atk'?MAX_TOWERS.elementAtk:0))/100);total.cd+=MAX_TOWERS.cd;}

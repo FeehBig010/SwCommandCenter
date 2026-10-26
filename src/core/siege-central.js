@@ -30,7 +30,7 @@ export function siegeGuildRecords(templates=[],matchups=[],rows=[],guildId=null)
 }
 
 export function canEditSiegeRecord(record,cloud,session){
- return !!record&&(record.counter?(!record.cloud||record.row.owner_id===session?.user?.id):!!cloud?.isLeader&&(!record.cloud||record.row.owner_id===session?.user?.id));
+ return !!record&&(record.counter?(!record.cloud||!!cloud?.isLeader&&record.row.owner_id===session?.user?.id):!!cloud?.isLeader&&(!record.cloud||record.row.owner_id===session?.user?.id));
 }
 
 // Keep the leader and its position in the key: the same trio with a different

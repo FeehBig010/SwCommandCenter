@@ -13,7 +13,8 @@
     "assets:setup": "node server/assets-cli.js setup",
     "assets:update": "node server/assets-cli.js update",
     "news:update": "node scripts/update-game-news.mjs",
-    "images:update": "node scripts/update-monster-images.mjs"
+    "images:update": "node scripts/update-monster-images.mjs",
+    "test:browser": "node scripts/run-browser-tests.mjs"
   },
   "dependencies": {
     "@sparticuz/chromium": "^153.0.0",
