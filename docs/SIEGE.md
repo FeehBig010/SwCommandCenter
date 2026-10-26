@@ -6,11 +6,15 @@ A rota `#/siege` concentra o acervo pessoal e os modelos da guilda em um layout 
 
 Ataques e defesas Siege/WGB de três slots continuam em `App.teams` / `AccountContext`, com persistência no IndexedDB. O importador mantém todos os presets e slots vazios. Selecionar uma linha abre apenas aquele time no `TeamEditor` (`singleDetail`), incluindo metas, Speed Tune, diagnóstico, otimização e exportação. A ferramenta de defesas simultâneas permanece acessível no rodapé da lista.
 
-`src/core/siege-central.js` compara as runas dos slots incluídos de todo o acervo Siege. A prioridade é: resultado vigente do otimizador, plano com `accountStamp` atual, equipamento do SWEX. O alerta identifica as runas e os times que compartilham cada uma; não altera o equipamento no jogo. Planos de outro inventário são ignorados. Ao mudar a instância de um slot, o plano daquela posição é descartado.
+`src/core/siege-central.js` compara as runas das defesas e dos times GvG. Ataques de Siege reutilizam o pool global e não exibem conflitos. A prioridade é: resultado vigente do otimizador, plano com `accountStamp` atual, equipamento do SWEX. O alerta identifica as runas e os times que compartilham cada uma; não altera o equipamento no jogo. Planos de outro inventário são ignorados. Ao mudar a instância de um slot, o plano daquela posição é descartado.
 
 ## Espaço da Guilda
 
 Modelos e counters compartilhados são filtrados pela guilda ativa e por três slots. Templates locais importados e snapshots favoritos permanecem identificados como locais/pessoais. O detalhe apresenta metas, sets, atributos principais, estratégia e cenário, sem controles de edição para membros comuns.
+
+`DefenseSearch` aplica debounce de 200 ms ao texto. Os termos precisam iniciar palavras dos nomes da defesa; nomes de ataques não produzem falsos resultados. Os três slots são cumulativos, independentes da posição, respeitam cópias repetidas e têm prioridade sobre o texto. Limpar os slots restaura o filtro textual. A galeria lateral agrupa o trio e sua Leader Skill; selecionar uma miniatura abre apenas aquela defesa e seus counters no palco central. Ataques ainda sem defesa alvo mantêm identificação própria e não correspondem a buscas de inimigos.
+
+Uma defesa com vários counters permanece única. O counter ativo determina os badges vermelhos 1/2/3 sobre seus inimigos, remapeados por ID e ocorrência quando a ordem dos slots difere. O formulário continua salvando os índices dos alvos; ausência de foco não gera texto de aviso.
 
 Líderes verificados podem editar a biblioteca local e seus próprios registros na nuvem. A interface não concede permissão para alterar registros de outro autor; o backend continua aplicando ownership, RLS e concorrência por `updated_at`. Trocar a guilda ou o usuário cancela o editor aberto. Votos e Defesa Alvo usam a migration `202610230001_guild_attack_votes.sql`; veja `docs/SUPABASE.md`.
 
@@ -18,7 +22,11 @@ Convites e publicação ficam em “Guilda e compartilhamento”. Somente compos
 
 ## Cópia e sincronização
 
-O botão principal cria um novo time pessoal e o seleciona imediatamente. A sincronização usa o `masterId` exato, resolve cópias distintas por nível e mantém metas/scenario/defesa inimiga como dados independentes. IDs e runas do autor do template não são reaproveitados. Totens vêm da conta do jogador. A ficha e o equipamento reais são calculados a partir da instância encontrada no inventário global.
+O botão principal cria um novo time pessoal e o seleciona imediatamente. A sincronização prefere o `masterId` exato, aceita apenas equivalências Collab verificadas do mesmo elemento como alternativa e resolve cópias distintas por nível. Metas/cenário/defesa inimiga permanecem independentes. IDs e runas do autor do template não são reaproveitados. Totens vêm da conta do jogador. A ficha e o equipamento reais são calculados a partir da instância encontrada no inventário global.
+
+`siegeAccountTimeline` usa as runas e artefatos da instância da conta, ou o plano local vigente, sem substituir os atributos pelas metas. A timeline ocupa a largura do detalhe e compara os ticks reais da conta com velocidades inimigas explicitamente conhecidas. Boosts/eventos informados permanecem no motor. Apenas um Tick alvo salvo gera um marcador “Defesa · Tick esperado”, sem inventar SPD ou alterar o combate. Inimigos sem SPD/Tick aparecem numa nota curta. O clone preserva esse contexto e reutiliza a mesma régua no editor pessoal; não há parecer de corte/prontidão no painel ou nos detalhes do counter.
+
+Vitória/Derrota continuam usando `set_counter_feedback` e as contagens de `get_siege_feedback`, com identificação pelo usuário autenticado e RLS no servidor. A taxa usa somente resultados de combate; favoritos/reações não fabricam vitórias. A validação de navegador usa respostas simuladas e não escreve partidas na guilda real.
 
 Ausência de SWEX impede a sincronização. Se uma instância faltar, o clone é criado com aquele slot pendente e mantém a identidade esperada para seleção manual. O usuário recebe o nome faltante; a otimização fica indisponível até completar ou excluir o slot da busca. Alterar ou excluir o clone não modifica o modelo original.
 

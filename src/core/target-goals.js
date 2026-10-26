@@ -1,5 +1,6 @@
 import {normalizeLeader} from './leaders.js';
 import {normalizeCombat,normalizeScenario} from './speedTuner.js';
+import {equivalentMonsters} from './CollabMapping.js';
 // A detached snapshot of the portable guild template. Keys refer to cloned slots,
 // never to another account's monster instances or rune IDs.
 export const TARGET_STATS=['hp','def','spd','atk','cr','cd','res','acc'];
@@ -19,8 +20,8 @@ export function targetGoalsOf(team){
 export function targetIssue(team,account){
  try{
   const target=targetGoalsOf(team);
-  if(team.gameMode!=='siege'||team.configs.length!==3||target.configs.some(t=>!team.configs.some(c=>c.key===t.key&&c.masterId===t.masterId&&c.enabled!==false)))return 'A composição mudou. Restaure os três monstros do modelo antes de bater a meta.';
-  const units=target.configs.map(t=>account?.units.find(u=>u.id===team.configs.find(c=>c.key===t.key)?.unitId&&u.master===t.masterId));
+  if(team.gameMode!=='siege'||team.configs.length!==3||target.configs.some(t=>!team.configs.some(c=>c.key===t.key&&equivalentMonsters(c.masterId,t.masterId)&&c.enabled!==false)))return 'A composição mudou. Restaure os três monstros do modelo antes de bater a meta.';
+  const units=target.configs.map(t=>account?.units.find(u=>u.id===team.configs.find(c=>c.key===t.key)?.unitId&&equivalentMonsters(u.master,t.masterId)));
   if(units.some(u=>!u))return 'Selecione uma cópia da sua conta para cada monstro do modelo.';
   if(new Set(units.map(u=>u.id)).size!==3)return 'Use três cópias distintas da sua conta.';
   if(!target.configs.some(c=>Object.values(c.goals).some(v=>Number(v)>0)||c.sets.length||c.combatSpd>0||c.maxTick>0))return 'O modelo não informa metas numéricas ou conjuntos de runas.';
@@ -49,7 +50,7 @@ export function targetDistance(stats,config,counts={},progress=1){
 export function rebindTargetGoals(raw,exportedConfigs,importedConfigs){
  const target=targetGoalsOf({target_goals:raw}),leaderIndex=Number(target.leaderIndex||0),enemyCombatSpd=Number(target.enemyCombatSpd||0);
  if(!Number.isInteger(leaderIndex)||leaderIndex<0||leaderIndex>2||!Number.isFinite(enemyCombatSpd)||enemyCombatSpd<0||enemyCombatSpd>1000)throw new Error('Contexto das metas alvo inválido.');
- const configs=target.configs.map(t=>{const index=exportedConfigs.findIndex(c=>c.key===t.key),own=importedConfigs[index];if(!own||own.masterId!==t.masterId)throw new Error('As metas alvo não correspondem aos monstros do plano.');return own;});
+ const configs=target.configs.map(t=>{const index=exportedConfigs.findIndex(c=>c.key===t.key),own=importedConfigs[index];if(!own||!equivalentMonsters(own.masterId,t.masterId))throw new Error('As metas alvo não correspondem aos monstros do plano.');return own;});
  const source={name:String(target.sourceName||'Time clonado').slice(0,100),leader:normalizeLeader(target.leader),leaderIndex,enemyCombatSpd,autoOpener:target.autoOpener!==false,combatScenario:normalizeScenario(target.combatScenario),configs:target.configs.map(c=>({masterId:c.masterId,label:String(c.label||'Monstro').slice(0,80),basis:c.basis==='total'?'total':'bonus',goals:Object.fromEntries(TARGET_STATS.map(k=>[k,c.goals[k]===''||c.goals[k]==null?'':Number(c.goals[k])])),sets:[...c.sets],combatSpd:c.combatSpd,maxTick:c.maxTick,combat:normalizeCombat(c.combat),artifacts:c.artifacts!==false}))};
  return snapshotTargetGoals(source,{name:source.name,configs});
 }

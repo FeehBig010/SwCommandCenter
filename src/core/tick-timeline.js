@@ -1,11 +1,11 @@
 // View model only. Tick positions come from measured readiness, never from the
 // serialized action queue or a natural-speed formula that would miss ATB events.
 export function tickTimeline(preview){
- const ready=preview?.scenario?.firstReady||[],actors=new Map((preview?.actors||[]).map(a=>[a.key,a])),turns=new Map((preview?.turns||[]).map(t=>[t.key,t]));
+ const ready=[...(preview?.scenario?.firstReady||[]),...(preview?.references||[])],actors=new Map((preview?.actors||[]).map(a=>[a.key,a])),turns=new Map((preview?.turns||[]).map(t=>[t.key,t]));
  const groups=new Map(),allocated=new Set();
  for(const row of ready){
   if(!Number.isInteger(row.tick)||row.tick<0||allocated.has(row.key))continue;
-  const actor=actors.get(row.key),turn=turns.get(row.key),member={key:row.key,name:actor?.name||row.name||(row.enemy?'Inimigo':'Monstro'),master:actor?.master??row.master,enemy:row.enemy===true,forced:row.forced===true,disabled:turn?.disabled??row.disabled,spd:turn?.spd??row.spd,actionTick:turn?.tick??null,readyTick:row.tick};
+  const actor=actors.get(row.key),turn=turns.get(row.key),member={key:row.key,name:actor?.name||row.name||(row.enemy?'Inimigo':'Monstro'),master:actor?.master??row.master,enemy:row.enemy===true,forced:row.forced===true,disabled:turn?.disabled??row.disabled,spd:turn?.spd??row.spd,actionTick:turn?.tick??null,readyTick:row.tick,...(row.referenceOnly?{referenceOnly:true}:{})};
   if(!groups.has(row.tick))groups.set(row.tick,[]);groups.get(row.tick).push(member);allocated.add(row.key);
  }
  const ticks=[...groups.keys()].sort((a,b)=>a-b),start=ticks[0]??1,end=ticks.at(-1)??start,cells=[];

@@ -14,6 +14,9 @@
 .tick-member-name{font-size:11px;line-height:1.5;color:#e4dcc9;max-width:100%;overflow-wrap:anywhere;font-weight:500}
 .tick-combat-spd{font:600 30px/1.15 Oswald,Inter,sans-serif;color:#ebd7a8;font-variant-numeric:tabular-nums;letter-spacing:.5px}
 .tick-member small{font-size:10px;color:#b8b1a1;line-height:1.4}
+.tick-enemy .monster-portrait{border-style:dashed}
+.tick-reference{opacity:.85}
+.tick-reference .tick-combat-spd{color:#b8b1a1}
 .tick-empty{color:#786e59;background:repeating-linear-gradient(90deg,transparent 0 179px,#9a815033 179px 180px)!important}
 .tick-ruler .tick-empty h4{color:#928365;border-bottom-color:#6b5d403f}
 .tick-empty-mark{display:block;text-align:center;padding:24px 0;color:#786e59;font-size:18px}
