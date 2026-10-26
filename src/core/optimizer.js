@@ -241,12 +241,12 @@ export function teamTurnPreview(account,team,options={},builds=null){
   if(stats?.combat&&!stats.total){actors.push({key:config.key,unitId:unit.id,master:unit.master,name:unit.name,spd:stats.combat.spd,attributes:stats.combat,combat:config.combat});continue;}
   if(!stats){const runes=currentRuneIds(account,team,config,unit).map(id=>account.runes.find(r=>r.id===id)).filter(Boolean);if(runes.length!==6||new Set(runes.map(r=>r.slot)).size!==6){missing.push(unit.name);continue;}stats=calculateStats(unit,runes,options.artifacts!==false&&config.artifacts!==false?artifactBonus(account,unit):{});counts=setCounts(runes);}
   const effects=artifactEffects(account,unit,options.artifacts!==false&&config.artifacts!==false),combat=combatAttributes(unit,stats,counts,team,config.combat,effects);
-  actors.push({key:config.key,unitId:unit.id,master:unit.master,name:unit.name,spd:combat.spd,rawSpd:combat.rawSpd,attributes:combat,combat:config.combat,effects,nemesisSets:Math.floor((counts?.[14]||0)/2)});
+  actors.push({key:config.key,unitId:unit.id,master:unit.master,name:unit.name,spd:combat.spd,rawSpd:combat.rawSpd,attributes:combat,combat:config.combat,effects,will:(counts?.[15]||0)>=2,nemesisSets:Math.floor((counts?.[14]||0)/2)});
  }
  if(missing.length||!actors.length)return {complete:false,actors,missing,turns:[],cut:null,source:builds?'builds':'equipped'};
  const enemy=Number(team.enemyCombatSpd)||0;
  const configured=scenarioForTeam(team,actors),hasEnemies=configured.actors.some(a=>a.enemy);
- const scenario=simulateCombat([...configured.actors,...(!hasEnemies&&enemy>0?[{key:'__enemy__',name:'Inimigo',spd:enemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true});scenario.risks.push(...missingDefenseConditions(team));const turns=scenario.firstTurns;
+ const scenario=simulateCombat([...configured.actors,...(!hasEnemies&&enemy>0?[{key:'__enemy__',name:'Inimigo',spd:enemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true,captureReadiness:true});scenario.risks.push(...missingDefenseConditions(team));const turns=scenario.firstTurns;
  return {complete:true,actors,missing:[],turns,scenario,cut:scenario.cut,source:builds?'builds':'equipped'};
 }
 export function validateWaveClear(unit,stats,skill,enemies,settings={}){

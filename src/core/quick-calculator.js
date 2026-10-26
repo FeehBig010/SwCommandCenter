@@ -11,7 +11,7 @@ export function quickConfig(master=null,name='Escolher monstro'){
 }
 export function quickTeam(area='siege'){return {...makeTeam(area),towerSpd:15,guildSpd:0,sheetSpeedFormula:true,autoEnemyPassives:true,autoOpener:true,orderMode:'auto',perfectTune:false,configs:Array.from({length:{siege:3,arena:4,cairos:5}[area]||3},()=>quickConfig())};}
 export function selectQuickMonster(config,option){return {...quickConfig(option?.master,option?.name),key:config.key,autoSpeed:config.autoSpeed};}
-export function quickPreview(input,{captureCheckpoints=false,actorCache=null}={}){
+export function quickPreview(input,{captureCheckpoints=false,actorCache=null,includeReference=true,captureReadiness=false}={}){
  const team={...input,autoOpener:true,towerSpd:15,guildSpd:0,sheetSpeedFormula:true};
  const active=team.configs.filter(c=>c.enabled!==false),actors=[];
  for(const c of active){if(!c.masterId)return {complete:false,missing:active.filter(c=>!c.masterId).map(c=>c.label),actors:[],turns:[],cut:null};
@@ -22,7 +22,7 @@ export function quickPreview(input,{captureCheckpoints=false,actorCache=null}={}
   actors.push({key:c.key,will:(counts[15]||0)>=2,master:c.masterId,name:c.label,spd:combat.spd,rawSpd:combat.rawSpd,combat:c.combat,attributes:combat,leaderBonus:leaderImpact(unit,stats,counts,team,c.combat).bonus,goals:goalReport({...stats,combat},c),nemesisSets:Math.floor((counts[14]||0)/2)});if(actorCache)actorCache.set(c,actors.at(-1));
  }
  if(!actors.length)return {complete:false,missing:[],actors:[],turns:[],cut:null};
- const configured=scenarioForTeam(team,actors),enemy=Number(team.enemyCombatSpd)||0,foes=configured.actors.some(a=>a.enemy);const cascade=cascadingBoostPlan(team,configured.events),referenceEnemy=!foes&&!enemy&&(cascade||automaticSyncStrategy(team).kind==='boost')?Math.max(1,actors[0].spd-1):0;const scenario=simulateCombat([...configured.actors,...(!foes&&(enemy||referenceEnemy)>0?[{key:'quick-enemy',name:referenceEnemy?'Inimigo de referência':'Inimigo',spd:enemy||referenceEnemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true,captureCheckpoints});
+ const configured=scenarioForTeam(team,actors),enemy=Number(team.enemyCombatSpd)||0,foes=configured.actors.some(a=>a.enemy);const cascade=cascadingBoostPlan(team,configured.events),referenceEnemy=includeReference&&!foes&&!enemy&&(cascade||automaticSyncStrategy(team).kind==='boost')?Math.max(1,actors[0].spd-1):0;const scenario=simulateCombat([...configured.actors,...(!foes&&(enemy||referenceEnemy)>0?[{key:'quick-enemy',name:referenceEnemy?'Inimigo de referência':'Inimigo',spd:enemy||referenceEnemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true,captureCheckpoints,captureReadiness});
  return {complete:true,missing:[],actors,turns:scenario.firstTurns,scenario,cut:scenario.cut,referenceEnemy,source:'manual'};
 }
 export function quickLeader(master){return catalogLeader(master);}

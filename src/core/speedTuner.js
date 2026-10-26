@@ -60,13 +60,23 @@ export function simulateFirstTurns(actors){
  if(!actors.length)return [];
  return simulateCombat(actors,{stopAfterFirst:true}).firstTurns.map(({key,tick,spd,atb})=>({key,tick,spd,atb}));
 }
-export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=30,captureCheckpoints=false}={}){
+export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=30,captureCheckpoints=false,captureReadiness=false}={}){
  if(!Array.isArray(actors)||actors.length>20||!actors.length)throw new Error('Use de 1 a 20 unidades.');
  if(events.length>100||!Number.isInteger(maxTurns)||maxTurns<1||maxTurns>100)throw new Error('Cenário excede o limite.');
  const keys=new Set(),state=actors.map((a,index)=>{if(keys.has(a.key))throw new Error('Unidade repetida no cenário.');keys.add(a.key);const c=normalizeCombat(a.combat);return {...a,index,baseSpd:number(a.rawSpd??a.spd,0,.01,100000,'SPD'),spd:number(a.spd,0,.01,100000,'SPD'),atb:number(a.initialAtb,0,0,100,'Barra inicial'),hp:c.hpPercent,combat:c,passive:c.oblivion?null:PASSIVES[a.master],turns:0,dead:c.hpPercent<=0,nemesisRemainder:0};});
  const order=(a,b)=>(Math.abs(b.atb-a.atb)>1e-9?b.atb-a.atb:0)||b.spd-a.spd||Number(b.enemy||false)-Number(a.enemy||false)||a.index-b.index;
  const alive=()=>state.filter(a=>!a.dead),same=(a,b)=>!!a.enemy===!!b.enemy;
  const turns=[],firstTurns=[],seen=new Set(),log=[],risks=[],forced=[],checkpoints=[];
+ // Readiness is independent of the one-action-per-tick queue. Record every
+ // first threshold crossing before bars are consumed, including event gains.
+ const firstReady=[],readySeen=captureReadiness?new Set():null;
+ function recordReady(tick,phase,forcedActor=null){
+  if(!captureReadiness)return;
+  for(const a of state){
+   if(a.dead||seen.has(a.key)||readySeen.has(a.key)||a.atb<100-1e-9&&a!==forcedActor)continue;
+   readySeen.add(a.key);firstReady.push({key:a.key,name:a.name,master:a.master,tick,spd:a.rawSpd!==undefined?runtimeSpeed(a.baseSpd,a.master,a.combat,a.effects||{}):a.spd,atb:a.atb,enemy:!!a.enemy,disabled:a.combat.disabled,forced:a===forcedActor&&a.atb<100-1e-9,phase});
+  }
+ }
  for(const a of state)if(!a.combat.oblivion&&!a.passive&&passiveNotices[a.master])risks.push(`${a.name||a.key}: ${passiveNotices[a.master].join(', ')} exige eventos/regras adicionais; resultado condicional.`);
  for(const a of state)if(a.passive==='antares')risks.push(`${a.name||a.key}: Antares pode interromper por RNG; cenário sem proc não garante segurança.`);
  const tls=()=>alive().filter(a=>a.passive==='tian_lang');
@@ -111,25 +121,29 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
  }
  for(const e of events)if(!keys.has(e.afterKey)||!Number.isInteger(Number(e.occurrence??1))||Number(e.occurrence??1)<1)throw new Error('Origem ou turno de evento inválido.');
  const leo=alive().filter(a=>a.passive==='leo'&&!a.boss);if(leo.length)forced.push(...leo.slice().sort((a,b)=>b.spd-a.spd||a.index-b.index).map(a=>a.key));
+ recordReady(0,'initial');
  for(let tick=1;tick<=10000&&turns.length<(stopAfterFirst?10000:maxTurns);tick++){
   for(const a of alive()){if(a.rawSpd!==undefined)a.spd=runtimeSpeed(a.baseSpd,a.master,a.combat,a.effects||{});}
   const leos=alive().filter(a=>a.passive==='leo');const cap=leos.length?Math.min(...leos.map(a=>a.spd)):Infinity;
   for(const a of alive())a.atb+=(a.passive==='leo'||a.boss?a.spd:Math.min(cap,a.spd))*NATURAL_GAUGE_STEP/100;
+  recordReady(tick,'natural');
   const forcedKey=forced.shift(),actor=forcedKey?alive().find(a=>a.key===forcedKey):alive().filter(a=>a.atb>=100-1e-9).sort(order)[0];
   if(!actor){if(!alive().length)break;continue;}
+  if(forcedKey)recordReady(tick,'forced',actor);
   const row={key:actor.key,tick,spd:actor.spd,atb:actor.atb,enemy:!!actor.enemy,forced:!!forcedKey,disabled:actor.combat.disabled};if(row.disabled)risks.push(`${actor.name||actor.key}: turno consumido por incapacidade, sem executar ação.`);turns.push(row);if(!seen.has(actor.key)){seen.add(actor.key);firstTurns.push(row);}actor.turns++;actor.atb=0;
   // Disabled turns consume ATB but cannot execute the configured actions; duration changes require explicit scenario state.
   const skipped=actor.combat.disabled;
-  if(!skipped)for(const e of events.filter(e=>e.afterKey===actor.key&&Number(e.occurrence??1)===actor.turns))apply(e,actor,tick);
+  if(!skipped)for(const e of events.filter(e=>e.afterKey===actor.key&&Number(e.occurrence??1)===actor.turns)){apply(e,actor,tick);recordReady(tick,'event');}
   if(skipped&&actor.disabledFor){actor.disabledFor--;if(!actor.disabledFor)actor.combat.disabled=false;}
   for(const am of alive().filter(a=>a.passive==='amduat'&&!same(a,actor)))skillBoost([am],25,am);
+  recordReady(tick,'passive');
   if(captureCheckpoints)checkpoints.push({key:actor.key,occurrence:actor.turns,tick,disabled:skipped,bars:state.map(a=>({key:a.key,atb:a.atb,dead:a.dead}))});
   if(stopAfterFirst&&alive().every(a=>seen.has(a.key)))break;
  }
  if(stopAfterFirst&&alive().some(a=>!seen.has(a.key)))throw new Error('Simulação de turnos excedeu o limite.');
  const ei=firstTurns.findIndex(t=>t.enemy),deadAllies=state.some(a=>a.dead&&!a.enemy&&!seen.has(a.key)),cut=deadAllies?true:state.some(a=>a.enemy)?ei>=0&&firstTurns.slice(ei+1).some(t=>!t.enemy):null;
  if(deadAllies)risks.push('Um aliado foi eliminado antes da primeira ação no cenário de dano informado.');
- return {turns,firstTurns,log,checkpoints,risks:[...new Set(risks)],cut,state:state.map(a=>({key:a.key,hp:a.hp,atb:a.atb,dead:a.dead,spd:a.spd})),assumptions:'Eventos informados como resolvidos; sem sorteio de procs, resistência, dano ou seleção automática de habilidade.'};
+ return {turns,firstTurns,...(captureReadiness?{firstReady}:{}),log,checkpoints,risks:[...new Set(risks)],cut,state:state.map(a=>({key:a.key,hp:a.hp,atb:a.atb,dead:a.dead,spd:a.spd})),assumptions:'Eventos informados como resolvidos; sem sorteio de procs, resistência, dano ou seleção automática de habilidade.'};
 }
 export const COMBAT_EVENTS={tiana:'Tiana S3 · remoção de efeitos + 30% ATB',boost:'Boost de barra',reduce:'Redução de barra',damage:'Dano (% HP máximo por alvo/hit)',heal:'Cura resolvida (% HP máximo)',tablo:'Tablo · reset + buff SPD',buffs:'Quantidade global de buffs',speed_buff:'Aplicar buff SPD',slow:'Aplicar slow',antares:'Forçar proc Antares (RNG)',leo_attack:'Leo · ataque com redução 15%',cleanse:'Remover incapacidade/slow'};
 export function normalizeScenario(raw={}){
