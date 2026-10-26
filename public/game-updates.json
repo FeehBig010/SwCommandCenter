@@ -1,9 +1,17 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-10-26T06:09:12.969Z",
+  "fetchedAt": "2026-10-26T12:55:27.433Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/notice/313/95960",
+      "url": "https://www.withhive.com/notice/313/95960",
+      "title": "[Summoners War] SWC2026 WORLD FINALS Limited Rewards Advance Notice",
+      "category": "notice",
+      "publishedAt": "2026-10-26T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
     {
       "id": "https://www.withhive.com/event/313/95920",
       "url": "https://www.withhive.com/event/313/95920",
