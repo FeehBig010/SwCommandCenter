@@ -1,0 +1,3 @@
+export function tradeoffChip(proposal){return proposal?.pareto?{kind:'perfect',label:'Otimização Perfeita',symbol:'🟢',description:'Ganhos sem perdas nos atributos comparados.'}:{kind:'sacrifice',label:'Sacrifício Calculado',symbol:'🟡',description:'Ganhos e sacrifícios explícitos, mantendo os Ticks.'};}
+export const TRADEOFF_LIMIT={kind:'limit',label:'Limite Atingido',symbol:'⚪',description:'Nenhuma melhoria encontrada no estoque permitido com as travas e os limites desta busca.'};
+export function changedTradeoffMembers(proposal){return proposal.members.filter(m=>Object.keys(m.before).some(key=>Math.abs(m.after[key]-m.before[key])>1e-8));}

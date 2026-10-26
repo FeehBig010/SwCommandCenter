@@ -1,6 +1,6 @@
 # Diagnóstico e re-runagem de ataques por trade-off
 
-O card do ataque selecionado, na Central de Siege e no Otimizador/Arena, oferece **⚡ Buscar Melhores Builds no JSON**. O botão aciona um Worker sob demanda; ataques não disparam o diagnóstico conservador automático antigo. Há prioridades SPD, EHP e Dano e um limite de sacrifício de 0% a 50% por atributo, inicialmente 20%.
+O card do ataque selecionado, na Central de Siege e no Otimizador/Arena, oferece **⚡ Buscar Alternativas (Trade-offs)**. O botão aciona uma instância sob demanda de `optimizer.worker.js`, com `mode: tradeoff`; ataques não disparam o diagnóstico conservador automático antigo. As preferências opcionais oferecem prioridades SPD, EHP e Dano e um limite de sacrifício de 0% a 50% por atributo, inicialmente 20%.
 
 ## Referência e objetivo
 
@@ -13,12 +13,16 @@ HP, ATK, DEF, TC, DC, RES e ACC da tabela representam a ficha real, incluindo va
 ## Restrições eliminatórias
 
 - Cada distribuição contém seis slots por unidade e nenhuma runa repetida entre os membros.
-- Todos os conjuntos selecionados são obrigatórios neste diagnóstico. Sem seleção, preservam-se os conjuntos completos atuais. A comparação é explícita no tooltip, independentemente da preferência flexível do otimizador antigo.
-- Os atributos principais escolhidos e as reservas explícitas são respeitados. Planos de defesas/GvG também protegem suas runas. Outros ataques continuam compartilhando o pool global.
+- Todos os conjuntos completos equipados e todos os selecionados são obrigatórios simultaneamente neste diagnóstico. Requisitos incompatíveis com seis slots geram uma mensagem explícita. A comparação é explícita no tooltip, independentemente da preferência flexível do otimizador antigo.
+- Os atributos principais escolhidos e as reservas explícitas são respeitados. Planos de defesas/GvG também protegem suas runas. Times ativos marcados como prioritários também protegem suas runas. Outros ataques sem prioridade continuam compartilhando o pool global.
 - A opção de usar runas equipadas é respeitada. Bloqueios locais sempre valem; bloqueios do jogo seguem “Respeitar bloqueios”. Runas vindas de outra unidade são identificadas no relatório para reequipamento.
 - Pool RTA é isolada. Intangible e conjuntos desconhecidos não são simulados: nesses casos, a build atual é mantida com uma mensagem.
 - A ordem factual da primeira rotação do SWEX é preservada. A prontidão e a primeira ação de cada membro não podem atrasar. Prazos de Tick explícitos também são obrigatórios. Se o cenário possui inimigos, não aumenta a quantidade de ações inimigas antes de cada aliado.
 - Boosts, buffs, passivas e artefatos seguem o motor de combate existente. Os Ticks apresentados são inteiros, com avatares prontos no mesmo Tick agrupados.
+
+## Resultados abaixo dos monstros
+
+O relatório abre uma sanfona abaixo da grade de monstros. Cada opção mostra um chip **Otimização Perfeita** (sem perdas), **Sacrifício Calculado** (perdas explícitas), e o botão **Aplicar**. A ficha comparativa e a timeline ficam em detalhes expansíveis, montados apenas quando abertos. Sem opções, aparece **Limite Atingido**, com aviso de que nada foi encontrado dentro dos limites desta busca; não se afirma que o estoque atingiu um ótimo global. O painel permite teclado, respeita movimento reduzido e mantém alvos de toque de 44 px.
 
 ## Busca limitada e aplicação
 
@@ -32,4 +36,4 @@ Mudança de time, conta, prioridade, limite ou reservas invalida resultados ante
 
 `npm test` cobre a referência real do JSON, Pareto e trade-offs, foco EHP/dano, conjunto obrigatório, mains, unicidade, reservas/bloqueios, boosts automáticos, Ticks, validade e revalidação de planos, inclusive ataques nativos de quatro slots.
 
-`npm run test:browser` executa também `tests/browser/attack-tradeoffs.mjs` sobre a aplicação real: botão único, Worker dedicado, relatório, agrupamento de ticks, aplicação/desfazer, preservação do SWEX, invalidação de relatório e cancelamento. Inclui uma medição com **1.518 runas sintéticas**, informando tempo do motor, tempo total e intervalos da thread principal. Essa medição não representa um benchmark de hardware mobile real.
+`npm run test:browser` executa também `tests/browser/attack-tradeoffs.mjs` sobre a aplicação real: botão único, Worker sob demanda, sanfona posicionada abaixo dos monstros, chips, relatório, agrupamento de ticks, aplicação/desfazer, preservação do SWEX, invalidação de relatório e cancelamento. Inclui uma medição com **1.518 runas sintéticas**, informando tempo do motor, tempo total e intervalos da thread principal. Essa medição não representa um benchmark de hardware mobile real.

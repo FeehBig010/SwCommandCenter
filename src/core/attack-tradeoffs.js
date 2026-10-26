@@ -1,4 +1,5 @@
 import {resolveSwexAttackLoadout,assertSwexAttackRunes} from './swex-attack-loadout.js';
+import {isPriority} from './allocation.js';
 import {assertMainPool} from './equipment-pools.js';
 import {STATS,FOUR,SETS,DEFAULT_OPTIONS} from './data.js';
 import {generateCandidates,equippedBuild,calculateStats,setCounts,artifactBonus} from './optimizer.js';
@@ -7,7 +8,7 @@ import {combatAttributes,scenarioForTeam,simulateCombat} from './speedTuner.js';
 import {estimateRealDamage} from './damage.js';
 import {lockContext} from './locks.js';
 import {runeConflictApplies} from './siege-central.js';
-import {accountStamp,plannedReservations} from './loadouts.js';
+import {accountStamp,plannedReservations,currentRuneIds} from './loadouts.js';
 
 const FIELDS=['hp','atk','def','spd','cr','cd','res','acc'];
 const EPS=1e-8,MAX_CANDIDATES=32,BEAM_WIDTH=96,MAX_TIMINGS=5000;
@@ -27,7 +28,21 @@ const lossless=(next,old)=>[...FIELDS,'ehp','damage'].every(k=>next[k]+EPS>=old[
 const changed=(next,old)=>[...FIELDS,'ehp','damage'].some(k=>next[k]>old[k]+EPS);
 const score=(next,old,settings)=>relative(next[settings.focus],old[settings.focus])-.15*FIELDS.reduce((n,k)=>n+Math.max(0,-relative(next[k],old[k])),0);
 const withinLoss=(next,old,settings)=>[...FIELDS,'ehp','damage'].every(k=>relative(next[k],old[k])+EPS>=-settings.maxLoss/100);
-function requirements(config,build){return config.sets?.some(Boolean)?config.sets.filter(Boolean):Object.entries(build.counts).flatMap(([id,n])=>Array(Math.floor(n/(FOUR.has(Number(id))?4:2))).fill(Number(id)));}
+function requirements(config,build){
+ const required={};for(const id of config.sets?.filter(Boolean)||[])required[id]=(required[id]||0)+1;
+ for(const [id,n]of Object.entries(build.counts))required[id]=Math.max(required[id]||0,Math.floor(n/(FOUR.has(Number(id))?4:2)));
+ return Object.entries(required).flatMap(([id,n])=>Array(n).fill(Number(id)));
+}
+function priorityReservations(account,teams,exceptId){
+ const protectedIds=new Set(),owners=new Set();
+ for(const team of teams.filter(t=>t.id!==exceptId&&t.active!==false&&isPriority(t)))for(const c of team.configs||[]){
+  if(c.enabled===false)continue;owners.add(c.unitId);const original=account.units.find(u=>u.id===c.unitId);if(!original)continue;
+  const {unit}=resolveSwexAttackLoadout(account,team,original);for(const id of currentRuneIds(account,team,c,unit))protectedIds.add(id);
+ }
+ // Ownership remains authoritative protection even with incomplete unit references.
+ for(const rune of account.runes)if(owners.has(rune.owner))protectedIds.add(rune.id);
+ return [...protectedIds];
+}
 function setsValid(counts,sets){const req={};for(const id of sets)req[id]=(req[id]||0)+(FOUR.has(id)?4:2);return Object.entries(req).every(([id,n])=>(counts[id]||0)>=n);}
 function buildActor(job,build){const c=build.stats.combat;return {key:job.config.key,unitId:job.unit.id,master:job.unit.master,name:job.unit.name,spd:c.spd,rawSpd:c.rawSpd,attributes:c,combat:job.config.combat,effects:job.effects,will:(build.counts[15]||0)>=2,nemesisSets:Math.floor((build.counts[14]||0)/2)};}
 function timing(context,builds){
@@ -45,7 +60,7 @@ function contextFor(account,team,rawOptions,reservedIds,allTeams,rawSettings){
  assertMainPool([team],rawOptions);
  if(team.mode!=='attack'||team.gameMode==='rta'||![3,4,5,6].includes(team.configs?.length)||team.configs.some(c=>c.enabled===false))throw new Error('Selecione um time de ataque completo, com todos os slots ativos.');
  if(new Set(team.configs.map(c=>c.key)).size!==team.configs.length||new Set(team.configs.map(c=>c.unitId)).size!==team.configs.length)throw new Error('Use uma cópia distinta da sua conta em cada slot.');
- const settings=tradeoffSettings(rawSettings),options={...DEFAULT_OPTIONS,...rawOptions,maxGrindsGems:false},blocked=new Set([...reservedIds,...(options.blockedRuneIds||[]),...plannedReservations(allTeams.filter(t=>['siege','gvg'].includes(t.gameMode||'siege')&&runeConflictApplies(t,account)),account,team.id)]),locks=lockContext(account,options),byId=new Map(account.runes.map(r=>[r.id,r]));
+ const settings=tradeoffSettings(rawSettings),options={...DEFAULT_OPTIONS,...rawOptions,maxGrindsGems:false},blocked=new Set([...priorityReservations(account,allTeams,team.id),...reservedIds,...(options.blockedRuneIds||[]),...plannedReservations(allTeams.filter(t=>['siege','gvg'].includes(t.gameMode||'siege')&&runeConflictApplies(t,account)),account,team.id)]),locks=lockContext(account,options),byId=new Map(account.runes.map(r=>[r.id,r]));
  const loadouts=new Map(team.configs.map(config=>{const original=account.units.find(u=>u.id===config.unitId);if(!original)throw new Error('Selecione uma unidade do seu SWEX para cada slot.');return [original.id,resolveSwexAttackLoadout(account,team,original)];}));
  const baselineAccount={...account,units:account.units.map(u=>loadouts.get(u.id)?.unit||u)};
  const resolvedLocks=lockContext(baselineAccount,options);resolvedLocks.runes.forEach(id=>locks.runes.add(id));
@@ -60,6 +75,7 @@ function contextFor(account,team,rawOptions,reservedIds,allTeams,rawSettings){
   if(config.combat?.disabled||Number(config.combat?.hpPercent??100)<=0)throw new Error('Remova o estado de incapacidade ou HP zerado antes de comparar a ordem de ataque.');
   if(Number(config.maxTick)>0&&!Number.isInteger(Number(config.maxTick)))throw new Error('Use Ticks inteiros nos prazos de ação.');
   const sets=requirements(config,baseline),effects=artifactEffects(baselineAccount,unit,options.artifacts!==false&&config.artifacts!==false),flat=options.artifacts!==false&&config.artifacts!==false?artifactBonus(baselineAccount,unit):{};
+  if(sets.reduce((n,id)=>n+(FOUR.has(id)?4:2),0)>6)throw new Error(`${unit.name}: os conjuntos equipados e exigidos não cabem em seis runas. Ajuste os conjuntos exigidos antes da busca.`);
   context.jobs.push({config,unit,baseline,source:loadout.source,metrics:buildMetrics(baseline),sets,effects,flat});
  }
  context.team.configs=context.team.configs.map((c,i)=>({...c,masterId:context.jobs[i].unit.master}));
