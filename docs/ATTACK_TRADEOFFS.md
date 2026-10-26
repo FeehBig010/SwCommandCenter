@@ -4,7 +4,7 @@ O card do ataque selecionado, na Central de Siege e no Otimizador/Arena, oferece
 
 ## Referência e objetivo
 
-A referência é o equipamento da unidade no SWEX (`unit.runeIds`), incluindo os artefatos equipados e o contexto de combate do time. Metas digitadas ou preenchidas automaticamente e planos locais anteriores não viram a ficha de referência. O diagnóstico permite perdas declaradas em metas de status; elas não são travas nessa busca. O otimizador de metas existente permanece separado.
+A referência é o equipamento original salvo no preset selecionado do SWEX (`accountPresets.equipment`), incluindo seus artefatos. Sem snapshot do preset, usa-se `unit.runeIds`; referências principais incompletas podem ser recuperadas de seis runas com ownership compatível no inventário. A origem aparece no relatório. O contexto de combate é o do time. Metas digitadas ou preenchidas automaticamente e planos locais anteriores não viram a ficha de referência. O diagnóstico permite perdas declaradas em metas de status; elas não são travas nessa busca. O otimizador de metas existente permanece separado.
 
 A primeira passada usa os atributos atuais como pisos para procurar alternativas sem perdas. Uma segunda passada permite trade-offs dentro do limite escolhido. Se a distribuição conjunta encontrar alguma melhoria sem sacrifício, apenas essas são apresentadas. Caso contrário, o conjunto precisa melhorar o foco em termos relativos e cada perda é mostrada por monstro. Não se impõem todas as metas da guilda a esta comparação; `target_goals` permanece intacto.
 
@@ -24,7 +24,7 @@ HP, ATK, DEF, TC, DC, RES e ACC da tabela representam a ficha real, incluindo va
 
 A geração usa os feixes existentes do otimizador, mais trocas vizinhas de uma runa. Retém até 32 alternativas por monstro, até 96 distribuições parciais e no máximo 5.000 verificações finais de timing. Mostra até três sugestões. Não enumera todas as permutações do inventário nem comprova ótimo global. “Nenhuma alternativa” significa que nada foi encontrado nesses limites e filtros.
 
-A aplicação dispara uma nova validação no Worker com o estado atual: confere assinatura do inventário/time/reservas, IDs, ownership/bloqueios, slots, conjuntos, sacrifícios e timing. As estatísticas recebidas do relatório não são confiadas. O resultado vira somente `team.plannedRunes`, com `source: 'attack-tradeoff'`; não modifica monstros, runas, artefatos ou o JSON da conta e não envia dados à nuvem. “Voltar às runas do SWEX” remove esse plano.
+A aplicação dispara uma nova validação no Worker com o estado atual: confere assinatura do inventário/time/reservas, IDs, ownership/bloqueios, slots, conjuntos, sacrifícios e timing. As estatísticas recebidas do relatório não são confiadas. O resultado vira somente `team.plannedRunes`, com `source: 'attack-tradeoff'`; não modifica monstros, runas, artefatos ou o JSON da conta e não envia dados à nuvem. “Voltar às runas do SWEX” restaura o snapshot original do preset selecionado; sem snapshot, remove a proposta e usa o equipamento principal.
 
 Mudança de time, conta, prioridade, limite ou reservas invalida resultados anteriores e encerra o Worker. A busca tem cancelamento. Não são projetados gems/grinds ou upgrades de nível que a conta ainda não possui.
 

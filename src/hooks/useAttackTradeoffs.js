@@ -7,10 +7,10 @@ export default function useAttackTradeoffs({account,team,options,reservedIds=EMP
  useEffect(()=>()=>{generation.current++;worker.current?.terminate();worker.current=null;},[account,key]);
  const current=state?.account===account&&state?.key===key;
  function stop(){generation.current++;worker.current?.terminate();worker.current=null;setState({account,key,busy:false,message:'Busca cancelada. A build atual foi mantida.'});}
- function run(proposal){
+ function run(proposal,restore=false){
   if(!account)return;
   worker.current?.terminate();const token=++generation.current,captured={account,key};let instance;
-  setState({account,key,busy:true,validating:!!proposal,report:proposal&&current?state.report:null,progress:{percent:0,message:proposal?'Revalidando inventário, conjuntos e Ticks…':'Lendo as fichas do SWEX…'}});
+  setState({account,key,busy:true,validating:!!proposal||restore,report:proposal&&current?state.report:null,progress:{percent:0,message:restore?'Restaurando o equipamento de referência do SWEX…':proposal?'Revalidando inventário, conjuntos e Ticks…':'Lendo as fichas do SWEX…'}});
   const live=()=>token===generation.current&&scope.current.account===captured.account&&scope.current.key===captured.key;
   const fail=message=>{if(live())setState({account,key,busy:false,error:message});instance?.terminate();if(worker.current===instance)worker.current=null;};
   try{
@@ -25,8 +25,8 @@ export default function useAttackTradeoffs({account,team,options,reservedIds=EMP
    };
    instance.onerror=()=>fail('A busca foi interrompida. A build atual foi mantida. Tente novamente.');
    instance.onmessageerror=()=>fail('Não foi possível receber o diagnóstico. Tente novamente.');
-   instance.postMessage({type:proposal?'validate':'search',account,team,options,reservedIds,allTeams,settings,...(proposal?{signature:state.report.signature,proposal}:{})});
+   instance.postMessage({type:restore?'restore':proposal?'validate':'search',account,team,options,reservedIds,allTeams,settings,...(proposal?{signature:state.report.signature,proposal}:{})});
   }catch{fail('Não foi possível iniciar a busca em segundo plano. Tente novamente.');}
  }
- return {...(current?state:{}),search:()=>run(null),apply:proposal=>{if(current&&!state.busy&&state.report?.proposals.includes(proposal))run(proposal);},cancel:stop};
+ return {...(current?state:{}),search:()=>run(null),apply:proposal=>{if(current&&!state.busy&&state.report?.proposals.includes(proposal))run(proposal);},cancel:stop,restore:()=>run(null,true)};
 }

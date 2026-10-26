@@ -1,3 +1,4 @@
+import {resolveSwexAttackLoadout,assertSwexAttackRunes} from './swex-attack-loadout.js';
 import {assertMainPool} from './equipment-pools.js';
 import {STATS,FOUR,SETS,DEFAULT_OPTIONS} from './data.js';
 import {generateCandidates,equippedBuild,calculateStats,setCounts,artifactBonus} from './optimizer.js';
@@ -45,17 +46,21 @@ function contextFor(account,team,rawOptions,reservedIds,allTeams,rawSettings){
  if(team.mode!=='attack'||team.gameMode==='rta'||![3,4,5,6].includes(team.configs?.length)||team.configs.some(c=>c.enabled===false))throw new Error('Selecione um time de ataque completo, com todos os slots ativos.');
  if(new Set(team.configs.map(c=>c.key)).size!==team.configs.length||new Set(team.configs.map(c=>c.unitId)).size!==team.configs.length)throw new Error('Use uma cópia distinta da sua conta em cada slot.');
  const settings=tradeoffSettings(rawSettings),options={...DEFAULT_OPTIONS,...rawOptions,maxGrindsGems:false},blocked=new Set([...reservedIds,...(options.blockedRuneIds||[]),...plannedReservations(allTeams.filter(t=>['siege','gvg'].includes(t.gameMode||'siege')&&runeConflictApplies(t,account)),account,team.id)]),locks=lockContext(account,options),byId=new Map(account.runes.map(r=>[r.id,r]));
- const context={account,team:{...team,plannedRunes:null},options,settings,blocked,locks,byId,jobs:[]};
- const baselineUsed=new Set();
+ const loadouts=new Map(team.configs.map(config=>{const original=account.units.find(u=>u.id===config.unitId);if(!original)throw new Error('Selecione uma unidade do seu SWEX para cada slot.');return [original.id,resolveSwexAttackLoadout(account,team,original)];}));
+ const baselineAccount={...account,units:account.units.map(u=>loadouts.get(u.id)?.unit||u)};
+ const resolvedLocks=lockContext(baselineAccount,options);resolvedLocks.runes.forEach(id=>locks.runes.add(id));
+ const fixedOwners=new Map();for(const u of account.units)if(locks.units.has(u.id))for(const id of u.runeIds||[])fixedOwners.set(id,u.id);
+ for(const rune of account.runes)if(rune.owner&&(locks.units.has(rune.owner)||options.respectLocks&&rune.locked))fixedOwners.set(rune.id,rune.owner);
+ const context={account:baselineAccount,team:{...team,plannedRunes:null},options,settings,blocked,locks,fixedOwners,byId,jobs:[]};
+ const baselineUsed=new Map();
  for(const config of team.configs){
-  const unit=account.units.find(u=>u.id===config.unitId);if(!unit)throw new Error('Selecione uma unidade do seu SWEX para cada slot.');
-  const baseline=equippedBuild(account,{...team,plannedRunes:null},config,options);if(!baseline||baseline.runeIds.length!==6||baseline.runeIds.some(id=>baselineUsed.has(id)))throw new Error(`${unit.name}: complete seis runas distintas e válidas no SWEX.`);
-  baseline.runeIds.forEach(id=>baselineUsed.add(id));
+  const loadout=loadouts.get(config.unitId),unit=loadout.unit;assertSwexAttackRunes(loadout,byId,baselineUsed);
+  const baseline=equippedBuild(baselineAccount,{...team,plannedRunes:null},config,options);if(!baseline)throw new Error(`${unit.name}: não foi possível calcular a ficha com o equipamento do SWEX. Reimporte o arquivo completo.`);
   if(Object.keys(baseline.counts).some(id=>Number(id)===25||!SETS[id]))throw new Error('Este diagnóstico não modela Intangible ou conjuntos desconhecidos. A build atual foi mantida.');
   if(config.combat?.disabled||Number(config.combat?.hpPercent??100)<=0)throw new Error('Remova o estado de incapacidade ou HP zerado antes de comparar a ordem de ataque.');
   if(Number(config.maxTick)>0&&!Number.isInteger(Number(config.maxTick)))throw new Error('Use Ticks inteiros nos prazos de ação.');
-  const sets=requirements(config,baseline),effects=artifactEffects(account,unit,options.artifacts!==false&&config.artifacts!==false),flat=options.artifacts!==false&&config.artifacts!==false?artifactBonus(account,unit):{};
-  context.jobs.push({config,unit,baseline,metrics:buildMetrics(baseline),sets,effects,flat});
+  const sets=requirements(config,baseline),effects=artifactEffects(baselineAccount,unit,options.artifacts!==false&&config.artifacts!==false),flat=options.artifacts!==false&&config.artifacts!==false?artifactBonus(baselineAccount,unit):{};
+  context.jobs.push({config,unit,baseline,source:loadout.source,metrics:buildMetrics(baseline),sets,effects,flat});
  }
  context.team.configs=context.team.configs.map((c,i)=>({...c,masterId:context.jobs[i].unit.master}));
  context.baseline=timing(context,context.jobs.map(j=>j.baseline));
@@ -68,6 +73,7 @@ function allowedGear(context,job,ids){
  if(context.locks.units.has(job.unit.id)&&JSON.stringify([...ids].sort((a,b)=>a-b))!==JSON.stringify([...job.unit.runeIds].sort((a,b)=>a-b)))return false;
  for(const rune of runes){
   const own=job.unit.runeIds.includes(rune.id);
+  if(context.fixedOwners.has(rune.id)&&context.fixedOwners.get(rune.id)!==job.unit.id)return false;
   if(context.blocked.has(rune.id)||rune.pool==='rta'||rune.set===25||!SETS[rune.set]||!own&&rune.level<context.options.minLevel||!own&&rune.owner&&!context.options.equipped||!own&&(context.locks.runes.has(rune.id)||context.options.respectLocks&&rune.locked)||Number(job.config.mains?.[rune.slot])&&rune.main[0]!==Number(job.config.mains[rune.slot]))return false;
  }
  for(const id of job.unit.runeIds){const r=context.byId.get(id);if((context.locks.runes.has(id)||context.options.respectLocks&&r?.locked)&&!ids.includes(id))return false;}
@@ -81,8 +87,8 @@ function exactBuild(context,job,ids){
 }
 function unitCandidates(context,job,progress){
  const config={...job.config,goals:Object.fromEntries(STATS.map(k=>[k,''])),focuses:[],matchTarget:null,rawPower:true,strictSets:true,sets:job.sets,combatSpd:Math.max(1,job.metrics.spd*(1-context.settings.maxLoss/100)),objective:{spd:'spd',ehp:'hp',damage:'damage'}[context.settings.focus]};
- const available={...context.account,runes:context.account.runes.filter(r=>!context.blocked.has(r.id))};
- const searchOptions={...context.options,depth:'fast',maxGrindsGems:false,combat:context.team};
+ const available={...context.account,runes:context.account.runes.filter(r=>!context.blocked.has(r.id)&&(context.options.equipped||!r.owner||job.unit.runeIds.includes(r.id)))};
+ const searchOptions={...context.options,depth:'fast',equipped:true,maxGrindsGems:false,combat:context.team};
  const guarded={...config,basis:'total',goals:{...job.baseline.stats.total},combatSpd:job.metrics.spd};
  const superior=generateCandidates(available,job.unit,guarded,{...searchOptions,strictMode:true},context.blocked,(pass,total)=>progress(pass,total*2)).candidates;
  const generated=[...superior,...generateCandidates(available,job.unit,config,{...searchOptions,strictMode:false},context.blocked,(pass,total)=>progress(total+pass,total*2)).candidates];
@@ -116,11 +122,11 @@ export function tradeoffNarrative(before,after,focus,damageMode='potential'){
 function proposalFor(context,rows,clock){
  const builds=rows.map(r=>r.build),pareto=rows.every(r=>r.pareto),focusGain=rows.reduce((n,r,i)=>n+relative(r.metrics[context.settings.focus],context.jobs[i].metrics[context.settings.focus]),0);
  if(!rows.some((r,i)=>changed(r.metrics,context.jobs[i].metrics))||!pareto&&focusGain<=EPS)return null;
- return {id:fingerprint(builds.map(b=>b.runeIds)),pareto,score:rows.reduce((n,r)=>n+r.score,0),focusGain,builds,members:rows.map((row,i)=>{const job=context.jobs[i];return {key:job.config.key,name:job.unit.name,master:job.unit.master,before:job.metrics,after:row.metrics,beforeTick:context.baseline.ready[job.config.key],tick:clock.ready[job.config.key],actionTick:clock.action[job.config.key],sets:job.sets,narrative:tradeoffNarrative(job.metrics,row.metrics,context.settings.focus,job.config.damage?.enabled?'scenario':'potential'),transfers:row.build.runeIds.flatMap(id=>{const rune=context.byId.get(id);return rune.owner&&rune.owner!==job.unit.id?[{runeId:id,from:context.account.units.find(u=>u.id===rune.owner)?.name||`Unidade #${rune.owner}`}]:[];})};}),preview:{complete:true,actors:clock.actors,turns:clock.turns,scenario:clock.scenario}};
+ return {id:fingerprint(builds.map(b=>b.runeIds)),pareto,score:rows.reduce((n,r)=>n+r.score,0),focusGain,builds,members:rows.map((row,i)=>{const job=context.jobs[i];return {key:job.config.key,name:job.unit.name,master:job.unit.master,source:job.source,before:job.metrics,after:row.metrics,beforeTick:context.baseline.ready[job.config.key],tick:clock.ready[job.config.key],actionTick:clock.action[job.config.key],sets:job.sets,narrative:tradeoffNarrative(job.metrics,row.metrics,context.settings.focus,job.config.damage?.enabled?'scenario':'potential'),transfers:row.build.runeIds.flatMap(id=>{const rune=context.byId.get(id);return rune.owner&&rune.owner!==job.unit.id?[{runeId:id,from:context.account.units.find(u=>u.id===rune.owner)?.name||`Unidade #${rune.owner}`}]:[];})};}),preview:{complete:true,actors:clock.actors,turns:clock.turns,scenario:clock.scenario}};
 }
 export function diagnoseAttackTradeoffs(account,team,options={},reservedIds=[],allTeams=[team],rawSettings={},onProgress=()=>{}){
  const started=Date.now(),context=contextFor(account,team,options,reservedIds,allTeams,rawSettings),pools=context.jobs.map((job,i)=>unitCandidates(context,job,(pass,total)=>onProgress({percent:Math.round((i+pass/total)/context.jobs.length*70),message:`Comparando runas de ${job.unit.name}…`})));
- const result={signature:context.signature,settings:context.settings,current:context.jobs.map(j=>({key:j.config.key,name:j.unit.name,metrics:j.metrics,sets:j.sets})),proposals:[],scope:'bounded-real-runes-no-projected-crafts',elapsed:0,checked:0,limited:false};
+ const result={signature:context.signature,settings:context.settings,current:context.jobs.map(j=>({key:j.config.key,name:j.unit.name,metrics:j.metrics,sets:j.sets,source:j.source})),proposals:[],scope:'bounded-real-runes-no-projected-crafts',elapsed:0,checked:0,limited:false};
  if(pools.some(p=>!p.length))return {...result,status:'none',message:'Nenhuma distribuição disponível com estes conjuntos, slots, bloqueios e limite de sacrifício.',elapsed:Date.now()-started};
  let beam=[{rows:[],used:new Set(),score:0,pareto:true}],final=[];
  outer:for(let index=0;index<context.jobs.length;index++){

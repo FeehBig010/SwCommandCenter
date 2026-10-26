@@ -54,7 +54,7 @@ test('EHP uses combat HP/DEF; percentage stats disclose percentage points rather
 test('missing units, empty equipment, duplicate copies, unsupported pools and invalid settings fail safely',()=>{
  const {account,team}=fixture();assert.throws(()=>search(null,team),/Importe/);assert.throws(()=>search(account,{...team,mode:'defense'}),/ataque completo/);assert.throws(()=>search(account,team,{focus:'unknown'}),/Escolha/);assert.throws(()=>search(account,{...team,pool:'rta'}),/RTA/);
  account.runes[0].set=30;assert.throws(()=>search(account,team),/desconhecidos/);account.runes[0].set=13;
- team.configs[1].unitId=1;assert.throws(()=>search(account,team),/cópia distinta/);team.configs[1].unitId=2;account.units[0].runeIds=[];assert.throws(()=>search(account,team),/seis runas/);
+ team.configs[1].unitId=1;assert.throws(()=>search(account,team),/cópia distinta/);team.configs[1].unitId=2;account.units[0].runeIds=[];account.runes.forEach(r=>{if(r.owner===1)r.owner=0;});assert.throws(()=>search(account,team),/não informa runas equipadas/);
 });
 test('EHP priority uses real equipped artifacts and never projects unavailable grinds or gems',()=>{
  const {account,team}=fixture();account.artifacts=[{id:501,main:[100,1500],subs:[]}];account.units[0].artifactIds=[501];const rune=freeFrom(account,1,{hp:8});rune.subs.find(s=>s[0]===6)[1]+=8;
@@ -70,4 +70,37 @@ test('native four-slot attacks are allocated jointly with no duplicated rune IDs
 });
 test('the first pass finds non-SPD Pareto upgrades even when SPD is the selected priority',()=>{
  const {account,team}=fixture();freeFrom(account,1,{hp:8});const report=search(account,team);assert.equal(report.status,'superior');assert.ok(report.proposals.some(p=>p.members.some(m=>m.after.hp>m.before.hp)));assert.ok(report.proposals.every(p=>p.pareto));
+});
+test('loaded JSON preset equipment fixes an empty principal loadout and keeps preset artifacts as the reference',()=>{
+ const {account,team}=fixture();account.artifacts=[{id:501,main:[100,1500],subs:[]},{id:502,main:[100,3000],subs:[]}];account.units[0].artifactIds=[502];
+ const equipment=account.units.map(u=>({unitId:u.id,runeIds:[...u.runeIds],artifactIds:u.id===1?[501]:[]}));
+ account.accountPresets=[{id:'deck17',name:'Deck 17',gameMode:'siege',unitIds:account.units.map(u=>u.id),equipment}];team.sourceDeckId='deck17';team.sourceAccountId=account.id;account.units[0].runeIds=[];account.runes.filter(r=>equipment[0].runeIds.includes(r.id)).forEach(r=>r.owner=0);freeFrom(account,1,{spd:8});
+ const before=structuredClone(account),report=search(account,team);assert.equal(report.status,'superior');assert.equal(report.current[0].metrics.spd,316);assert.match(report.current[0].source,/Deck 17/);const main=structuredClone(account);main.units[0].runeIds=equipment[0].runeIds;main.units[0].artifactIds=[501];assert.equal(report.current[0].metrics.hp,equippedBuild(main,team,team.configs[0],options).stats.total.hp);
+ const plan=validateAttackTradeoff(account,team,options,[],[team],report.settings,report.signature,report.proposals[0]);assert.equal(plan.source,'attack-tradeoff');assert.deepEqual(account,before);
+});
+test('a complete JSON preset snapshot takes precedence over different main gear and never trusts a local proposed plan',()=>{
+ const {account,team}=fixture(),rune=freeFrom(account,1,{spd:8});account.accountPresets=[{id:'preset',name:'Preset original',gameMode:'siege',unitIds:[1,2,3],equipment:[{unitId:1,runeIds:account.units[0].runeIds.map(id=>id===1?rune.id:id),artifactIds:[]}]}];team.sourceDeckId='preset';team.plannedRunes={accountStamp:accountStamp(account),byConfig:{[team.configs[0].key]:[999,2,3,4,5,6]}};
+ const report=search(account,team);assert.equal(report.current[0].metrics.spd,324);assert.match(report.current[0].source,/Preset original/);
+});
+test('main loadout references recover from matching ownership without consulting local plans',()=>{
+ const {account,team}=fixture();account.units[0].runeIds=account.units[0].runeIds.slice(0,4);const report=search(account,team);assert.equal(report.current[0].metrics.spd,316);assert.match(report.current[0].source,/principal/);
+});
+test('foreign-account, foreign-area and unrelated unit snapshots cannot override the main SWEX equipment',()=>{
+ for(const mode of ['account','area','unit']){const {account,team}=fixture(),rune=freeFrom(account,1,{spd:8});team.sourceDeckId='preset';if(mode==='account')team.sourceAccountId='another';account.accountPresets=[{id:'preset',name:'Wrong source',gameMode:mode==='area'?'arena':'siege',unitIds:mode==='unit'?[9,8,7]:[1,2,3],equipment:[{unitId:1,runeIds:[101,2,3,4,5,6],artifactIds:[]}]}];const report=search(account,team);assert.equal(report.current[0].metrics.spd,316);}
+});
+test('incomplete preset messages identify missing slots, unavailable IDs and shared runes instead of blaming an empty monster',()=>{
+ const {account,team}=fixture();team.sourceDeckId='deck17';const equipment=account.units.map(u=>({unitId:u.id,runeIds:[...u.runeIds],artifactIds:[]}));account.accountPresets=[{id:'deck17',name:'Deck 17',gameMode:'siege',unitIds:[1,2,3],equipment}];
+ equipment[0].runeIds=equipment[0].runeIds.filter(id=>id!==4);assert.throws(()=>search(account,team),/5 de 6.*Deck 17.*Slots ausentes: 4/);
+ equipment[0].runeIds=[1,2,3,999,5,6];assert.throws(()=>search(account,team),/1 runa.*não estão no inventário/);
+ equipment[0].runeIds=[1,2,3,4,5,6];equipment[1].runeIds=[1,8,9,10,11,12];assert.throws(()=>search(account,team),/runa #1.*repetida entre.*Lushen.*Julie/);
+});
+test('explicitly empty preset gear is not silently replaced by a different main loadout',()=>{
+ const {account,team}=fixture();team.sourceDeckId='empty';account.accountPresets=[{id:'empty',name:'Preset vazio',gameMode:'siege',unitIds:[1,2,3],equipment:[{unitId:1,runeIds:[],artifactIds:[]}]}];assert.throws(()=>search(account,team),/Preset vazio.*não informa runas/);
+});
+test('preset references cannot take runes belonging to a locally locked outside unit',()=>{
+ const {account,team}=fixture();account.runes[0].owner=99;account.units.push({id:99,master:13413,name:'Unidade travada',runeIds:[1],artifactIds:[],base:{...account.units[0].base}});team.sourceDeckId='preset';account.accountPresets=[{id:'preset',name:'Preset',gameMode:'siege',unitIds:[1,2,3],equipment:[{unitId:1,runeIds:[...account.units[0].runeIds],artifactIds:[]}]}];const report=search(account,team,undefined,{localLocks:{unitIds:[99]}});assert.ok(report.proposals.every(p=>p.builds.every(b=>!b.runeIds.includes(1))));
+});
+test('undo restores the original JSON preset instead of a different or empty main loadout',async()=>{
+ const {restoreSwexAttackReference}=await import('../src/core/swex-attack-loadout.js');const {account,team}=fixture();team.sourceDeckId='preset';const equipment=account.units.map(u=>({unitId:u.id,runeIds:[...u.runeIds],artifactIds:[]}));account.accountPresets=[{id:'preset',gameMode:'siege',unitIds:[1,2,3],equipment}];account.units[0].runeIds=[];const plan=restoreSwexAttackReference(account,team);assert.equal(plan.source,'swex-reference');assert.deepEqual(plan.byConfig[team.configs[0].key],equipment[0].runeIds);
+ team.sourceDeckId=null;account.units[0].runeIds=equipment[0].runeIds;assert.equal(restoreSwexAttackReference(account,team),null);account.units[0].runeIds=[];assert.deepEqual(restoreSwexAttackReference(account,team).byConfig[team.configs[0].key],equipment[0].runeIds);
 });
