@@ -6,6 +6,8 @@ let log='';server.stdout.on('data',chunk=>{log=(log+chunk).slice(-4000);});serve
 try{
  let ready=false;for(let attempt=0;attempt<100;attempt++){if(failed)throw new Error(`Servidor de testes indisponível: ${log}`);try{ready=(await fetch(origin)).ok;}catch{}if(ready)break;await new Promise(resolve=>setTimeout(resolve,200));}
  if(!ready)throw new Error('O servidor de testes não iniciou.');
- const child=spawn(process.execPath,['tests/browser/privacy-onboarding.mjs'],{env:{...process.env,E2E_BASE_URL:origin},stdio:'inherit'});
- const code=await new Promise((resolve,reject)=>{child.on('error',reject);child.on('exit',resolve);});if(code!==0)process.exitCode=1;
+ for(const file of ['tests/browser/privacy-onboarding.mjs','tests/browser/attack-tradeoffs.mjs']){
+  const child=spawn(process.execPath,[file],{env:{...process.env,E2E_BASE_URL:origin},stdio:'inherit'});
+  const code=await new Promise((resolve,reject)=>{child.on('error',reject);child.on('exit',resolve);});if(code!==0){process.exitCode=1;break;}
+ }
 }finally{server.kill('SIGTERM');}
