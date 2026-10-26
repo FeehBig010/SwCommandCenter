@@ -1,4 +1,4 @@
-import {activeCoupons,couponRewards,fetchCouponHistory,couponMonthMatches,COUPON_MAX_AGE} from '../core/game-coupons.js';
+import {activeCoupons,couponRewards,fetchCouponHistory,couponMonthMatches,COUPON_MAX_AGE,COUPON_REDEEM_URL} from '../core/game-coupons.js';
 import snapshot from '../core/coupon-snapshot.json' with {type:'json'};
 
 export const COUPON_CLOUD_REFRESH=6*60*60*1000;
@@ -81,4 +81,4 @@ export async function copyCouponCode(code,{clipboard=globalThis.navigator?.clipb
  if(!validCode(code)||typeof clipboard?.writeText!=='function')throw new Error('Selecione o código para copiar.');
  await clipboard.writeText(code);
 }
-export function couponRedeemUrl(code){return validCode(code)?`https://withhive.me/313/${encodeURIComponent(code)}`:'https://withhive.com/';}
+export function couponRedeemUrl(){return COUPON_REDEEM_URL;}

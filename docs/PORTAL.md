@@ -42,8 +42,8 @@ copiados para assets locais. As artes pertencem aos seus respectivos titulares.
 
 “Copiar Código” aguarda `navigator.clipboard.writeText` antes de informar sucesso.
 Se a permissão falhar, seleciona o campo para cópia manual. “Resgatar no Jogo”
-abre `https://withhive.me/313/CODIGO` em nova aba, o link direto oficial usado
-pela comunidade; nenhuma tentativa de resgate é feita pelo
+abre `https://event.withhive.com/ci/smon/evt_coupon` em nova aba, o formulário
+oficial indicado pelo usuário; nenhuma tentativa de resgate é feita pelo
 site. O rodapé também leva aos eventos oficiais da Com2uS.
 
 Supabase, validade, deploy e formato dos registros: [COUPONS.md](COUPONS.md).

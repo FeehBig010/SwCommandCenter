@@ -53,8 +53,10 @@ e um ícone neutro de fallback, sem carregar URLs arbitrárias da tabela.
 
 O botão de cópia aguarda `navigator.clipboard.writeText` e mantém “Copiado! ✓”
 por 2.000 ms. Falha de permissão seleciona o código para cópia manual. O link
-`https://withhive.me/313/CODIGO` abre o resgate oficial em nova aba, com proteção
-contra `window.opener`; código inválido retorna à página `https://withhive.com/`.
+`https://event.withhive.com/ci/smon/evt_coupon` abre o formulário oficial de
+resgate em nova aba, com proteção contra `window.opener`. O destino é fixo, sem
+injetar o código em parâmetros não documentados; use “Copiar Código” para colá-lo
+no formulário.
 
 `tests/coupons.test.mjs` valida prioridade/fallback, validade e cancelamento,
 clipboard, markup real dos ícones e permissões PostgreSQL/RLS. Os testes de

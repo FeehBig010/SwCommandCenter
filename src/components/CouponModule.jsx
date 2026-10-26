@@ -20,7 +20,7 @@ function Coupon({coupon}){
   <label className="coupon-code-label"><span>Código</span><input ref={codeRef} className="coupon-code" aria-label={`Código ${coupon.code}`} value={coupon.code} readOnly onFocus={e=>e.target.select()}/></label>
   <div className="coupon-rewards" aria-label="Recompensas">{coupon.rewards.length?coupon.rewards.map(reward=><CouponReward key={reward.type} reward={reward}/>):<span className="coupon-reward"><Gift size={24}/>Recompensas no resgate</span>}</div>
   <button type="button" className={`coupon-copy${copied?' copied':''}`} disabled={copying} onClick={copy}>{copied?<Check size={16}/>:<Copy size={16}/>}<span>{copied?'Copiado! ✓':copying?'Copiando…':'Copiar Código'}</span></button>
-  <a className="coupon-redeem" href={couponRedeemUrl(coupon.code)} target="_blank" rel="noopener noreferrer"><ExternalLink size={14}/>Resgatar no Jogo</a>
+  <a className="coupon-redeem" href={couponRedeemUrl()} target="_blank" rel="noopener noreferrer"><ExternalLink size={14}/>Resgatar no Jogo</a>
   <span className={`coupon-feedback${error?' copy-error':''}`} role="status">{error|| (copied?`${coupon.code} copiado!`:'')}</span>
  </article>;
 }

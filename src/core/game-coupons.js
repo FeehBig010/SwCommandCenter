@@ -1,6 +1,6 @@
 export const COUPON_SOURCE='https://raw.githubusercontent.com/yunamystcodes/yunamystcodes/main/data/code_history.json';
 export const COUPON_SOURCE_PAGE='https://github.com/yunamystcodes/yunamystcodes';
-export const COUPON_REDEEM_URL='https://withhive.com/';
+export const COUPON_REDEEM_URL='https://event.withhive.com/ci/smon/evt_coupon';
 export const COUPON_EVENTS_URL='https://www.withhive.com/event/game/313?lang=pt';
 export const COUPON_MAX_AGE=72*60*60*1000;
 const MONTHS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];

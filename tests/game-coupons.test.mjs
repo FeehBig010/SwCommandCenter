@@ -24,7 +24,7 @@ test('empty/malformed feeds, duplicate coupons and old snapshots have bounded, h
 test('fetch uses the public JSON without credentials, keeps cancellation and rejects HTTP/malformed/oversized responses',async()=>{
  const signal=new AbortController().signal;let requested;
  const history={a:entry('OCTSW2026O7J')},fetcher=async(url,options)=>{requested={url,options};return {ok:true,text:async()=>JSON.stringify(history)};};
- assert.deepEqual(await fetchCouponHistory({fetcher,signal}),history);assert.equal(requested.options.credentials,'omit');assert.equal(requested.options.signal,signal);assert.equal(new URL(requested.url).hostname,'raw.githubusercontent.com');assert.equal(COUPON_REDEEM_URL,'https://withhive.com/');
+ assert.deepEqual(await fetchCouponHistory({fetcher,signal}),history);assert.equal(requested.options.credentials,'omit');assert.equal(requested.options.signal,signal);assert.equal(new URL(requested.url).hostname,'raw.githubusercontent.com');assert.equal(COUPON_REDEEM_URL,'https://event.withhive.com/ci/smon/evt_coupon');
  await assert.rejects(fetchCouponHistory({fetcher:async()=>({ok:false})}),/consultar/);
  await assert.rejects(fetchCouponHistory({fetcher:async()=>({ok:true,text:async()=>'<html>'})}));
  await assert.rejects(fetchCouponHistory({fetcher:async()=>({ok:true,text:async()=>'x'.repeat(1000001)})}),/inválida/);

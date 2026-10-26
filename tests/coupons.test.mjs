@@ -43,7 +43,7 @@ test('network failures preserve only valid cloud/snapshot coupons, never expired
 test('clipboard receives the exact code once; unavailable/denied clipboard does not report success and feedback lasts two seconds',async()=>{
  const copied=[];await copyCouponCode('OCTSW2026O7J',{clipboard:{writeText:async code=>copied.push(code)}});assert.deepEqual(copied,['OCTSW2026O7J']);assert.equal(COUPON_COPY_DURATION,2000);
  await assert.rejects(copyCouponCode('OCTSW2026O7J',{clipboard:null}));await assert.rejects(copyCouponCode('OCTSW2026O7J',{clipboard:{writeText:async()=>{throw Error('Denied');}}}),/Denied/);await assert.rejects(copyCouponCode('<script>',{clipboard:{writeText:async()=>assert.fail()}}));
- assert.equal(couponRedeemUrl('OCTSW2026O7J'),'https://withhive.me/313/OCTSW2026O7J');assert.equal(couponRedeemUrl('../unsafe'),'https://withhive.com/');
+ assert.equal(couponRedeemUrl('OCTSW2026O7J'),'https://event.withhive.com/ci/smon/evt_coupon');assert.equal(couponRedeemUrl('../unsafe'),'https://event.withhive.com/ci/smon/evt_coupon');
 });
 test('actual reward component renders official local images with labels and quantities; unknown rewards remain absent',async()=>{
  const bundled=await build({entryPoints:[new URL('../src/components/CouponReward.jsx',import.meta.url).pathname],bundle:true,write:false,format:'esm',platform:'node',jsx:'automatic'});
