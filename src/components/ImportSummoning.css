@@ -1,4 +1,6 @@
-.summoning-overlay{background:rgba(0,0,0,.9)}.summoning-overlay .swex-loading-rune{width:142px;height:142px;border-color:#dbba6f88;box-shadow:0 0 50px #d2a64c22,inset 0 0 35px #d2a64c20}
+.swex-loading-overlay.summoning-overlay{background:rgba(4,9,13,.95)}.summoning-overlay .swex-loading-rune{width:142px;height:142px;border-color:#dbba6f88;box-shadow:0 0 50px #d2a64c22,inset 0 0 35px #d2a64c20}
 .summoning-overlay .swex-loading-rune:before{inset:-16px;border-width:2px;border-style:dashed;border-color:#dbba6f99;animation-duration:12s}.summoning-overlay .swex-loading-rune:after{inset:17px;border:2px solid #dbba6f66;border-top-color:#f1d99d;animation-duration:4s}.summoning-overlay .swex-loading-rune span{font-size:60px}
 .swex-loading-progress h2{font:500 clamp(19px,3vw,28px)/1.4 Cinzel,serif;color:#f1e6cd;margin:0;text-align:center}.summoning-percent{text-align:center;color:#dfc890;font:500 19px Cinzel,serif}.swex-loading-progress>p{text-align:center;min-height:3em;font-size:14px!important}
+.summoning-overlay .swex-loading-progress progress::-webkit-progress-value{background:linear-gradient(90deg,#84612d,#d4af37,#f2dd9c)}
+.summoning-overlay .swex-loading-progress progress::-moz-progress-bar{background:linear-gradient(90deg,#84612d,#d4af37,#f2dd9c)}
 @media(prefers-reduced-motion:reduce){.summoning-overlay .swex-loading-rune:before,.summoning-overlay .swex-loading-rune:after{animation:none}}

@@ -1,13 +1,16 @@
-export const SUMMONING_DURATION=15000;
+export const SUMMONING_DURATION=20000;
 export const SUMMONING_MESSAGES=[
- 'Descriptografando Runas...',
- 'Mapeando Inventário...',
- 'Importando Presets de Siege e Masmorras...',
- 'Preparando Central de Comando...',
+ 'Descriptografando pacotes de dados do SWEX...',
+ 'Mapeando inventário de runas e artefatos...',
+ 'Importando presets de Siege, Arena e Masmorras...',
+ 'Sincronizando torres de glória e estatísticas...',
+ 'Preparando a Central de Comando... Pronto!',
 ];
+export const SUMMONING_STAGES=[0,5000,9000,13000,17000];
 export function summoningFrame(elapsed){
  const time=Math.max(0,Math.min(SUMMONING_DURATION,elapsed));
- return {percent:Math.min(100,1+Math.floor(time/SUMMONING_DURATION*99)),message:SUMMONING_MESSAGES[Math.min(3,Math.floor(time/3000))]};
+ const stage=SUMMONING_STAGES.findLastIndex(start=>time>=start);
+ return {percent:Math.min(100,Math.floor(time/SUMMONING_DURATION*100)),message:SUMMONING_MESSAGES[stage]};
 }
 // A visual clock independent of parsing. Deadlines avoid cumulative timer drift;
 // the caller waits for both this promise and real inventory hydration.

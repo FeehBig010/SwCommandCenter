@@ -16,18 +16,18 @@ origem da arte e atualização automática dos cupons: [PORTAL.md](PORTAL.md).
 
 ## Upload e invocação
 
-Um upload válido iniciado no portal inicia um relógio monotônico de 15.000 ms,
-com `setTimeout` encadeado. A barra vai de 1 a 100%; os textos mudam nas etapas de
-0, 3, 6 e 9 segundos. O último texto permanece até a conclusão.
+Um upload válido iniciado no portal inicia um relógio monotônico de 20.000 ms,
+com `setTimeout` encadeado. A barra vai de 0 a 100%; os textos mudam nas etapas de
+0, 5, 9, 13 e 17 segundos. O último texto permanece até a conclusão.
 
 O Web Worker continua lendo e normalizando o SWEX, enquanto a preparação dos
 presets cede tempo à interface em blocos assíncronos. O inventário completo só
 é instalado e o Dashboard aberto depois de **ambas** as condições:
 
-- o relógio visual completou os 15 segundos;
+- o relógio visual completou os 20 segundos;
 - todos os dados reais e os times da conta estão prontos.
 
-Se o processamento de uma conta muito grande superar 15 segundos, a tela aguarda
+Se o processamento de uma conta muito grande superar 20 segundos, a tela aguarda
 os dados, em vez de abrir um Dashboard incompleto. O overlay permanece durante
 o commit do React e a primeira pintura da Central. Erros de arquivo encerram a
 sequência, preservam os dados anteriores e permitem tentar novamente. Uploads

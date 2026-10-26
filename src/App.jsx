@@ -117,7 +117,7 @@ export default function App(){
   if(!file||importRef.current)return;
   if(file.size>50*1024*1024){notify('O JSON deve ter no máximo 50 MB.',true);return;}
   const controller=new AbortController();importRef.current=controller;
-  const cinematic=page==='portal',currentUpload=accountSync.beginUpload();setCinematicImport(cinematic);setImportProgress(1);setImportPhase('Preparando importação');setIsLoading(true);
+  const cinematic=page==='portal',currentUpload=accountSync.beginUpload();setCinematicImport(cinematic);setImportProgress(cinematic?0:1);setImportPhase('Preparando importação');setIsLoading(true);
   const sequence=cinematic?startSummoning({signal:controller.signal,onFrame:({percent,message})=>{setImportProgress(percent);setImportPhase(message);}}):null;
   const realProgress=(percent,message)=>{if(!cinematic){setImportProgress(previous=>Math.max(previous,percent));if(message)setImportPhase(message);}};
   try{

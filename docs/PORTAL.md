@@ -2,7 +2,7 @@
 
 `EntryPortal` mantém os callbacks da calculadora, login inline, seletor/drop de
 SWEX e continuação da conta. O relógio e a hidratação da importação continuam no
-App: esta mudança não altera os 15 segundos nem a autorização do backup privado.
+App: a animação dura 20 segundos, de 0 a 100%, sem alterar a autorização do backup privado.
 
 A composição usa uma grade com colunas externas iguais e centro mais largo.
 Desktop e tablets a partir de 768 px mantêm as três colunas. Em celulares, a guia,
@@ -18,11 +18,12 @@ antiga miniatura remota retangular, que estava inacessível.
 
 ## Cupons
 
-O componente `CouponModule` consulta o JSON público de histórico mantido pela
+O serviço `fetchActiveCoupons` consulta primeiro `public.coupons` no Supabase.
+Sem dados recentes ou com a tabela indisponível, consulta o JSON público da
 comunidade YunaMyst:
 https://github.com/yunamystcodes/yunamystcodes/blob/main/data/code_history.json
 
-A consulta não envia inventário, sessão ou credenciais. Somente registros ativos,
+A API comunitária não recebe inventário, sessão ou credenciais. Somente registros ativos,
 observados nas últimas 72 horas e referenciados por SWGT/SWQuery são exibidos.
 Validade explícita, códigos mensais de outro mês, desaparecimentos e estados
 expirados excluem o cupom. O calendário exibido usa America/Sao_Paulo. A lista é
@@ -34,13 +35,15 @@ ele obedece às mesmas regras de validade, inclusive quando a rede falha. Sem
 confirmação recente, o módulo mostra um estado vazio e mantém o acesso aos eventos
 oficiais. Não transforma ausência de conexão em confirmação de validade.
 
-Recompensas vêm da descrição da fonte; tipos ou quantidades desconhecidos não são
-inventados. O ícone do Pergaminho de Vento é o asset público de jogo distribuído em
-`yunamystcodes/yunamystcodes/assets/rewards/wind.png`, consultado em 26/10/2026.
-Outros tipos conhecidos usam ícones vetoriais. As artes de Summoners War pertencem
-aos seus respectivos titulares.
+Recompensas vêm dos dados da nuvem ou da descrição da fonte; tipos ou quantidades
+desconhecidos não são inventados. Mana, Energia, Cristais e Pergaminhos usam os
+PNGs oficiais do jogo distribuídos pela SWARFARM em `herders/images/items`,
+copiados para assets locais. As artes pertencem aos seus respectivos titulares.
 
 “Copiar Código” aguarda `navigator.clipboard.writeText` antes de informar sucesso.
 Se a permissão falhar, seleciona o campo para cópia manual. “Resgatar no Jogo”
-abre https://withhive.com/ em nova aba; nenhuma tentativa de resgate é feita pelo
+abre `https://withhive.me/313/CODIGO` em nova aba, o link direto oficial usado
+pela comunidade; nenhuma tentativa de resgate é feita pelo
 site. O rodapé também leva aos eventos oficiais da Com2uS.
+
+Supabase, validade, deploy e formato dos registros: [COUPONS.md](COUPONS.md).
