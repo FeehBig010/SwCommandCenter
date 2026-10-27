@@ -1,9 +1,17 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-10-27T02:02:39.715Z",
+  "fetchedAt": "2026-10-27T07:47:30.303Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/notice/313/95971",
+      "url": "https://www.withhive.com/notice/313/95971",
+      "title": "[COM2US] October System Maintenance Notice",
+      "category": "notice",
+      "publishedAt": "2026-10-27T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hiveweb/2026062901/static/img/game/appicon_c2_new.png"
+    },
     {
       "id": "https://www.withhive.com/notice/313/95960",
       "url": "https://www.withhive.com/notice/313/95960",
