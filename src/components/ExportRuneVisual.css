@@ -1,0 +1,14 @@
+.export-rune-stone{position:relative;width:68px;height:78px;text-align:center;color:#f4e2b7;font-family:Arial,sans-serif}
+.export-rune-stone-art{position:absolute;left:3px;top:2px;width:62px;height:62px;background:radial-gradient(ellipse,#d9b36b18,transparent 70%)}
+.export-rune-stone .export-rune-shape{position:absolute;inset:0;width:62px;height:62px;object-fit:contain}
+.export-rune-stone .export-rune-glyph{position:absolute;width:27px;height:27px;left:17.5px;top:16px;object-fit:contain}
+.export-rune-slot-number{position:absolute;left:0;top:0;z-index:1;display:block;width:16px;height:16px;border:1px solid #a1834b;border-radius:50%;background:#17140f;font:700 10px/14px Arial,sans-serif;color:#e3c98c}
+.export-rune-upgrade{position:absolute;left:16px;right:9px;top:48px;border:1px solid #a48a50;border-radius:3px;background:#16120fee;color:#fff0c8;font:700 10px/14px Arial,sans-serif}
+.export-rune-stars{position:absolute;top:66px;left:0;width:100%;color:#e6bd62;font:9px/1 Arial,sans-serif;letter-spacing:0}
+.export-rune-unknown{position:absolute;inset:18px 0 auto;color:#e4cfa0;font-size:20px}
+.export-rune-stone.is-empty{border:1px dashed #92734466;border-radius:10px;background:#15120e55}
+.export-rune-empty-mark{display:block;padding-top:24px;color:#927e60;font:18px/1 Arial,sans-serif}
+.export-set-badge{display:flex;align-items:center;gap:7px;min-width:0;color:#f0dfba}
+.export-set-art{display:flex;align-items:center;justify-content:center;flex:none;width:40px;height:40px;border:1px solid #987d45;border-radius:7px;background:linear-gradient(145deg,#30362e,#111b1b);box-shadow:inset 0 0 0 2px #0a11134d}
+.export-set-art img{display:block;width:32px;height:32px;object-fit:contain}
+.export-set-label{font:600 12px/1.4 Arial,sans-serif;overflow-wrap:anywhere}

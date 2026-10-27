@@ -1,4 +1,5 @@
 import './QuickShareTemplate.css';
+import {ExportSetBadge} from './ExportRuneVisual';
 
 // A dedicated export surface: no inputs, action buttons, inventory or app chrome.
 export default function QuickShareTemplate({data,assets}){
@@ -8,7 +9,7 @@ export default function QuickShareTemplate({data,assets}){
    <span className="quick-share-position">{monster.position===1?'01 · ABRIDOR':String(monster.position).padStart(2,'0')}</span>
    <div className="quick-share-avatar"><img src={assets[`portrait:${monster.master}`]} alt={monster.name}/>{assets[monster.elementIcon]&&<img className="quick-share-element" src={assets[monster.elementIcon]} alt="Elemento"/>}</div>
    <h2>{monster.name}</h2>
-   <div className="quick-share-sets">{monster.sets.length?monster.sets.map((set,i)=><span key={i}>{assets[set.icon]&&<img src={assets[set.icon]} alt=""/>}<small>{set.count>1?`${set.count}× `:''}{set.name}</small></span>):<small>Conjuntos livres</small>}</div>
+   <span className="quick-share-set-context">{monster.desiredSets?'Conjuntos desejados':'Conjuntos equipados'}</span><div className="quick-share-sets">{monster.sets.length?monster.sets.map((set,i)=><ExportSetBadge key={i} set={set} assets={assets}/>):<small>Conjuntos livres</small>}</div>
    <div className="quick-share-speed"><span>SPD FICHA</span><strong>{monster.stats.find(stat=>stat.key==='spd')?.total??'—'}</strong></div>
    <div className="quick-share-combat"><span>Combate</span><b>{monster.combatSpd??'—'} SPD</b></div>
    <div className="quick-share-combat"><span>Runas</span><b>+{monster.runeSpd??'—'} SPD</b></div>
