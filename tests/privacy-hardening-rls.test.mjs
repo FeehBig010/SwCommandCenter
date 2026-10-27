@@ -12,7 +12,7 @@ test('production migrations isolate private stores across members, leaders and a
  try{
   await db.exec("create role anon;create role authenticated;create role service_role;create schema auth;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb default '{}');create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema public,auth to authenticated,anon;");
   const files=(await readdir(new URL('../supabase/migrations/',import.meta.url))).filter(f=>f.endsWith('.sql')).sort();
-  for(const file of files.filter(f=>f!=='202610260002_private_data_hardening.sql'))await db.exec(await readFile(new URL(`../supabase/migrations/${file}`,import.meta.url),'utf8'));
+  for(const file of files.filter(f=>f<'202610260002_private_data_hardening.sql'))await db.exec(await readFile(new URL(`../supabase/migrations/${file}`,import.meta.url),'utf8'));
   for(const [i,id]of ids.entries())await db.query('insert into auth.users(id,email) values($1,$2)',[id,`test${i}@example.com`]);
   await db.query("update public.profiles set role='super_admin' where id=$1",[ids[0]]);await db.query("update public.profiles set role='guild_leader' where id=$1",[ids[1]]);
   const guild=(await as(ids[1],"select public.create_guild('Destino') id"))[0].id;await db.query("insert into public.guild_members(guild_id,user_id) values($1,$2)",[guild,ids[2]]);
@@ -22,6 +22,7 @@ test('production migrations isolate private stores across members, leaders and a
   const safe={version:1,team},counter=cleanCloudPayload('counter',{version:1,offense:team,enemyDefense:team.configs.map(c=>({masterId:c.masterId,label:c.label})),name:'Counter'});
   const legacy=(await db.query("insert into public.guild_teams(owner_id,guild_id,kind,visibility,name,payload,moderation_status) values($1,$2,'counter','guild','Legacy',$3,'approved') returning id",[ids[1],guild,{...counter,unit_list:[{unit_id:12345}]}])).rows[0].id;
   await db.exec(await readFile(new URL('../supabase/migrations/202610260002_private_data_hardening.sql',import.meta.url),'utf8'));
+  for(const file of files.filter(f=>f>'202610260002_private_data_hardening.sql'))await db.exec(await readFile(new URL(`../supabase/migrations/${file}`,import.meta.url),'utf8'));
   for(const table of ['user_inventory','swex_data','account_snapshots'])await t.test(`${table}: all application roles are denied another owner's SELECT/INSERT/UPDATE/DELETE`,async()=>{
    await as(ids[2],`insert into public.${table}(user_id,payload) values($1,$2)`,[ids[2],compact]);
    for(const user of [ids[0],ids[1],ids[3]]){
