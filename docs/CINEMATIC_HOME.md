@@ -1,5 +1,7 @@
 # Home cinematográfica
 
+> Modelo desativado: a abertura atual voltou ao `EntryPortal.jsx` original, com boas-vindas, Calculadora Livre, sincronização SWEX/login e cupons na mesma tela. O conteúdo abaixo documenta a experiência anterior; ela não é carregada pela rota inicial. A validação da home ativa está em `tests/browser/home-portal.mjs`.
+
 ## Arquitetura e escopo
 
 O aplicativo usa React 19, Vite 6 e navegação por hash em `src/App.jsx`. A home continua no destino `portal`; nenhuma rota ou verificação de autorização foi criada ou substituída. Não há biblioteca de animação instalada: os efeitos usam CSS, e o carrossel usa rolagem nativa.
