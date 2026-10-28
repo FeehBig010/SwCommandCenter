@@ -2,18 +2,20 @@
 import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
 import {existsSync} from 'node:fs';
-import {mkdir,readFile} from 'node:fs/promises';
+import {mkdir} from 'node:fs/promises';
 const origin=process.env.E2E_BASE_URL||'http://127.0.0.1:5290';
 const out=process.env.E2E_ARTIFACT_DIR||'/tmp/sw-home-qa';await mkdir(out,{recursive:true});
-const snapshot=JSON.parse(await readFile(new URL('../../src/core/coupon-snapshot.json',import.meta.url),'utf8'));
+const couponCode='HOMEQACOUPON'; // Synthetic public fixture; never submitted to Hive.
+const snapshot={[couponCode]:{code:couponCode,status:'active',sources:['SWGT'],last_seen:new Date().toISOString(),reward:'Mana ×300,000, Mystical Scroll ×2'}};
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||(existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),headless:true,args:['--no-sandbox']});
 const errors=[],imageFailures=[],homeRequests=[];
 let activePage;
-async function setup({viewport={width:1440,height:960},reducedMotion='no-preference',signedIn=false,failScenes=false}={}){
- const context=await browser.newContext({viewport,reducedMotion,hasTouch:viewport.width<761});
+async function setup({viewport={width:1440,height:960},reducedMotion='no-preference',signedIn=false,failScenes=false,cloudCoupons=false}={}){
+ const context=await browser.newContext({viewport,reducedMotion,hasTouch:viewport.width<761,permissions:['clipboard-read','clipboard-write']});
  if(signedIn){const user={id:'11111111-1111-4111-8111-111111111111',aud:'authenticated',role:'authenticated',email:'qa@example.test',app_metadata:{provider:'email'},user_metadata:{}},token=`${Buffer.from('{"alg":"HS256"}').toString('base64url')}.${Buffer.from(JSON.stringify({sub:user.id,aud:'authenticated',role:'authenticated',exp:Math.floor(Date.now()/1000)+3600})).toString('base64url')}.qa`,session={access_token:token,refresh_token:'qa-refresh',token_type:'bearer',expires_at:Math.floor(Date.now()/1000)+3600,expires_in:3600,user};await context.addInitScript(session=>localStorage.setItem('sb-privacy-qa-auth-token',JSON.stringify(session)),session);}
  await context.route('**/*',route=>{const u=new URL(route.request().url());if(u.origin===origin){if(u.pathname.startsWith('/art/home/')){homeRequests.push(u.pathname);if(failScenes&&u.pathname.endsWith('-scene.webp'))return route.fulfill({status:404,body:''});}return route.continue();}
-  if(u.hostname.endsWith('.supabase.co')){const headers={'access-control-allow-origin':origin};if(u.pathname.endsWith('get_engine_settings'))return route.fulfill({headers,json:{default_speed_tick:7,max_teams:10,maintenance_mode:false}});if(u.pathname.endsWith('profiles'))return route.fulfill({headers,json:{id:'11111111-1111-4111-8111-111111111111',role:'member',display_name:'QA'}});return route.fulfill({headers,json:[]});}
+  if(u.hostname.endsWith('.supabase.co')){const headers={'access-control-allow-origin':origin};if(u.pathname.endsWith('get_engine_settings'))return route.fulfill({headers,json:{default_speed_tick:7,max_teams:10,maintenance_mode:false}});if(u.pathname.endsWith('profiles'))return route.fulfill({headers,json:{id:'11111111-1111-4111-8111-111111111111',role:'member',display_name:'QA'}});if(u.pathname.endsWith('coupons')&&cloudCoupons)return route.fulfill({headers,json:[{code:couponCode,status:'active',source:'manual',checked_at:new Date().toISOString(),rewards:[{type:'mana',amount:300000}]}]});return route.fulfill({headers,json:[]});}
+  if(['event.withhive.com','withhive.me'].includes(u.hostname))return route.fulfill({contentType:'text/html',body:'<title>Official link destination test</title>'});
   if(u.hostname==='raw.githubusercontent.com'&&u.pathname.endsWith('code_history.json'))return route.fulfill({json:snapshot});return route.abort();
  });
  const page=await context.newPage();activePage=page;page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.url().startsWith(origin+'/art/home/')&&r.status()>=400&&!failScenes)imageFailures.push(r.url());});
@@ -21,6 +23,31 @@ async function setup({viewport={width:1440,height:960},reducedMotion='no-prefere
 }
 async function home(page){await page.goto(`${origin}/#/portal`);await page.getByRole('heading',{name:'SW Command Center',exact:true}).waitFor();assert.equal(await page.locator('.home-module-card').count(),3);assert.equal(await page.locator('vite-error-overlay').count(),0);}
 async function selected(page,name){await page.waitForFunction(name=>document.querySelector(`.home-card-selector[aria-label="Selecionar ${name}"]`)?.getAttribute('aria-pressed')==='true',name);}
+async function quickServices(page,mobile=false){
+ await page.getByRole('button',{name:'Sincronizar SWEX e ver cupons',exact:true}).click();
+ const area=page.locator('.home-services');await area.getByRole('button',{name:'Copiar Código',exact:true}).waitFor();
+ for(const selector of ['.portal-guide','.portal-manual','.portal-account','.portal-coupons'])assert.equal(await area.locator(selector).count(),1);
+ // One frame: the quick-access shortcut scrolls smoothly, so viewport coordinates
+ // read in separate awaits would describe different scroll positions.
+ const {manual,account,coupons,guide,drop}=await area.evaluate(root=>Object.fromEntries(Object.entries({manual:'.portal-manual',account:'.portal-account',coupons:'.portal-coupons',guide:'.portal-guide',drop:'.portal-dropzone'}).map(([key,selector])=>[key,root.querySelector(selector).getBoundingClientRect().toJSON()])));
+ assert.ok(guide.x>=account.x&&guide.x+guide.width<=drop.x,'Guide stays beside the original SWEX control');
+ assert.ok(mobile?account.y<manual.y&&manual.y<coupons.y:manual.x<account.x&&account.x<coupons.x);
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ await area.getByText('Comunidade',{exact:true}).waitFor();await area.getByText('Última consulta em',{exact:false}).waitFor();
+ assert.ok(await area.getByRole('img',{name:'Mana',exact:true}).count());
+ await area.getByRole('button',{name:'Copiar Código',exact:true}).click();await area.getByRole('button',{name:'Copiado! ✓',exact:true}).waitFor();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),couponCode);
+ await area.getByRole('button',{name:'Copiar Código',exact:true}).waitFor();
+ await area.getByRole('button',{name:'Resgate no iPhone e iOS',exact:true}).click();
+ const hint=area.getByRole('tooltip').filter({hasText:'Este site não solicita sua senha Hive'});await hint.waitFor({state:'visible'});
+ const hintBox=await hint.boundingBox(),listBox=await area.locator('.coupon-list').boundingBox();assert.ok(hintBox.x>=0&&hintBox.x+hintBox.width<=(await page.viewportSize()).width);assert.ok(hintBox.y>=listBox.y&&hintBox.y+hintBox.height<=listBox.y+listBox.height,'Rescue instructions are not clipped by the coupon list');
+ await area.getByRole('button',{name:'Resgate no iPhone e iOS',exact:true}).click();
+ const web=area.getByRole('link',{name:'Resgatar no Jogo',exact:true});assert.equal(await web.getAttribute('href'),'https://event.withhive.com/ci/smon/evt_coupon');assert.equal(await web.getAttribute('target'),'_blank');assert.match(await web.getAttribute('rel'),/noopener noreferrer/);
+ let popupPromise=page.waitForEvent('popup');await web.click();let popup=await popupPromise;await popup.waitForLoadState();assert.equal(popup.url(),'https://event.withhive.com/ci/smon/evt_coupon');await popup.close();
+ const app=area.locator('.coupon-app-link');assert.equal(await app.isVisible(),mobile);
+ if(mobile){assert.equal(await app.getAttribute('href'),`https://withhive.me/313/${couponCode}`);popupPromise=page.waitForEvent('popup');await app.click();popup=await popupPromise;await popup.waitForLoadState();assert.equal(popup.url(),`https://withhive.me/313/${couponCode}`);await popup.close();}
+ assert.equal(await area.locator('.coupon-code').inputValue(),couponCode);
+ await area.screenshot({path:`${out}/home-quick-services-${mobile?'mobile':'desktop'}.png`});
+}
 try{
  let {context,page}=await setup();await home(page);await selected(page,'Minha Conta');
  assert.equal(await page.getByRole('navigation',{name:'Navegação principal'}).count(),1);
@@ -34,6 +61,7 @@ try{
  await page.getByRole('button',{name:'Entrar em Guild Center',exact:true}).click();await page.getByRole('heading',{name:'🔒 Área reservada',exact:true}).waitFor();assert.ok(page.url().endsWith('#/guild-center'));await page.reload();await page.getByRole('heading',{name:'🔒 Área reservada',exact:true}).waitFor();
  await home(page);await page.getByRole('button',{name:'Selecionar Build Lab',exact:true}).click();await page.getByRole('button',{name:'Entrar em Build Lab',exact:true}).click();await page.getByRole('heading',{name:'🔒 Área reservada',exact:true}).waitFor();assert.ok(page.url().endsWith('#/optimizer'));
  await home(page);await page.getByRole('button',{name:'Entrar em Minha Conta',exact:true}).click();await page.getByRole('heading',{name:'Sua Central começa aqui',exact:true}).waitFor();assert.ok(page.url().endsWith('#/dashboard'));
+ await home(page);await quickServices(page);
  await home(page);await page.getByRole('button',{name:'Sincronizar SWEX e ver cupons',exact:true}).click();await page.getByRole('button',{name:'Selecionar arquivo JSON SWEX',exact:true}).waitFor();assert.ok(await page.locator('.home-services').evaluate(e=>e===document.activeElement));await page.getByRole('button',{name:'Salvar dados na nuvem (Login/Criar Conta)',exact:true}).click();await page.getByRole('region',{name:'Entrar ou criar conta na nuvem',exact:true}).waitFor();await page.getByRole('region',{name:'Entrar ou criar conta na nuvem',exact:true}).getByLabel('E-mail',{exact:true}).fill('qa@example.test');await page.getByRole('button',{name:'Selecionar Guild Center',exact:true}).click();assert.equal(await page.getByRole('region',{name:'Entrar ou criar conta na nuvem',exact:true}).count(),1);assert.equal(await page.getByRole('region',{name:'Entrar ou criar conta na nuvem',exact:true}).getByLabel('E-mail',{exact:true}).inputValue(),'qa@example.test');
  await page.getByRole('button',{name:'Sincronizar SWEX e ver cupons',exact:true}).click();assert.ok(await page.locator('.portal-coupons').count());await page.screenshot({path:`${out}/home-services.png`,fullPage:true});
  // Drop is handled exactly once even though the preserved utility panel is nested.
@@ -48,5 +76,7 @@ try{
  ({context,page}=await setup({viewport:{width:390,height:667},reducedMotion:'reduce'}));await home(page);await page.getByRole('button',{name:'Mostrar cartão Guild Center',exact:true}).click();await selected(page,'Guild Center');assert.ok(await page.locator('.home-card-arrival').first().evaluate(e=>getComputedStyle(e).animationName==='none'));assert.equal(await page.locator('.home-module-card').first().evaluate(e=>getComputedStyle(e).transitionDuration),'0s');await page.locator('.home-card-crest').waitFor();const crest=await page.locator('.home-module-card.is-active .home-card-crest').boundingBox(),title=await page.locator('.home-module-card.is-active .home-card-title').boundingBox();assert.ok(crest.y+crest.height<=title.y,'Guild crest overlaps card title');await page.screenshot({path:`${out}/home-reduced-motion.png`});await context.close();
  ({context,page}=await setup({signedIn:true}));await home(page);await page.getByRole('button',{name:'Selecionar Guild Center',exact:true}).click();await page.getByRole('button',{name:'Entrar em Guild Center',exact:true}).click();await page.getByRole('heading',{name:'Guild Center',exact:true}).waitFor();await page.reload();await page.getByRole('heading',{name:'Guild Center',exact:true}).waitFor();await context.close();
  ({context,page}=await setup({failScenes:true}));await home(page);await page.getByRole('button',{name:'Selecionar Build Lab',exact:true}).click();await selected(page,'Build Lab');assert.ok(await page.getByRole('button',{name:'Entrar em Build Lab',exact:true}).isEnabled());await page.screenshot({path:`${out}/home-fallback.png`});await context.close();
- assert.deepEqual(errors,[]);assert.deepEqual(imageFailures,[]);assert.ok(homeRequests.length>0);console.log('PASS: cinematic home loads three cards, keyboard and touch selection, decoded scene fades, existing routes/authorization, preserved login/upload/coupons/calculator, tablet/mobile/wide layout, reduced motion and asset-failure fallback; no runtime errors.');
+ ({context,page}=await setup({viewport:{width:390,height:844}}));await home(page);await quickServices(page,true);await context.close();
+ ({context,page}=await setup({cloudCoupons:true}));await home(page);await page.getByRole('button',{name:'Sincronizar SWEX e ver cupons',exact:true}).click();await page.getByText('Curadoria da Central',{exact:true}).waitFor();assert.equal(await page.getByText('Comunidade',{exact:true}).count(),0);await page.getByRole('button',{name:'Origem e confirmação dos cupons',exact:true}).click();await page.getByRole('tooltip').filter({hasText:'não registram confirmação oficial por código'}).waitFor({state:'visible'});await context.close();
+ assert.deepEqual(errors,[]);assert.deepEqual(imageFailures,[]);assert.ok(homeRequests.length>0);console.log('PASS: cinematic cards and existing routes preserved; compact quick services, original upload/login/calculator, real clipboard feedback, Web/app link popups and honest cloud/community provenance; desktop/mobile without overflow or runtime errors.');
 }catch(error){if(activePage&&!activePage.isClosed()){console.error((await activePage.locator('body').innerText()).slice(-2500));await activePage.screenshot({path:`${out}/failure.png`,fullPage:true});}throw error;}finally{await browser.close();}

@@ -24,3 +24,10 @@
 @media(max-width:1100px){.portal-coupons{padding:20px 14px;gap:14px}.coupon-entry{padding:14px 10px;gap:12px}.portal-coupons h2{font-size:15px}.coupon-reward{font-size:11px}.coupon-code{font-size:13px;letter-spacing:0}.coupon-copy,.coupon-events{font-size:11px}}
 @media(max-width:767px){.portal-coupons{min-height:340px}.portal-coupons h2{font-size:19px}.coupon-code{font-size:19px}.coupon-reward{font-size:13px}.coupon-copy,.coupon-events{font-size:12px}.coupon-list{max-height:none;overflow:visible}.coupon-entry{padding:18px}.coupon-events{margin-top:8px}}
 .coupon-redeem-row{display:flex;align-items:center;gap:8px}.coupon-redeem-row>.coupon-redeem{flex:1}.coupon-redeem-row .technical-help{flex:none}.coupon-redeem-row .technical-help>[role=tooltip]{left:auto;right:0;max-width:min(280px,75vw);z-index:45}
+.coupon-provenance{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px 10px;font:400 9px/1.5 Inter,sans-serif;color:#aab7c2}.coupon-provenance>span{padding:3px 7px;border:1px solid #b49a5e44;border-radius:4px;color:#d8c38e;background:#b49a5e0d}
+.coupon-month{position:relative;display:flex;align-items:center;justify-content:center;gap:8px}.coupon-month .technical-help{position:static;flex:none;text-transform:none}.coupon-month .technical-help>[role=tooltip]{left:0;right:auto;width:min(290px,100%);text-align:left}
+.coupon-redeem-row .technical-help>[role=tooltip]{top:auto;bottom:calc(100% + 6px)}
+.coupon-app-link{display:none}.coupon-app-link small{font-size:9px;font-weight:400;color:#aab7c2}
+.coupon-actions{display:grid;gap:12px}
+.coupon-copy,.coupon-redeem,.coupon-events,.coupon-code{min-height:44px}.coupon-refresh{min-width:44px;min-height:44px}.coupon-source{padding-right:46px}
+@media(max-width:767px){.coupon-app-link{display:flex;flex-wrap:wrap;gap:4px 8px}.coupon-app-link small{flex-basis:100%}}

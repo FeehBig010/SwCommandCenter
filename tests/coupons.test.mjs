@@ -45,6 +45,16 @@ test('clipboard receives the exact code once; unavailable/denied clipboard does 
  await assert.rejects(copyCouponCode('OCTSW2026O7J',{clipboard:null}));await assert.rejects(copyCouponCode('OCTSW2026O7J',{clipboard:{writeText:async()=>{throw Error('Denied');}}}),/Denied/);await assert.rejects(copyCouponCode('<script>',{clipboard:{writeText:async()=>assert.fail()}}));
  assert.equal(couponRedeemUrl('OCTSW2026O7J'),'https://event.withhive.com/ci/smon/evt_coupon');assert.equal(couponRedeemUrl('../unsafe'),'https://event.withhive.com/ci/smon/evt_coupon');
 });
+test('optional official app links include only valid public codes; the Web portal remains the safe desktop/iOS destination',()=>{
+ assert.equal(couponRedeemUrl('OCTSW2026O7J',{inGame:true}),'https://withhive.me/313/OCTSW2026O7J');
+ for(const code of ['../unsafe','CODE?account=private','<script>',null,undefined])assert.equal(couponRedeemUrl(code,{inGame:true}),'https://event.withhive.com/ci/smon/evt_coupon');
+ assert.equal(couponRedeemUrl(),'https://event.withhive.com/ci/smon/evt_coupon');
+});
+test('coupon provenance survives display filtering without promoting central curation into official confirmation',()=>{
+ const coupons=normalizeCouponRows([row('CENTRAL'),row('COMMUNITY',{source:'community'})],now);
+ assert.deepEqual(visibleCoupons(coupons,now).map(c=>[c.code,c.origin]),[['CENTRAL','supabase'],['COMMUNITY','community']]);
+ assert.ok(coupons.every(c=>c.origin!=='official'));
+});
 test('actual reward component renders official local images with labels and quantities; unknown rewards remain absent',async()=>{
  const bundled=await build({entryPoints:[new URL('../src/components/CouponReward.jsx',import.meta.url).pathname],bundle:true,write:false,format:'esm',platform:'node',jsx:'automatic'});
  const {default:Reward}=await import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`);

@@ -4,7 +4,7 @@
 .cinematic-home-shell main { padding: 0; margin: 0; max-width: none; }
 .cinematic-home { --home-gold: #d4af37; --home-ivory: #f1e6cd; color: var(--home-ivory); min-width: 0; }
 .cinematic-home button:focus-visible { outline: 2px solid #f1d583; outline-offset: 4px; }
-.home-opening { position: relative; isolation: isolate; display: flex; flex-direction: column; min-height: calc(100svh - 57px); padding: 34px clamp(24px, 3vw, 48px) 20px; overflow: hidden; background: #0a1119; }
+.home-opening { position: relative; isolation: isolate; display: flex; flex-direction: column; min-height: 0; padding: 34px clamp(24px, 3vw, 48px) 20px; overflow: hidden; background: #0a1119; }
 .home-scenery, .home-scene-layer, .home-scenery-shade { position: absolute; inset: 0; pointer-events: none; }
 .home-scenery { z-index: -1; background: #0a1119; animation: home-backdrop-enter .7s ease both; }
 .home-scene-layer { opacity: 0; background-size: cover; background-position: center; transition: opacity .7s ease; }
@@ -70,16 +70,47 @@
 .home-resources-bar>span { display: flex; align-items: center; gap: 7px; color: #a7b4c0; font: 400 10px/1.5 Inter, sans-serif; }
 .home-resources-bar>div { display: flex; flex-wrap: wrap; gap: 12px; }
 .home-resources-bar button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 0; background: transparent; padding: 8px 4px; color: #d8c38e; font: 400 11px/1.5 Inter, sans-serif; }
-.home-services { padding: 36px clamp(24px, 3vw, 48px) 28px; background: #0a121b; border-top: 1px solid #b49a5e55; scroll-margin-top: 16px; }
+.home-services { padding: 20px clamp(24px, 3vw, 48px) 24px; background: #0a121b; border-top: 1px solid #b49a5e55; scroll-margin-top: 16px; }
 .home-services:focus-visible { outline: 2px solid #d4af37; outline-offset: -4px; }
 .cinematic-home .entry-portal.portal-embedded { display: block; height: auto; max-width: 1540px; padding: 0; margin: auto; overflow: visible; }
-.cinematic-home .portal-embedded .portal-grid { width: 100%; height: auto; grid-template-columns: minmax(170px, .7fr) minmax(0, 1.2fr) minmax(250px, 1fr); align-items: start; }
-.cinematic-home .portal-embedded .portal-guide { height: 535px; }
-.cinematic-home .portal-embedded .portal-glass { overflow: visible; }
-.cinematic-home .portal-embedded #home-services-title { font: 600 22px/1.4 Cinzel, Georgia, serif; color: #f1e6cd; text-align: center; }
-.cinematic-home .portal-embedded .portal-paths { grid-template-rows: auto auto; }
-.cinematic-home .portal-embedded .portal-privacy { position: static; margin-top: 24px; font-size: 10px; }
-.cinematic-home .portal-embedded .coupon-list { max-height: 480px; }
+.cinematic-home .portal-embedded .portal-service-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.cinematic-home .portal-embedded #home-services-title { font: 500 19px/1.4 Cinzel, Georgia, serif; color: #f1e6cd; margin: 0; }
+.portal-service-heading>span { font: 400 9px/1.5 Inter, sans-serif; letter-spacing: 1.5px; text-transform: uppercase; color: #c6b07c; }
+.cinematic-home .portal-embedded .portal-grid { width: 100%; height: auto; grid-template-columns: minmax(170px, .65fr) minmax(320px, 1.35fr) minmax(260px, 1fr); gap: 16px; align-items: start; overflow: visible; padding: 0; }
+.cinematic-home .portal-embedded .portal-glass, .cinematic-home .portal-embedded .portal-paths { display: contents; }
+.cinematic-home .portal-embedded .portal-paths article { padding: 18px 16px; border-radius: 12px; background: rgba(15,20,25,.75); align-items: stretch; }
+.cinematic-home .portal-embedded .portal-paths h2 { font-size: 18px; text-align: left; }
+.cinematic-home .portal-embedded .portal-paths p { font-size: 11px; text-align: left; margin-bottom: 12px; }
+.cinematic-home .portal-embedded .portal-swords { justify-content: start; min-height: 30px; margin-bottom: 12px; }
+.cinematic-home .portal-embedded .portal-swords svg { width: 28px; height: 28px; }
+.cinematic-home .portal-embedded .portal-primary { font-size: 11px; min-height: 44px; margin-top: 8px; }
+.portal-sync-content, .portal-sync-controls { width: 100%; min-width: 0; }
+.cinematic-home .portal-embedded .portal-sync-content { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; align-items: center; }
+.cinematic-home .portal-embedded .portal-guide { position: relative; width: 100%; height: auto; min-height: 225px; }
+.cinematic-home .portal-embedded .portal-speech { position: relative; top: auto; left: auto; width: 100%; margin: 0; padding: 9px; border-radius: 9px; font-size: 10px; line-height: 1.6; }
+.cinematic-home .portal-embedded .portal-guide>img { position: relative; display: block; top: auto; bottom: auto; left: auto; width: 100%; height: 135px; margin-top: 9px; transform: none; object-position: center bottom; }
+.cinematic-home .portal-embedded .portal-dropzone { min-height: 104px; padding: 12px 8px; }
+.cinematic-home .portal-embedded .portal-dropzone strong { font-size: 12px; }
+.cinematic-home .portal-embedded .portal-cloud-button { font-size: 10px; min-height: 44px; margin-top: 10px; }
+.cinematic-home .portal-embedded .portal-login-panel fieldset { grid-template-columns: minmax(0, 1fr); }
+.cinematic-home .portal-embedded .portal-login-panel button, .cinematic-home .portal-embedded .portal-login-panel input, .cinematic-home .portal-embedded .portal-continue { min-height: 44px; }
+.cinematic-home .portal-embedded .portal-account-confirmed { grid-template-columns: auto minmax(0, 1fr); padding: 12px; gap: 8px; }
+.cinematic-home .portal-embedded .portal-account-confirmed>button { grid-column: 1/-1; grid-row: auto; justify-self: end; width: 44px; height: 44px; }
+.cinematic-home .portal-embedded .portal-privacy { position: static; margin-top: 16px; font-size: 10px; }
+.cinematic-home .portal-embedded .portal-coupons { padding: 16px; gap: 12px; border-radius: 12px; }
+.cinematic-home .portal-embedded .portal-coupons h2 { font-size: 16px; text-align: left; }
+.cinematic-home .portal-embedded .coupon-month { justify-content: flex-start; font-size: 11px; margin-top: 6px; }
+.cinematic-home .portal-embedded .coupon-list { max-height: 320px; }
+.cinematic-home .portal-embedded .coupon-entry { padding: 12px; gap: 10px; }
+.cinematic-home .portal-embedded .coupon-code { font-size: 16px; }
+.cinematic-home .portal-embedded .coupon-rewards { gap: 8px; }
+.cinematic-home .portal-embedded .coupon-reward { font-size: 11px; }
+.cinematic-home .portal-embedded .coupon-reward>img { width: 28px; height: 28px; }
+.cinematic-home .portal-embedded .coupon-empty { min-height: 120px; }
+.cinematic-home .portal-embedded .coupon-actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 8px; }
+.cinematic-home .portal-embedded .coupon-actions .coupon-copy { font-size: 11px; padding-inline: 6px; }
+.cinematic-home .portal-embedded .coupon-actions .coupon-redeem-row { gap: 4px; }
+.cinematic-home .portal-embedded .coupon-app-link { grid-column: 1/-1; }
 @media(min-width:761px) and (hover:hover) and (pointer:fine) {
   .home-module-card:hover { transform: translate3d(-50%, calc(var(--card-y) - 6px), 0) scale(calc(var(--card-scale) + .02)); box-shadow: 0 25px 55px #000b; }
 }
@@ -95,10 +126,12 @@
   .home-card-runes { gap: 5px; }
   .home-card-runes>span { width: 38px; height: 38px; }
   .home-card-runes img { width: 25px; height: 25px; }
-  .cinematic-home .portal-embedded .portal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .cinematic-home .portal-embedded .portal-guide { grid-column: 1/-1; height: 175px; }
-  .cinematic-home .portal-embedded .portal-guide>img { width: 135px; height: 175px; top: auto; bottom: 0; left: 0; transform: none; }
-  .cinematic-home .portal-embedded .portal-speech { margin-left: 155px; width: calc(100% - 155px); max-width: 490px; top: 16px; }
+  .cinematic-home .portal-embedded .portal-grid { grid-template-columns: minmax(0, 1.3fr) minmax(260px, 1fr); grid-template-areas: 'account coupons' 'manual coupons'; }
+  .cinematic-home .portal-embedded .portal-account { grid-area: account; }
+  .cinematic-home .portal-embedded .portal-manual { grid-area: manual; }
+  .cinematic-home .portal-embedded .portal-coupons { grid-area: coupons; }
+  .cinematic-home .portal-embedded .portal-sync-content { grid-template-columns: 100px minmax(0, 1fr); }
+  .cinematic-home .portal-embedded .coupon-actions { grid-template-columns: minmax(0, 1fr); }
 }
 @media(max-width:760px) {
   .home-opening { min-height: calc(100svh - 44px); padding: 22px 16px 12px; }
@@ -124,12 +157,13 @@
   .home-resources-bar button { font-size: 10px; }
   .home-card-runes>span { width: 48px; height: 48px; }
   .home-card-runes img { width: 30px; height: 30px; }
-  .home-services { padding: 28px 16px 22px; }
-  .cinematic-home .portal-embedded .portal-grid { display: flex; overflow: visible; height: auto; gap: 22px; }
-  .cinematic-home .portal-embedded .portal-guide { height: 175px; }
-  .cinematic-home .portal-embedded .portal-speech { position: relative; left: 0; top: 5px; margin-left: 135px; width: calc(100% - 135px); }
-  .cinematic-home .portal-embedded .portal-guide>img { width: 125px; }
-  .cinematic-home .portal-embedded #home-services-title { font-size: 20px; }
+  .home-services { padding: 20px 16px; }
+  .cinematic-home .portal-embedded .portal-grid { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: 'account' 'manual' 'coupons'; height: auto; gap: 14px; }
+  .cinematic-home .portal-embedded .portal-sync-content { grid-template-columns: 95px minmax(0, 1fr); gap: 12px; }
+  .cinematic-home .portal-embedded .portal-swords { display: none; }
+  .cinematic-home .portal-embedded #home-services-title { font-size: 17px; }
+  .cinematic-home .portal-embedded .portal-service-heading>span { display: none; }
+  .cinematic-home .portal-embedded .coupon-list { max-height: none; overflow: visible; }
 }
 @keyframes home-backdrop-enter { from { opacity: 0; } to { opacity: 1; } }
 @keyframes home-heading-enter { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }

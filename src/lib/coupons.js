@@ -81,4 +81,7 @@ export async function copyCouponCode(code,{clipboard=globalThis.navigator?.clipb
  if(!validCode(code)||typeof clipboard?.writeText!=='function')throw new Error('Selecione o código para copiar.');
  await clipboard.writeText(code);
 }
-export function couponRedeemUrl(){return COUPON_REDEEM_URL;}
+// The app link passes only a public code; opening either link never records a redemption.
+export function couponRedeemUrl(code,{inGame=false}={}){
+ return inGame&&validCode(code)?`https://withhive.me/313/${code}`:COUPON_REDEEM_URL;
+}
