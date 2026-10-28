@@ -162,3 +162,21 @@ export function quickSpeedTarget(team,config){
  const combatSpd=combatAttributes(unit,{total:{...config.manual.sheet,spd:sheetSpd}},{},{...team,sheetSpeedFormula:true,guildSpd:0},config.combat).spd;
  return {combatSpd,runeSpd:Math.max(0,sheetSpd-Number(unit.base.spd)),hasTarget:config.syncMinimum!=null};
 }
+
+// Compact rune controls edit the same sheet used by the tick engine. Swift is
+// already part of that sheet and must be separated only at the UI boundary.
+export const quickSwiftBonus=config=>(config.sets||[]).some(id=>Number(id)===3)?Math.ceil(Number(config.manual.base.spd)*.25):0;
+export const quickRuneSpeed=config=>Math.max(0,Number(config.syncMinimum??config.manual.sheet.spd)-Number(config.manual.base.spd)-quickSwiftBonus(config));
+export function updateQuickRuneSpeed(team,key,value,tune=true){
+ const config=team.configs.find(c=>c.key===key),n=Number(value);if(!config||!Number.isFinite(n)||n<0||n>1000000)return team;
+ return updateQuickSheetSpeed(team,key,Number(config.manual.base.spd)+quickSwiftBonus(config)+n,tune);
+}
+export function updateQuickRuneSets(team,key,sets,tune=true){
+ const configs=team.configs.map(c=>{if(c.key!==key)return c;const next={...c,sets};return {...next,manual:{...c.manual,sheet:{...c.manual.sheet,spd:Number(c.manual.sheet.spd)-quickSwiftBonus(c)+quickSwiftBonus(next)}}};});
+ const next={...team,configs};return tune?autoTuneQuickTeam(next):next;
+}
+export function toggleQuickSwift(team,key,enabled,tune=true){
+ const config=team.configs.find(c=>c.key===key);if(!config)return team;
+ const sets=enabled?[3,...config.sets.filter(id=>id&&!FOUR.has(Number(id))).slice(0,1)]:config.sets.filter(id=>Number(id)!==3);
+ return updateQuickRuneSets(team,key,sets,tune);
+}

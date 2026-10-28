@@ -6,7 +6,7 @@ function Portrait({master,name,element}){
  const [viewportRef,near]=useNearViewport();
  const rejectedSources=useRef(new Set());
  const src=sources[0];
- useEffect(()=>{if(!near)return;let live=true;resolveMonsterImageSources(master).then(next=>{const available=next.filter(url=>!rejectedSources.current.has(url));if(live&&available.length&&JSON.stringify(available)!==JSON.stringify(sources)){setSources(available);setFailed(false);setLoaded(false);}});return()=>{live=false;};},[master,near]);
+ useEffect(()=>{if(!near)return;let live=true;resolveMonsterImageSources(master).then(next=>{const available=next.filter(url=>!rejectedSources.current.has(url));if(live&&available.length&&JSON.stringify(available)!==JSON.stringify(sources)){setSources(available);setFailed(false);/* Alternate hosts may change after this same photo has loaded. */if(available[0]!==src)setLoaded(false);}});return()=>{live=false;};},[master,near]);
  // Keep the silhouette visible while trying each alternate host only once.
  useEffect(()=>{if(!failed||!src)return;rejectedSources.current.add(src);const available=sources.filter(url=>!rejectedSources.current.has(url));if(available.length){setSources(available);setFailed(false);setLoaded(false);}},[failed,src,sources]);
  return <span ref={viewportRef} className={`avatar monster-portrait element-${element||0} ${loaded&&!failed?'':'portrait-fallback'}`}>
