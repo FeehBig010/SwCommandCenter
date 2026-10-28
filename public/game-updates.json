@@ -1,9 +1,41 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-10-27T23:45:36.049Z",
+  "fetchedAt": "2026-10-28T05:35:00.134Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/event/313/96036",
+      "url": "https://www.withhive.com/event/313/96036",
+      "title": "Reach Higher Goals! World Arena Mission Event",
+      "category": "event",
+      "publishedAt": "2026-10-28T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261021/9c6c5f67354a6cac10db1f94e0a11011.jpg"
+    },
+    {
+      "id": "https://www.withhive.com/notice/313/96035",
+      "url": "https://www.withhive.com/notice/313/96035",
+      "title": "[Summoners War] v9.3.8 Update Notice",
+      "category": "update",
+      "publishedAt": "2026-10-28T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
+    {
+      "id": "https://www.withhive.com/notice/313/96034",
+      "url": "https://www.withhive.com/notice/313/96034",
+      "title": "[Summoners War] v9.3.8 Auto Update Notice",
+      "category": "update",
+      "publishedAt": "2026-10-28T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
+    {
+      "id": "https://www.withhive.com/notice/313/96033",
+      "url": "https://www.withhive.com/notice/313/96033",
+      "title": "[Summoners War] [World Arena] Challenge Battle Monster Details Notice",
+      "category": "notice",
+      "publishedAt": "2026-10-28T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
     {
       "id": "https://www.withhive.com/notice/313/95971",
       "url": "https://www.withhive.com/notice/313/95971",
