@@ -29,7 +29,7 @@
 .home-card-browser { min-width: 0; width: 100%; max-width: 1000px; justify-self: end; }
 .home-deck { position: relative; height: clamp(410px, 55svh, 600px); min-width: 0; }
 .home-card-track { position: relative; width: 100%; height: 100%; }
-.home-module-card { position: absolute; top: 0; left: var(--card-position); width: 42%; height: calc(100% - 36px); min-width: 0; border-radius: 13px; transform: translate3d(-50%, var(--card-y), 0) scale(var(--card-scale)); transform-origin: center; transition: transform .6s cubic-bezier(.22, 1, .36, 1), left .6s cubic-bezier(.22, 1, .36, 1), width .6s ease, opacity .35s ease, box-shadow .5s ease; box-shadow: 0 18px 35px #0008; }
+.home-module-card { position: absolute; top: 0; left: calc(21% + var(--card-index) * 29%); width: 42%; height: calc(100% - 36px); min-width: 0; border-radius: 13px; transform: translate3d(-50%, var(--card-y), 0) scale(var(--card-scale)); transform-origin: center; transition: transform .6s cubic-bezier(.22, 1, .36, 1), box-shadow .5s ease; box-shadow: 0 18px 35px #0008; }
 .home-card-arrival { position: relative; width: 100%; height: 100%; border: 1px solid #b49a5e66; border-radius: inherit; background: #14202a; overflow: hidden; animation: home-card-enter .65s cubic-bezier(.22, 1, .36, 1) both; animation-delay: calc(70ms + var(--card-index) * 85ms); }
 .home-module-card.is-active { box-shadow: 0 22px 55px #000a, 0 0 0 1px #d4af3730; }
 .home-module-card.is-active .home-card-arrival { border-color: #d4af37b3; }
@@ -70,6 +70,47 @@
 .home-resources-bar>span { display: flex; align-items: center; gap: 7px; color: #a7b4c0; font: 400 10px/1.5 Inter, sans-serif; }
 .home-resources-bar>div { display: flex; flex-wrap: wrap; gap: 12px; }
 .home-resources-bar button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 0; background: transparent; padding: 8px 4px; color: #d8c38e; font: 400 11px/1.5 Inter, sans-serif; }
+.home-services { padding: 20px clamp(24px, 3vw, 48px) 24px; background: #0a121b; border-top: 1px solid #b49a5e55; scroll-margin-top: 16px; }
+.home-services:focus-visible { outline: 2px solid #d4af37; outline-offset: -4px; }
+.cinematic-home .entry-portal.portal-embedded { display: block; height: auto; max-width: 1540px; padding: 0; margin: auto; overflow: visible; }
+.cinematic-home .portal-embedded .portal-service-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.cinematic-home .portal-embedded #home-services-title { font: 500 19px/1.4 Cinzel, Georgia, serif; color: #f1e6cd; margin: 0; }
+.portal-service-heading>span { font: 400 9px/1.5 Inter, sans-serif; letter-spacing: 1.5px; text-transform: uppercase; color: #c6b07c; }
+.cinematic-home .portal-embedded .portal-grid { width: 100%; height: auto; grid-template-columns: minmax(170px, .65fr) minmax(320px, 1.35fr) minmax(260px, 1fr); gap: 16px; align-items: start; overflow: visible; padding: 0; }
+.cinematic-home .portal-embedded .portal-glass, .cinematic-home .portal-embedded .portal-paths { display: contents; }
+.cinematic-home .portal-embedded .portal-paths article { padding: 18px 16px; border-radius: 12px; background: rgba(15,20,25,.75); align-items: stretch; }
+.cinematic-home .portal-embedded .portal-paths h2 { font-size: 18px; text-align: left; }
+.cinematic-home .portal-embedded .portal-paths p { font-size: 11px; text-align: left; margin-bottom: 12px; }
+.cinematic-home .portal-embedded .portal-swords { justify-content: start; min-height: 30px; margin-bottom: 12px; }
+.cinematic-home .portal-embedded .portal-swords svg { width: 28px; height: 28px; }
+.cinematic-home .portal-embedded .portal-primary { font-size: 11px; min-height: 44px; margin-top: 8px; }
+.portal-sync-content, .portal-sync-controls { width: 100%; min-width: 0; }
+.cinematic-home .portal-embedded .portal-sync-content { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; align-items: center; }
+.cinematic-home .portal-embedded .portal-guide { position: relative; width: 100%; height: auto; min-height: 225px; }
+.cinematic-home .portal-embedded .portal-speech { position: relative; top: auto; left: auto; width: 100%; margin: 0; padding: 9px; border-radius: 9px; font-size: 10px; line-height: 1.6; }
+.cinematic-home .portal-embedded .portal-guide>img { position: relative; display: block; top: auto; bottom: auto; left: auto; width: 100%; height: 135px; margin-top: 9px; transform: none; object-position: center bottom; }
+.cinematic-home .portal-embedded .portal-dropzone { min-height: 104px; padding: 12px 8px; }
+.cinematic-home .portal-embedded .portal-dropzone strong { font-size: 12px; }
+.cinematic-home .portal-embedded .portal-cloud-button { font-size: 10px; min-height: 44px; margin-top: 10px; }
+.cinematic-home .portal-embedded .portal-login-panel fieldset { grid-template-columns: minmax(0, 1fr); }
+.cinematic-home .portal-embedded .portal-login-panel button, .cinematic-home .portal-embedded .portal-login-panel input, .cinematic-home .portal-embedded .portal-continue { min-height: 44px; }
+.cinematic-home .portal-embedded .portal-account-confirmed { grid-template-columns: auto minmax(0, 1fr); padding: 12px; gap: 8px; }
+.cinematic-home .portal-embedded .portal-account-confirmed>button { grid-column: 1/-1; grid-row: auto; justify-self: end; width: 44px; height: 44px; }
+.cinematic-home .portal-embedded .portal-privacy { position: static; margin-top: 16px; font-size: 10px; }
+.cinematic-home .portal-embedded .portal-coupons { padding: 16px; gap: 12px; border-radius: 12px; }
+.cinematic-home .portal-embedded .portal-coupons h2 { font-size: 16px; text-align: left; }
+.cinematic-home .portal-embedded .coupon-month { justify-content: flex-start; font-size: 11px; margin-top: 6px; }
+.cinematic-home .portal-embedded .coupon-list { max-height: 320px; }
+.cinematic-home .portal-embedded .coupon-entry { padding: 12px; gap: 10px; }
+.cinematic-home .portal-embedded .coupon-code { font-size: 16px; }
+.cinematic-home .portal-embedded .coupon-rewards { gap: 8px; }
+.cinematic-home .portal-embedded .coupon-reward { font-size: 11px; }
+.cinematic-home .portal-embedded .coupon-reward>img { width: 28px; height: 28px; }
+.cinematic-home .portal-embedded .coupon-empty { min-height: 120px; }
+.cinematic-home .portal-embedded .coupon-actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 8px; }
+.cinematic-home .portal-embedded .coupon-actions .coupon-copy { font-size: 11px; padding-inline: 6px; }
+.cinematic-home .portal-embedded .coupon-actions .coupon-redeem-row { gap: 4px; }
+.cinematic-home .portal-embedded .coupon-app-link { grid-column: 1/-1; }
 @media(min-width:761px) and (hover:hover) and (pointer:fine) {
   .home-module-card:hover { transform: translate3d(-50%, calc(var(--card-y) - 6px), 0) scale(calc(var(--card-scale) + .02)); box-shadow: 0 25px 55px #000b; }
 }
@@ -85,7 +126,12 @@
   .home-card-runes { gap: 5px; }
   .home-card-runes>span { width: 38px; height: 38px; }
   .home-card-runes img { width: 25px; height: 25px; }
-
+  .cinematic-home .portal-embedded .portal-grid { grid-template-columns: minmax(0, 1.3fr) minmax(260px, 1fr); grid-template-areas: 'account coupons' 'manual coupons'; }
+  .cinematic-home .portal-embedded .portal-account { grid-area: account; }
+  .cinematic-home .portal-embedded .portal-manual { grid-area: manual; }
+  .cinematic-home .portal-embedded .portal-coupons { grid-area: coupons; }
+  .cinematic-home .portal-embedded .portal-sync-content { grid-template-columns: 100px minmax(0, 1fr); }
+  .cinematic-home .portal-embedded .coupon-actions { grid-template-columns: minmax(0, 1fr); }
 }
 @media(max-width:760px) {
   .home-opening { min-height: calc(100svh - 44px); padding: 22px 16px 12px; }
@@ -111,7 +157,13 @@
   .home-resources-bar button { font-size: 10px; }
   .home-card-runes>span { width: 48px; height: 48px; }
   .home-card-runes img { width: 30px; height: 30px; }
-
+  .home-services { padding: 20px 16px; }
+  .cinematic-home .portal-embedded .portal-grid { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: 'account' 'manual' 'coupons'; height: auto; gap: 14px; }
+  .cinematic-home .portal-embedded .portal-sync-content { grid-template-columns: 95px minmax(0, 1fr); gap: 12px; }
+  .cinematic-home .portal-embedded .portal-swords { display: none; }
+  .cinematic-home .portal-embedded #home-services-title { font-size: 17px; }
+  .cinematic-home .portal-embedded .portal-service-heading>span { display: none; }
+  .cinematic-home .portal-embedded .coupon-list { max-height: none; overflow: visible; }
 }
 @keyframes home-backdrop-enter { from { opacity: 0; } to { opacity: 1; } }
 @keyframes home-heading-enter { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
@@ -120,60 +172,3 @@
 @media(prefers-reduced-motion:reduce) {
   .cinematic-home *, .cinematic-home *::before, .cinematic-home *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
-
-/* All six destinations share the same opening deck. Tools expand to their
-   natural reading size; no secondary miniature portal is rendered below. */
-.home-module-card.is-offstage { opacity: 0; pointer-events: none; }
-.home-card-browser[data-tool-active=true] .home-deck { height: clamp(630px, 76svh, 780px); }
-.home-deck { transition: height .5s ease; }
-.home-module-card[data-tool].is-active { width: min(100%, 620px); }
-.home-module-card[data-module=coupons].is-active { width: min(100%, 480px); }
-.home-tool-panel { position: absolute; z-index: 3; inset: 65px 0 0; background: linear-gradient(#0b141df2, #0b141d); opacity: 0; pointer-events: none; transition: opacity .3s ease; }
-.home-module-card[data-tool].is-active .home-tool-panel { opacity: 1; pointer-events: auto; }
-.home-module-card[data-tool].is-active .home-card-title { visibility: hidden; }
-.home-tool-content { height: 100%; overflow: auto; overscroll-behavior-y: contain; padding: 10px 24px 24px; scrollbar-width: thin; scrollbar-color: #a58b4f #0b141d; }
-.home-tool-content:focus-visible { outline: 2px solid #d4af37; outline-offset: -5px; }
-.home-tool-content h2 { font: 500 24px/1.35 Cinzel, Georgia, serif; color: #f1e6cd; margin: 0 0 12px; }
-.home-tool-content p { color: #b6bfc7; font: 400 13px/1.7 Inter, sans-serif; margin: 0 0 20px; }
-.home-tool-content .portal-swords { min-height: 90px; margin: 30px 0; }
-.home-tool-content .portal-swords svg { width: 64px; height: 64px; }
-.home-tool-content .portal-primary { min-height: 48px; font-size: 14px; margin-top: 30px; }
-.home-tool-content .portal-sync-content { display: grid; grid-template-columns: minmax(160px, .85fr) minmax(230px, 1.15fr); gap: 24px; align-items: center; }
-.home-tool-content .portal-guide { min-height: 0; height: auto; }
-.home-tool-content .portal-speech { position: relative; top: auto; left: auto; width: 100%; padding: 14px; font-size: 12px; line-height: 1.7; }
-.home-tool-content .portal-guide>img { position: relative; display: block; top: auto; bottom: auto; left: auto; transform: none; width: 100%; height: 300px; margin-top: 16px; object-position: center bottom; }
-.home-tool-content .portal-dropzone { min-height: 140px; }
-.home-tool-content .portal-cloud-button { min-height: 48px; font-size: 12px; }
-.home-tool-content .portal-login-panel fieldset { grid-template-columns: minmax(0, 1fr); }
-.home-tool-content .portal-login-panel button, .home-tool-content .portal-login-panel input, .home-tool-content .portal-continue { min-height: 44px; }
-.home-tool-content .portal-account-confirmed { grid-template-columns: auto minmax(0, 1fr); padding: 14px; }
-.home-tool-content .portal-account-confirmed>button { grid-column: 1/-1; grid-row: auto; justify-self: end; width: 44px; height: 44px; }
-.home-tool-content .portal-coupons { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
-.home-tool-content .portal-coupons h2 { font-size: 22px; }
-.home-tool-content .coupon-list { overflow: visible; }
-.home-tool-content .coupon-code { font-size: 22px; }
-.home-tool-content .coupon-actions { grid-template-columns: minmax(0, 1fr); }
-@media(max-width:1100px) and (min-width:761px) {
-  .home-card-browser[data-tool-active=true] { grid-column: 1/-1; width: 100%; }
-  .home-stage:has(.home-card-browser[data-tool-active=true]) .home-module-copy { display: none; }
-}
-@media(max-width:760px) {
-  .home-card-browser[data-tool-active=true] .home-deck { height: clamp(600px, 76svh, 760px); }
-  .home-module-card[data-tool].is-active { width: var(--home-mobile-width); }
-  .home-card-controls { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 0; justify-items: center; }
-  .home-card-controls>.home-step:first-child { grid-column: 1; grid-row: 1; }
-  .home-card-controls>.home-step:last-child { grid-column: 3; grid-row: 1; }
-  .home-card-dots { grid-column: 2; grid-row: 1; display: grid; grid-template-columns: repeat(6, minmax(44px, 1fr)); width: 100%; }
-  .home-card-dots button { width: 100%; min-width: 44px; }
-  .home-card-count { grid-column: 1/-1; grid-row: 2; padding: 6px 0; margin: 0; font-size: 9px; }
-  .home-tool-content { padding: 8px 18px 20px; }
-  .home-tool-content h2 { font-size: 22px; }
-  .home-tool-content .portal-sync-content { grid-template-columns: minmax(0, 1fr); gap: 18px; }
-  .home-tool-content .portal-guide { display: grid; grid-template-columns: minmax(0, 1fr) 100px; gap: 10px; align-items: center; }
-  .home-tool-content .portal-speech { font-size: 12px; padding: 10px; }
-  .home-tool-content .portal-guide>img { height: 190px; margin: 0; }
-  .home-tool-content .portal-coupons h2 { font-size: 20px; }
-  .home-tool-content .coupon-entry { padding: 14px; }
-}
-@media(max-width:383px) { .home-card-dots { grid-template-columns: repeat(3, 44px); justify-content: center; } }
-@media(prefers-reduced-motion:reduce) { .cinematic-home .home-deck { transition: none; } }

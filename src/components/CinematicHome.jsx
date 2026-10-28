@@ -1,12 +1,11 @@
-import {memo, useEffect, useState} from 'react';
-import {ArrowRight, CloudUpload, Gift, LockKeyhole, Swords} from 'lucide-react';
-import {HOME_CARDS} from '../core/home-modules';
-import {AccountEntry,CalculatorEntry} from './EntryPortal';
-import CouponModule from './CouponModule';
+import {memo, useEffect, useRef, useState} from 'react';
+import {ArrowDown, CloudUpload, LockKeyhole, Swords} from 'lucide-react';
+import {HOME_MODULES} from '../core/home-modules';
+import EntryPortal from './EntryPortal';
 import HomeModuleCards from './HomeModuleCards';
 import './CinematicHome.css';
 
-const SyncCard = memo(AccountEntry), CalculatorCard = memo(CalculatorEntry), CouponsCard = memo(CouponModule);
+const HomeServices = memo(EntryPortal);
 const scenes = new Map();
 
 function prepareScene(src) {
@@ -38,29 +37,32 @@ function HomeScenery({active}) {
   const [visible, setVisible] = useState(null), [ready, setReady] = useState([]);
   useEffect(() => {
     let live = true, timer;
-    const module = HOME_CARDS[active];
+    const module = HOME_MODULES[active];
     prepareScene(module.scene).then(() => {
       if (!live) return;
       setReady(old => old.includes(active) ? old : [...old, active]);
       setVisible(active);
       // Only the next scene is prefetched. Failed images keep the existing scene.
-      timer = setTimeout(() => prepareScene(HOME_CARDS[(active + 1) % HOME_CARDS.length].scene).catch(() => {}), 200);
+      timer = setTimeout(() => prepareScene(HOME_MODULES[(active + 1) % HOME_MODULES.length].scene).catch(() => {}), 200);
     }).catch(() => {});
     return () => { live = false; clearTimeout(timer); };
   }, [active]);
   return <div className="home-scenery" aria-hidden="true">
-    {HOME_CARDS.map((module, index) => <div key={module.id} className={`home-scene-layer ${visible === index ? 'is-visible' : ''}`}
+    {HOME_MODULES.map((module, index) => <div key={module.id} className={`home-scene-layer ${visible === index ? 'is-visible' : ''}`}
       style={ready.includes(index) ? {backgroundImage: `url("${module.scene}")`} : undefined}/>)}
     <div className="home-scenery-shade"/>
   </div>;
 }
 
 export default function CinematicHome({onNavigate, ...portalProps}) {
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState(0), servicesRef = useRef(null);
   const mobile = useHomeMedia('(max-width: 760px)'), reducedMotion = useHomeMedia('(prefers-reduced-motion: reduce)');
-  const module = HOME_CARDS[active];
+  const module = HOME_MODULES[active];
 
-  const tools = {calculator:<CalculatorCard onQuick={portalProps.onQuick} busy={portalProps.busy}/>,sync:<SyncCard {...portalProps} embedded/>,coupons:<CouponsCard/>};
+  function openServices() {
+    servicesRef.current?.scrollIntoView({behavior: reducedMotion ? 'instant' : 'smooth', block: 'start'});
+    servicesRef.current?.focus({preventScroll: true});
+  }
 
   return <div className="cinematic-home" onDragOver={event => {
     if (event.dataTransfer.types.includes('Files')) event.preventDefault();
@@ -84,13 +86,15 @@ export default function CinematicHome({onNavigate, ...portalProps}) {
           </div>
         </section>
         <HomeModuleCards active={active} onSelect={setActive} onNavigate={onNavigate} mobile={mobile}
-          reducedMotion={reducedMotion} busy={portalProps.busy} tools={tools}/>
+          reducedMotion={reducedMotion} busy={portalProps.busy}/>
       </div>
       <div className="home-resources-bar"><span><LockKeyhole size={13}/>Seu inventário, no seu espaço.</span><div>
         <button type="button" disabled={portalProps.busy} onClick={portalProps.onQuick}><Swords size={15}/>Calculadora Livre</button>
-        <button type="button" disabled={portalProps.busy} onClick={()=>setActive(4)}><CloudUpload size={15}/>Sincronizar SWEX e ver cupons<ArrowRight size={15}/></button>
-        <button type="button" disabled={portalProps.busy} onClick={()=>setActive(5)}><Gift size={15}/>Códigos &amp; Eventos</button>
+        <button type="button" disabled={portalProps.busy} onClick={openServices}><CloudUpload size={15}/>Sincronizar SWEX e ver cupons<ArrowDown size={15}/></button>
       </div></div>
+    </section>
+    <section className="home-services" ref={servicesRef} tabIndex={-1} aria-label="Sincronização, login e cupons">
+      <HomeServices {...portalProps} embedded/>
     </section>
   </div>;
 }
