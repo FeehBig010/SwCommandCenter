@@ -35,3 +35,16 @@ test('runes on a different priority attack cannot be borrowed; non-priority dono
 test('scenario chips communicate losses without claiming an exhaustive global maximum',()=>{
  assert.equal(tradeoffChip({pareto:true}).label,'Otimização Perfeita');assert.equal(tradeoffChip({pareto:false}).label,'Sacrifício Calculado');assert.equal(TRADEOFF_LIMIT.label,'Limite Atingido');assert.match(TRADEOFF_LIMIT.description,/limites desta busca/);assert.doesNotMatch(TRADEOFF_LIMIT.description,/ao máximo|ótimo global/);
 });
+test('Worker revalidates tick locks after a UI preference change instead of applying a stale proposal',async()=>{
+ const old=globalThis.self,messages=[];globalThis.self={postMessage:m=>messages.push(m)};
+ try{
+  // A unique module URL installs the actual handler on this test's worker scope.
+  await import('../src/core/optimizer.worker.js?tick-lock-regression');
+  const {account,team}=fixture();freeFrom(account,1,{spd:8});
+  const input={mode:'tradeoff',type:'search',account,team,options,reservedIds:[],allTeams:[team],settings:{focus:'spd',maxLoss:20}};
+  self.onmessage({data:input});const result=messages.at(-1);assert.equal(result.type,'result');assert.ok(result.report.proposals.length);
+  const changed=structuredClone(team);[changed.configs[0],changed.configs[2]]=[changed.configs[2],changed.configs[0]];
+  self.onmessage({data:{...input,type:'validate',team:changed,allTeams:[changed],signature:result.report.signature,proposal:result.report.proposals[0]}});
+  assert.equal(messages.at(-1).type,'error');assert.match(messages.at(-1).message,/mud|atual|ordem|Tick/i);
+ }finally{globalThis.self=old;}
+});

@@ -12,4 +12,4 @@ const aliases={gb12:'gbah',db12:'dbah',nb12:'nbah',...Object.fromEntries(DIMENSI
 export function canonicalPveStage(stage){return aliases[stage]||stage;}
 export function isPveStage(area,stage){return !!PVE_STAGES[area]?.some(s=>s[0]===canonicalPveStage(stage));}
 export function pveSlots(area,stage){return area==='dimensional'&&canonicalPveStage(stage)?.endsWith('-predator')?5:({cairos:5,dimensional:4,rift:6,toa:5})[area];}
-export function pveStageIcon(stage){stage=canonicalPveStage(stage);const dimension=DIMENSIONS.find(([id])=>stage?.startsWith(`${id}-`));return dimension?(['sacreon','inferath'].includes(dimension[0])?'karzhan':dimension[0]):({gb10:'gbah',db10:'dbah',nb10:'nbah','toa-saved':'toan'})[stage]||stage;}
+export function pveStageIcon(stage){stage=canonicalPveStage(stage);const dimension=DIMENSIONS.find(([id])=>stage?.startsWith(`${id}-`));return dimension?(stage.endsWith('-predator')?'dimension-predator':dimension[0]):({gb10:'gbah',db10:'dbah',nb10:'nbah','toa-saved':'toan'})[stage]||stage;}

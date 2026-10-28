@@ -1,0 +1,9 @@
+import {useMemo,useState} from 'react';
+import {checkPveTargets} from '../core/pve-target-checker';
+import {LABELS} from '../core/data';
+import InfoTooltip from './InfoTooltip';
+export default function PveTargetChecker({account,team,stage,options={}}){
+ const [show,setShow]=useState(false);
+ const report=useMemo(()=>show?checkPveTargets(account,team,stage,options):null,[show,account,team,stage,options]);
+ return <section className="pve-target-checker" aria-label="Verificador de metas PvE"><header><h3>Metas PvE</h3><InfoTooltip label="Como verificamos as metas PvE">Compara os atributos de ficha atuais com as metas configuradas e as referências estáticas disponíveis. ACC só é exigida para unidades com cap ativo; SPD de referência supera os inimigos cadastrados nas waves. Não busca runas, não aplica torres/compensação de guilda e não simula ticks, IA ou vitória. Sem referência do chefe, somente as metas de ficha são avaliadas. Raid mantém seu painel independente de EHP.</InfoTooltip><button type="button" className="button small" disabled={!account} onClick={()=>setShow(v=>!v)}>{show?'Ocultar verificação':'Verificar metas no JSON'}</button></header>{report&&<><p role="status">{report.met?'Metas de ficha atendidas':'Revise as metas e o equipamento'}{!report.hasReference?' · Sem referência estática deste chefe':''}</p><div className="pve-target-scroll"><table><thead><tr><th>Monstro</th><th>SPD ficha</th><th>ACC</th><th>Verificação</th></tr></thead><tbody>{report.members.map(m=><tr key={m.key}><th>{m.name}</th><td>{m.stats?.spd??'—'}</td><td>{m.stats?`${m.stats.acc}%`:'—'}</td><td className={m.met?'met':'deficit'}>{m.reason||(!m.checks.length?'Sem metas configuradas':m.met?'Metas atendidas':'Abaixo da meta')}{m.checks.filter(g=>!g.met).map(g=><small key={g.stat}>{LABELS[g.stat]||g.stat}: {Math.ceil(g.current)} / {g.target} · faltam {Math.ceil(g.missing)}</small>)}</td></tr>)}</tbody></table></div></>}</section>;
+}

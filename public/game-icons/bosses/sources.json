@@ -15,9 +15,19 @@
     "toan": "unit_icon_0012_4_3.png",
     "toah": "unit_icon_0012_4_3.png",
     "toahell": "unit_icon_0012_4_3.png",
-    "karzhan": "unit_icon_0051_4_3.png",
-    "ellunia": "unit_icon_0051_0_1.png",
-    "lumel": "unit_icon_0053_1_1.png",
-    "khalderun": "unit_icon_0071_3_4.png"
+    "karzhan": "unit_icon_0051_1_4.png",
+    "ellunia": "unit_icon_0051_0_4.png",
+    "lumel": "unit_icon_0053_2_0.png",
+    "khalderun": "unit_icon_0069_0_0.png",
+    "sacreon": "unit_icon_0084_0_0.png",
+    "inferath": "unit_icon_0058_0_10.png",
+    "dimension-predator": "unit_icon_0058_0_9.png"
+  },
+  "dimensional_provenance": {
+    "repository": "https://github.com/swarfarm/swarfarm",
+    "revision": "d68ee42efa554238b6f38471e3a9e7b33031bf62",
+    "path": "herders/static/herders/images/dungeons",
+    "mapping": "bestiary/fixtures/bestiary_data.json: dungeon 1101/2101/3101/4101/5101; guardian icon represents each dimension, not an individual 2A family",
+    "inferath": "Generic official Dimension Raid icon; a specific Inferath guardian is not present in this snapshot."
   }
 }
