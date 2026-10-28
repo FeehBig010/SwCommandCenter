@@ -56,21 +56,29 @@ Os exemplos demonstram somente o formato; não são uma afirmação de popularid
 
 ## Fontes externas investigadas
 
+Revisão de integração em **28/10/2026**. Foram consultadas páginas públicas de documentação/termos, sem importar composições ou estatísticas.
+
 | Fonte solicitada | Integração neste MVP | Situação de termos/licença/API |
 | --- | --- | --- |
-| SWGT Defense Trending | Nenhuma coleta automática | Não foi possível confirmar um meio oficial e autorização de reutilização nesta sessão. |
-| SWLens Trending Siege Teams | Nenhuma coleta automática | Não foi possível confirmar um meio oficial e autorização de reutilização nesta sessão. |
-| Rosa Midman Siege Trending | Nenhuma coleta automática | Não foi possível confirmar um meio oficial e autorização de reutilização nesta sessão. |
+| SWGT Defense Trending | Nenhuma coleta automática | Os [termos oficiais](https://swgt.io/controllers/common/viewUserAgreement), vigentes desde 18/07/2026, exigem autorização escrita para cópia/extração automatizada e reutilização do conteúdo proprietário. Não foi identificado um endpoint documentado com licença para esta integração. |
+| SWLens Trending Siege Teams | Nenhuma coleta automática | Os [termos oficiais](https://www.swlens.io/terms), atualizados em 11/10/2026, exigem autorização escrita para coleta em massa, leitura direta de endpoints e redistribuição de equipes/estatísticas. Contato indicado pela fonte: contact@swlens.io. |
+| Rosa Midman Siege Trending | Nenhuma coleta automática | A [página pública](https://rosa-midman.com/game-data/summoners-war-rta) apresenta tendências, mas não foi confirmada uma API oficial documentada nem licença de redistribuição. É necessário consultar o responsável antes de integrar. |
 
-A ferramenta de pesquisa disponível retornou erro e a política de rede do ambiente não libera esses destinos. Isso não demonstra que uma integração não exista nem que o uso esteja permitido. Não foram copiadas bases, rankings, composições populares nem números desses serviços. Uma integração futura deve confirmar a licença/termos e usar um endpoint documentado/autorizado, entregando o mesmo DTO validado de importação com origem e data. O envio manual de um arquivo de terceiro continua dependendo de autorização real; a declaração registrada não substitui essa autorização.
+Não foram copiadas bases, rankings, composições populares nem números desses serviços. Não identificar uma API pública não demonstra que ela inexista. Uma integração futura deve confirmar a licença/termos e usar um endpoint documentado/autorizado, entregando o mesmo DTO validado de importação com origem e data. O envio manual de um arquivo de terceiro continua dependendo de autorização real; a declaração registrada não substitui essa autorização.
+
+## Revisão incremental
+
+O módulo já estava integrado ao projeto; esta revisão preserva seus componentes, rotas e políticas. Importações JSON cujo documento é `null`, array ou primitivo agora retornam validação amigável em PT-BR. A data dos dados no catálogo usa UTC para preservar o dia informado pela fonte, inclusive quando o navegador está no fuso de São Paulo. Nenhuma migration adicional é necessária para essas correções; a migration original acima continua necessária no Supabase utilizado pelo site.
 
 ## Verificação
 
 - `tests/guild-intelligence.test.mjs`: identidade com líder, IDs reais, JSON/CSV, proveniência, duplicações, presets imutáveis e estatísticas sem vitórias implícitas.
 - `tests/guild-intelligence-cloud.test.mjs`: contrato dos RPCs, escopo, paginação, referência opaca de preset e erros PT-BR.
 - `tests/guild-intelligence-rls.test.mjs`: migrations reais, permissões de membros/líderes, isolamento de duas guildas, cadastro sem batalha, idempotência, resultados e correções, exclusão, FKs e integração dos counters legados.
-- `tests/browser/guild-intelligence.mjs`: fluxo no site real com sessão de teste e RPCs executados no PostgreSQL local; desktop/mobile e persistência após recarregar.
+- `tests/browser/guild-intelligence.mjs`: fluxo no site real com sessão de teste e RPCs executados no PostgreSQL local; desktop/mobile, fuso de São Paulo, rejeição de JSON `null` e persistência após recarregar. O preset é semeado antes de montar o React para não disputar com o salvamento local da aplicação.
 - `npm test`, `npm run test:browser`, `npm run build`. O projeto não oferece script de lint.
+
+Na revisão de 28/10/2026, `npm test` passou com **471 testes** e `npm run test:browser` passou nos quatro fluxos disponíveis (privacidade/onboarding, Trade-offs, Guild Intelligence e portal inicial). No Guild Intelligence, Chromium em 1440×1000 e 390×844 validou cadastro sem batalha, consulta por outro membro, vínculo de preset, persistência após refresh, resultados opcionais, troca de guilda, cadastro/importação pela liderança e ausência de erros de execução. As migrations foram executadas em PostgreSQL/PGlite local, com sessões sintéticas, sem enviar dados ao Supabase de produção. O conector Browser não oferece runtime chamável nesta sessão; foi utilizado o Playwright já instalado no projeto, sem iniciar o aplicativo desktop.
 
 ## Arquivos do módulo
 
