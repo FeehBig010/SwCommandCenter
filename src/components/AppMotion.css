@@ -1,0 +1,45 @@
+/* Shared micro-interactions. Geometry, typography and business states stay local. */
+:root{--motion-gold:#d4af37;--motion-ease:cubic-bezier(.22,1,.36,1)}
+.app-motion-layer{position:fixed;inset:0;pointer-events:none!important;z-index:2100;overflow:hidden;contain:strict}
+.app-motion-layer *{pointer-events:none!important}
+.app-motion-spotlight{position:absolute;left:0;top:0;width:var(--surface-width,0px);height:var(--surface-height,0px);transform:translate3d(var(--surface-x,0px),var(--surface-y,0px),0);background:radial-gradient(300px circle at var(--cursor-x,50%) var(--cursor-y,50%),#dfbf7919,transparent 75%);opacity:0;transition:opacity .18s ease;will-change:transform}
+.app-motion-spotlight[data-visible=true]{opacity:1}
+.motion-ripple-clip{position:absolute;display:block;overflow:hidden;isolation:isolate}
+.motion-ripple-clip>i{position:absolute;display:block;width:var(--ripple-size);height:var(--ripple-size);margin-left:calc(var(--ripple-size)/-2);margin-top:calc(var(--ripple-size)/-2);border:1px solid #efd49e66;border-radius:50%;background:radial-gradient(circle,#efd49e14 35%,#efd49e36 70%,transparent 72%);animation:motion-press-wave .48s ease-out both}
+@keyframes motion-press-wave{from{transform:scale(.08);opacity:.85}to{transform:scale(1);opacity:0}}
+:is(.app-shell,.auth-modal,.optimizer-rune-dialog) [data-motion-nav]{position:relative;isolation:isolate}
+.motion-navigation-light{position:absolute;left:0;top:0;display:block;width:var(--nav-width,0px);height:var(--nav-height,0px);transform:translate3d(var(--nav-x,0px),var(--nav-y,0px),0);border:1px solid #d4af3738;border-radius:6px;background:linear-gradient(120deg,#d4af3720,#d4af3708);box-shadow:inset 0 1px #f6dfa412;pointer-events:none;z-index:-1;opacity:0;transition:transform .32s var(--motion-ease),width .25s var(--motion-ease),height .25s var(--motion-ease),opacity .16s ease}
+[data-motion-nav=ready]>.motion-navigation-light{opacity:1}
+:is(.app-shell,.auth-modal,.optimizer-rune-dialog) [data-motion-nav=ready] :is([role=tab][aria-selected=true],button[aria-pressed=true],button.active){background:transparent;color:#e1c484;box-shadow:none}
+@media(prefers-reduced-motion:no-preference){
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) :is(.button,.portal-primary,.portal-cloud-button,.coupon-copy,.coupon-redeem,.coupon-events,.command-link,.command-area,.icon-button){transition:background-color .22s ease,border-color .22s ease,color .18s ease,box-shadow .28s var(--motion-ease),transform .22s var(--motion-ease),scale .16s var(--motion-ease),opacity .15s ease}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) :is(button,a.button):not(:disabled):not([aria-disabled=true]):active{scale:.98}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) [data-motion-nav] button:not(:disabled):not([aria-disabled=true]):active{scale:1}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) :is(input:not([type=range]),select,textarea){transition:border-color .18s ease,box-shadow .22s ease,background-color .18s ease}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) :is(input:not([type=range]):not([type=checkbox]),select,textarea):focus-visible{box-shadow:0 0 0 3px #d4af3714}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) .nautical-slider::-webkit-slider-thumb{transition:box-shadow .2s ease,transform .18s ease}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) .nautical-slider:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px #d4af3724}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) .nautical-slider::-moz-range-thumb{transition:box-shadow .2s ease,transform .18s ease}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) .nautical-slider:focus-visible::-moz-range-thumb{box-shadow:0 0 0 4px #d4af3724}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) main>:is(section,article,.page-intro,.empty-results,.guild-center){animation:motion-view-enter .24s ease-out}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) details[open]>:not(summary):not(style){animation:motion-detail-enter .2s ease-out}
+ :is(.auth-modal,.choice-dialog,.optimizer-rune-dialog,.gi-modal){animation:motion-detail-enter .22s ease-out}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) :is(.toast,.coupon-copy.copied){animation:motion-feedback .32s var(--motion-ease)}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) .button[aria-busy=true]{background-image:linear-gradient(110deg,transparent 25%,#efd49e1c 50%,transparent 75%);background-size:220% 100%;animation:motion-working 1.6s linear infinite}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) .button[aria-busy=true]:disabled{box-shadow:inset 0 1px #efd49e38}
+}
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) :is(.button,.portal-primary,.portal-cloud-button,.coupon-copy,.coupon-redeem,.coupon-events,.command-link):not(:disabled):not([aria-disabled=true]):hover{box-shadow:inset 0 -70px #d4af3710,0 4px 15px #0003;border-color:#bb9c5980}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) :is(.button.primary,.portal-primary,.coupon-copy):not(:disabled):not([aria-disabled=true]):hover{box-shadow:inset 0 -70px #fff1,0 4px 16px #d4af371c}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) :is(.button,.portal-primary,.coupon-copy):not(:disabled):not([aria-disabled=true]):not([role=tab]):not([aria-pressed]):hover{transform:translateY(-1px)}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) [data-motion-nav] button:hover{transform:none;box-shadow:inset 0 -1px #d4af3766}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) :is(.portal-glass,.portal-coupons,.summary-monster-card,.command-area,.command-metric,.command-insight,.game-news-card,.gi-counter-card,.siege-master-card,.rune-detail,.saved-item){transition:border-color .22s ease,box-shadow .28s var(--motion-ease)}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) :is(.portal-glass,.portal-coupons,.summary-monster-card,.command-area,.command-metric,.command-insight,.game-news-card,.gi-counter-card,.siege-master-card,.rune-detail,.saved-item):hover{box-shadow:inset 0 1px #edd8a815,0 5px 18px #0003}
+ :is(.app-shell,.auth-modal,.optimizer-rune-dialog) .coupon-refresh:not(:disabled):hover svg{transition:transform .32s var(--motion-ease);transform:rotate(45deg)}
+}
+@keyframes motion-view-enter{from{opacity:.72}to{opacity:1}}
+@keyframes motion-detail-enter{from{opacity:.35}to{opacity:1}}
+@keyframes motion-feedback{0%{filter:brightness(.95)}55%{filter:brightness(1.12)}100%{filter:none}}
+@keyframes motion-working{to{background-position:-220% 0}}
+@media(hover:none),(pointer:coarse){.app-motion-spotlight{display:none}}
+@media(prefers-reduced-motion:reduce),(forced-colors:active){.app-motion-layer,.motion-navigation-light{display:none}:is(.app-shell,.auth-modal,.optimizer-rune-dialog) [data-motion-nav=ready] :is([role=tab][aria-selected=true],button[aria-pressed=true],button.active){outline:1px solid currentColor;outline-offset:-2px}.motion-navigation-light{transition:none}}
