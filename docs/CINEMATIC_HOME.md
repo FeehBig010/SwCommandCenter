@@ -12,13 +12,15 @@ O aplicativo usa React 19, Vite 6 e navegação por hash em `src/App.jsx`. A hom
 
 Os destinos mantêm seus estados vazios, requisitos de sessão e comportamento de refresh. O clique na imagem **seleciona** o cartão; a ação **Entrar** navega usando a função já existente de `App`. A Calculadora Livre continua acessível diretamente por `#/quick` e pelo atalho na home.
 
+O mesmo carrossel também contém os cartões **Calculadora Livre**, **Sincronizar Conta Completa** e **Códigos & Eventos**. Eles exibem os controles originais dentro do cartão selecionado, sem criar rotas ou uma segunda seção de entrada. Os cartões de ferramentas se expandem em largura e altura para acomodar conteúdo legível; Ciri, o balão e o formulário não são miniaturizados. No celular, conteúdo maior usa rolagem interna.
+
 ## Componentes
 
 - `CinematicHome.jsx`: composição, cenário e acesso aos serviços anteriores.
 - `HomeModuleCards.jsx`: cartões, teclado, controles e carrossel de toque.
 - `CinematicHome.css`: estilos isolados pela classe da home.
-- `src/core/home-modules.js`: metadados dos três destinos e mapeamento de teclado.
-- `EntryPortal.jsx`: recebe apenas uma opção `embedded`; mantém upload, login, conta conectada, Ciri, Calculadora Livre e cupons no bloco abaixo da abertura.
+- `src/core/home-modules.js`: os três destinos originais e os três cartões de ferramentas no array `HOME_CARDS`, além do mapeamento de teclado.
+- `EntryPortal.jsx`: exporta os componentes de apresentação reutilizados `AccountEntry`, `CalculatorEntry` e `WelcomeGuide`. A home os monta uma única vez dentro do carrossel, preservando callbacks de upload/login/conta e o estado do formulário.
 - `App.jsx`: conecta a nova home à mesma navegação e mantém menu/cabeçalho disponíveis nela.
 
 Nenhum módulo interno, política de acesso, tabela ou fluxo de importação foi alterado. A sanfona/login existente permanece montada durante a seleção de cartões, preservando os valores digitados.
@@ -36,7 +38,7 @@ Os seletores são botões semânticos com `aria-pressed`, foco visível, setas d
 ## Validação automatizada
 
 - `tests/home-cinematic.test.mjs`: teclado, caminhos locais, formato/tamanho das imagens e preservação dos originais.
-- `tests/browser/home-cinematic.mjs`: três cartões, seleção, destinos e autorização existentes, refresh, teclado, swipe real via eventos de toque, centralização mobile, tablet, desktop amplo, movimento reduzido, falha de imagens, retenção do formulário de login e importação acionada uma única vez.
+- `tests/browser/home-cinematic.mjs`: seis cartões no mesmo carrossel, ausência da seção inferior, dimensões legíveis da personagem/formulário, seleção, destinos e autorização existentes, refresh, teclado, swipe real via eventos de toque, centralização mobile, tablet, desktop amplo, movimento reduzido, falha de imagens, retenção do formulário de login, importação acionada uma única vez, clipboard e links de resgate.
 - O teste de navegador usa endpoints públicos simulados e nenhuma conta real; ele faz parte de `npm run test:browser`.
 - Comandos do projeto: `npm test`, `npm run test:browser` e `npm run build`. O projeto não define comando de lint.
 
