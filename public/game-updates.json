@@ -1,9 +1,17 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-10-29T09:52:55.452Z",
+  "fetchedAt": "2026-10-29T16:55:01.874Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/event/313/96124",
+      "url": "https://www.withhive.com/event/313/96124",
+      "title": "[World Boss Play Mission] Halloween Guerrilla Event",
+      "category": "event",
+      "publishedAt": "2026-10-29T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261029/5f6fe3a9f5c442067d53fd6af9b75c2a.jpg"
+    },
     {
       "id": "https://www.withhive.com/event/313/96036",
       "url": "https://www.withhive.com/event/313/96036",
