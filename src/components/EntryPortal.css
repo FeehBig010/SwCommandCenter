@@ -54,3 +54,25 @@
 @media(min-width:768px) and (max-width:900px){.portal-guide>img{top:105px;bottom:auto;object-position:center top}.portal-login-panel fieldset{grid-template-columns:1fr}}
 @media(max-width:767px){.portal-guide>img{height:175px}}
 .portal-account-confirmed{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px 12px;min-height:95px;padding:18px;border:1px solid #d4af3755;border-radius:8px;background:#0b171ca6;text-align:left}.portal-account-confirmed>svg{color:#9dcea7;grid-row:span 2}.portal-account-confirmed strong{color:#e8d5a3;overflow-wrap:anywhere}.portal-account-confirmed>span{font-size:11px;color:#9db0b9;grid-column:2}.portal-account-confirmed>button{grid-column:3;grid-row:1 / 3}
+/* Cinematic motion keeps the original welcome screen and account actions intact. */
+.entry-portal .portal-motes{display:none}
+.entry-portal .portal-castle{animation:none}
+.portal-ambient{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.portal-ambient>i{position:absolute;width:min(75vw,1000px);height:min(85vh,850px);border-radius:50%;background:radial-gradient(ellipse,#d4af3712,transparent 65%);left:12%;top:5%}
+.portal-ambient>i+i{background:radial-gradient(ellipse,#8463c31a,transparent 68%);left:auto;right:-10%;top:-25%}
+@media(prefers-reduced-motion:no-preference){
+ .portal-ambient>i{animation:portal-ambient-drift 26s ease-in-out infinite alternate}
+ .portal-ambient>i+i{animation-delay:-13s;animation-duration:32s}
+}
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){
+ .entry-portal :is(.portal-manual,.portal-account,.portal-coupons)[data-home-tilt]{transform:perspective(1100px) rotateX(calc(var(--home-y,0) * var(--home-tilt-angle))) rotateY(calc(var(--home-x,0) * var(--home-tilt-angle)));translate:0 calc(var(--home-lift,0) * -3px);will-change:transform,translate;box-shadow:0 12px 24px #0004,inset 0 0 0 1px rgb(var(--motion-light-rgb)/var(--home-edge-alpha))}
+ .portal-manual .portal-swords svg{transition:translate var(--motion-panel-duration) var(--motion-ease-spring)}
+ .portal-manual[data-home-tilt] .portal-swords svg{translate:0 -3px}
+}
+:root[data-appearance=office] .portal-ambient>i{animation:none;opacity:.3}
+:root[data-appearance=office] .portal-shade{background:#0a1018e8}
+@keyframes portal-ambient-drift{from{transform:translate3d(-3%,0,0);opacity:.5}to{transform:translate3d(4%,3%,0);opacity:1}}
+
+/* Radial ambience replaces the old continuously blurred fog. */
+.entry-portal .portal-mist{animation:none;filter:none;opacity:.35}
+@media(forced-colors:active){.portal-ambient{display:none}}

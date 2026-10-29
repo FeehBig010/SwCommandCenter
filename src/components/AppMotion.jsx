@@ -1,10 +1,10 @@
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 
-const NAV_GROUPS='.sidebar nav,[role="tablist"],.segmented,.optimizer-area-tabs';
+const NAV_GROUPS='.sidebar nav,[role="tablist"],.segmented,.optimizer-area-tabs,.element-filter,.appearance-options';
 const ACTIVE_ITEMS=['button[aria-current="page"]','[role="tab"][aria-selected="true"]','button[aria-current="location"]','button[aria-pressed="true"],button.active'];
 function selectedItem(group){for(const selector of ACTIVE_ITEMS){const item=group.querySelector(selector);if(item)return item;}return null;}
-const SURFACES='.portal-glass,.portal-coupons,.summary-monster-card,.monster-editor,.command-area,.command-metric,.command-insight,.command-war,.game-news-card,.gi-counter-card,.siege-master-card,.siege-goal-card,.rune-detail,.saved-item,.team-panel,.cairos-panel,.guild-center-links>.button';
+const SURFACES='.portal-manual,.portal-account,.portal-glass,.portal-coupons,.summary-monster-card,.monster-editor,.command-area,.command-metric,.command-insight,.command-war,.game-news-card,.gi-counter-card,.siege-master-card,.siege-goal-card,.rune-detail,.saved-item,.team-panel,.cairos-panel,.guild-center-links>.button';
 const FLOATING='dialog,[role="dialog"],.quick-settings-popover,.quick-header-popover,.combobox-popover,[inert]';
 
 function NavigationLight({group}){
@@ -80,11 +80,11 @@ export default function AppMotion(){
   }
   const leave=event=>{if(!event.relatedTarget)hideLight();};
   const visibility=()=>{if(document.hidden){hideLight();setRipples([]);}};
-  document.addEventListener('pointermove',move,{passive:true});document.addEventListener('pointerout',leave,{passive:true});document.addEventListener('click',click,true);
+  document.addEventListener('focusin',scheduleDiscovery);document.addEventListener('pointermove',move,{passive:true});document.addEventListener('pointerout',leave,{passive:true});document.addEventListener('click',click,true);
   document.addEventListener('scroll',hideLight,{capture:true,passive:true});document.addEventListener('visibilitychange',visibility);window.addEventListener('resize',hideLight,{passive:true});pointer.addEventListener('change',hideLight);
   return()=>{
    cancelAnimationFrame(frame);cancelAnimationFrame(discoverFrame);rootChanges.disconnect();appChanges.disconnect();mainChanges.disconnect();hideLight();
-   document.removeEventListener('pointermove',move);document.removeEventListener('pointerout',leave);document.removeEventListener('click',click,true);
+   document.removeEventListener('focusin',scheduleDiscovery);document.removeEventListener('pointermove',move);document.removeEventListener('pointerout',leave);document.removeEventListener('click',click,true);
    document.removeEventListener('scroll',hideLight,true);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('resize',hideLight);pointer.removeEventListener('change',hideLight);
   };
  },[reduced]);

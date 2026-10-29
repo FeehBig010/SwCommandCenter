@@ -1,3 +1,5 @@
+import {useRef} from 'react';
+import useMotionFeedback from '../hooks/useMotionFeedback';
 import OptimizerAudit from './OptimizerAudit';
 import { CheckCircle2, AlertCircle, FileText, Save, Download, SearchCheck } from 'lucide-react';
 import { STATS, LABELS, STAT_NAMES, SETS } from '../core/data';
@@ -6,9 +8,10 @@ import DamagePreview from './DamagePreview';
 import EquipmentWheel from './EquipmentWheel';
 const fmt=n=>Number(n).toLocaleString('pt-BR');
 export default function Results({result,account,onSave,stale=false}){
- if(!result)return <section className="results-panel"><h2><FileText size={18}/>Resultado da busca</h2><div className="empty-results"><SearchCheck size={28}/><p>Configure as metas e inicie a otimização.</p><small>Você recebe as builds e a lista de runas para localizar no jogo.</small></div></section>;
+ const region=useRef(null);useMotionFeedback(region,result);
+ if(!result)return <section ref={region} className="results-panel"><h2><FileText size={18}/>Resultado da busca</h2><div className="empty-results"><SearchCheck size={28}/><p>Configure as metas e inicie a otimização.</p><small>Você recebe as builds e a lista de runas para localizar no jogo.</small></div></section>;
  const good=result.status==='met';
- return <section className="results-panel" aria-live="polite"><div className="result-title"><h2>{good?<CheckCircle2 size={19}/>:<AlertCircle size={19}/>} {result.audit?'Auditoria concluída':good?'Metas atingidas':result.builds.length?'Aproximação encontrada':'Distribuição não encontrada'}</h2><div className="button-group">{result.builds.length>0&&<>{onSave&&<button className="button small" onClick={onSave}><Save size={15}/>Salvar build</button>}<button className="button small" onClick={()=>downloadJSON({version:1,accountId:account.id,...result},'siege-resultado.json')}><Download size={15}/>Exportar</button></>}</div></div>
+ return <section ref={region} className="results-panel" aria-live="polite"><div className="result-title"><h2>{good?<CheckCircle2 size={19}/>:<AlertCircle size={19}/>} {result.audit?'Auditoria concluída':good?'Metas atingidas':result.builds.length?'Aproximação encontrada':'Distribuição não encontrada'}</h2><div className="button-group">{result.builds.length>0&&<>{onSave&&<button className="button small" onClick={onSave}><Save size={15}/>Salvar build</button>}<button className="button small" onClick={()=>downloadJSON({version:1,accountId:account.id,...result},'siege-resultado.json')}><Download size={15}/>Exportar</button></>}</div></div>
   {stale&&<div className="notice warning">As configurações mudaram. Execute uma nova busca antes de salvar este resultado.</div>}
   <OptimizerAudit audit={result.audit}/>
   {result.cloneMatching?.orderValid&&<p className="notice" role="status">Ordem da meta preservada: {result.cloneMatching.turns.map(t=>`${t.name} · Tick ${t.tick}`).join(' → ')}. {good?'Atributos e conjuntos atingidos.':'Aproximação mais próxima encontrada nesta busca; confira os atributos e conjuntos pendentes.'}</p>}
