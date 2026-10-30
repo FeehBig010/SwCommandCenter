@@ -1,9 +1,33 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-10-30T01:56:28.553Z",
+  "fetchedAt": "2026-10-30T08:35:01.274Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/event/313/96143",
+      "url": "https://www.withhive.com/event/313/96143",
+      "title": "SWC2026 WORLD FINALS Prediction Event",
+      "category": "event",
+      "publishedAt": "2026-10-30T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261030/fa7dd31147b9b2fae6e496130e37621b.jpg"
+    },
+    {
+      "id": "https://www.withhive.com/event/313/96142",
+      "url": "https://www.withhive.com/event/313/96142",
+      "title": "SWC2026 WORLD FINALS Special! Player Support Event",
+      "category": "event",
+      "publishedAt": "2026-10-30T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261030/b98e455613fee38f91949dd3098964e6.jpg"
+    },
+    {
+      "id": "https://www.withhive.com/event/313/96141",
+      "url": "https://www.withhive.com/event/313/96141",
+      "title": "Siege Battle Tournament Season 22 Prediction Event",
+      "category": "event",
+      "publishedAt": "2026-10-30T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261029/0e213bc31febf49368590a6b8d74fadf.jpg"
+    },
     {
       "id": "https://www.withhive.com/event/313/96124",
       "url": "https://www.withhive.com/event/313/96124",
