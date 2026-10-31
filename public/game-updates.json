@@ -1,9 +1,17 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-10-31T13:37:53.911Z",
+  "fetchedAt": "2026-10-31T18:30:43.522Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/notice/313/96162",
+      "url": "https://www.withhive.com/notice/313/96162",
+      "title": "[Summoners War] Pass Product Display Error and Resolution Notice",
+      "category": "notice",
+      "publishedAt": "2026-11-01T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
     {
       "id": "https://www.withhive.com/event/313/96143",
       "url": "https://www.withhive.com/event/313/96143",
