@@ -1,6 +1,7 @@
 import {openerRequirements} from './opener-tune.js';
 import {goalReport} from './optimizer.js';
-import {blankConfig,makeTeam,STATS,FOUR} from './data.js';
+import {pveSlots} from './pve-stages.js';
+import {blankConfig,makeTeam,STATS,FOUR,GAME_MODES} from './data.js';
 import {monsterBase} from './monster-search.js';
 import {requiredSheetSpeed,leaderImpact,combatAttributes,scenarioForTeam,simulateCombat,cascadingBoostPlan,cascadeReady,firstRotationSafe,automaticSyncStrategy} from './speedTuner.js';
 import {catalogLeader} from './leader-catalog.js';
@@ -9,17 +10,19 @@ export function quickConfig(master=null,name='Escolher monstro'){
  const base={...(monsterBase(master)||fallback)};
  return {...blankConfig(null,name),masterId:master,sets:[],basis:'total',manual:{base,sheet:{...base}}};
 }
-export function quickTeam(area='siege'){return {...makeTeam(area),towerSpd:15,guildSpd:0,sheetSpeedFormula:true,autoEnemyPassives:true,autoOpener:true,orderMode:'auto',perfectTune:false,configs:Array.from({length:{siege:3,arena:4,cairos:5}[area]||3},()=>quickConfig())};}
+export function quickTeam(area='siege',dungeon=null){return {...makeTeam(area),...(dungeon?{dungeon,destination:dungeon}:{}),towerSpd:15,guildSpd:0,sheetSpeedFormula:true,autoEnemyPassives:true,autoOpener:true,orderMode:'auto',perfectTune:false,configs:Array.from({length:pveSlots(area,dungeon)||GAME_MODES[area]?.slots||3},()=>quickConfig())};}
 export function selectQuickMonster(config,option){return {...quickConfig(option?.master,option?.name),key:config.key,autoSpeed:config.autoSpeed};}
+export const quickCombatTeam=team=>({...team,towerSpd:team.speedMode==='snapshot'?Number(team.towerSpd)||0:15,guildSpd:team.speedMode==='snapshot'?Number(team.guildSpd)||0:0,sheetSpeedFormula:true});
+
 export function quickPreview(input,{captureCheckpoints=false,actorCache=null,includeReference=true,captureReadiness=false}={}){
- const team={...input,autoOpener:true,towerSpd:15,guildSpd:0,sheetSpeedFormula:true};
+ const team={...quickCombatTeam(input),autoOpener:true};
  const active=team.configs.filter(c=>c.enabled!==false),actors=[];
  for(const c of active){if(!c.masterId)return {complete:false,missing:active.filter(c=>!c.masterId).map(c=>c.label),actors:[],turns:[],cut:null};
   if(actorCache?.has(c)){actors.push(actorCache.get(c));continue;}
   const {base,sheet}=c.manual;for(const kind of [base,sheet])for(const stat of STATS){const n=Number(kind[stat]);if(!Number.isFinite(n)||n<0||n>10000000||stat==='spd'&&n<=0)throw new Error(`${c.label}: atributo ${stat.toUpperCase()} inválido.`);}
   const unit={master:c.masterId,element:c.masterId%10,base:Object.fromEntries(STATS.map(k=>[k,Number(base[k])]))},counts={};for(const set of c.sets.filter(Boolean))counts[set]=(counts[set]||0)+(FOUR.has(set)?4:2);
-  const total=Object.fromEntries(STATS.map(k=>[k,Number(sheet[k])])),stats={total,bonus:Object.fromEntries(STATS.map(k=>[k,total[k]-unit.base[k]]))},combat=combatAttributes(unit,stats,counts,team,c.combat);
-  actors.push({key:c.key,will:(counts[15]||0)>=2,master:c.masterId,name:c.label,spd:combat.spd,rawSpd:combat.rawSpd,combat:c.combat,attributes:combat,leaderBonus:leaderImpact(unit,stats,counts,team,c.combat).bonus,goals:goalReport({...stats,combat},c),nemesisSets:Math.floor((counts[14]||0)/2)});if(actorCache)actorCache.set(c,actors.at(-1));
+  const total=Object.fromEntries(STATS.map(k=>[k,Number(sheet[k])])),stats={total,bonus:Object.fromEntries(STATS.map(k=>[k,total[k]-unit.base[k]]))},combat=combatAttributes(unit,stats,counts,team,c.combat,c.snapshotArtifactEffects);
+  actors.push({key:c.key,will:(counts[15]||0)>=2,master:c.masterId,name:c.label,spd:combat.spd,rawSpd:combat.rawSpd,combat:c.combat,...(c.snapshotArtifactEffects?{effects:c.snapshotArtifactEffects}:{}),attributes:combat,leaderBonus:leaderImpact(unit,stats,counts,team,c.combat,c.snapshotArtifactEffects).bonus,goals:goalReport({...stats,combat},c),nemesisSets:Math.floor((counts[14]||0)/2)});if(actorCache)actorCache.set(c,actors.at(-1));
  }
  if(!actors.length)return {complete:false,missing:[],actors:[],turns:[],cut:null};
  const configured=scenarioForTeam(team,actors),enemy=Number(team.enemyCombatSpd)||0,foes=configured.actors.some(a=>a.enemy);const cascade=cascadingBoostPlan(team,configured.events),referenceEnemy=includeReference&&!foes&&!enemy&&(cascade||automaticSyncStrategy(team).kind==='boost')?Math.max(1,actors[0].spd-1):0;const scenario=simulateCombat([...configured.actors,...(!foes&&(enemy||referenceEnemy)>0?[{key:'quick-enemy',name:referenceEnemy?'Inimigo de referência':'Inimigo',spd:enemy||referenceEnemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true,captureCheckpoints,captureReadiness});
@@ -28,9 +31,11 @@ export function quickPreview(input,{captureCheckpoints=false,actorCache=null,inc
 export function quickLeader(master){return catalogLeader(master);}
 
 // Synchronization is chosen by identity, including restored legacy plans.
-// No saved manual/advanced flag may disable the automatic follower targets.
-export function quickOrderLocked(){return true;}
+// Manual teams keep automatic follower targets. Explicit JSON verification
+// preserves the equipped sheets until the player requests a simulation.
+export function quickOrderLocked(team){return team?.speedMode!=='snapshot';}
 export function autoTuneQuickTeam(input){
+ if(!quickOrderLocked(input))return {...quickCombatTeam(input),automaticSync:null,syncAudit:null,perfectTuneAudit:null,configs:input.configs.map(c=>({...c,autoSpeed:false,syncMinimum:null,syncCombatTarget:null}))};
  const strategy=automaticSyncStrategy(input),team={...input,orderMode:'auto',autoOpener:true,autoEnemyPassives:true,towerSpd:15,guildSpd:0,perfectTune:strategy.kind==='strict',automaticSync:strategy,syncAudit:null,perfectTuneAudit:null,configs:input.configs.map((c,i)=>({...c,autoSpeed:i>0,syncMinimum:null,syncCombatTarget:null}))};
  if(team.configs.some(c=>!c.masterId))return team;
  try{
@@ -56,7 +61,7 @@ export function autoTuneBoost(input){
   const configs=input.configs.slice();let feasible=true,nextTarget=target;
   for(let i=configs.length-1;i>0;i--){
    const c=configs[i],unit={master:c.masterId,element:c.masterId%10,base:c.manual.base};
-   const sheet=requiredSheetSpeed(nextTarget,unit,{...input,sheetSpeedFormula:true},c.combat);
+   const sheet=requiredSheetSpeed(nextTarget,unit,{...input,sheetSpeedFormula:true},c.combat,c.snapshotArtifactEffects);
    if(sheet==null||sheet>1000){feasible=false;break;}
    configs[i]={...c,manual:{...c.manual,sheet:{...c.manual.sheet,spd:sheet}}};
    nextTarget=combatSpeed({...input,configs},i,sheet);if(nextTarget>opener){feasible=false;break;}
@@ -115,7 +120,7 @@ export function autoTuneCascade(input){
   const seed=working;let found=false;
   for(let combatTarget=1;combatTarget<=1000;combatTarget++){
    working=seed;
-   for(let i=plan.lastIndex+1;i<keys.length;i++)if(auto[i]){const c=working.configs[i],unit={master:c.masterId,element:c.masterId%10,base:c.manual.base};set(i,requiredSheetSpeed(combatTarget,unit,{...working,sheetSpeedFormula:true},c.combat,{}, {},{conservative:true}));}
+   for(let i=plan.lastIndex+1;i<keys.length;i++)if(auto[i]){const c=working.configs[i],unit={master:c.masterId,element:c.masterId%10,base:c.manual.base};set(i,requiredSheetSpeed(combatTarget,unit,{...working,sheetSpeedFormula:true},c.combat,c.snapshotArtifactEffects,{}, {conservative:true}));}
    if(safeThrough(keys.length-1,true)){found=true;break;}
   }
   feasible=found;
@@ -128,7 +133,7 @@ export function autoTuneCascade(input){
 
 function combatSpeed(team,index,value){
  const c=team.configs[index],unit={master:c.masterId,element:c.masterId%10,base:c.manual.base};
- return combatAttributes(unit,{total:{...c.manual.sheet,spd:value}},{},{...team,sheetSpeedFormula:true,towerSpd:15,guildSpd:0},c.combat).spd;
+ return combatAttributes(unit,{total:{...c.manual.sheet,spd:value}},{},quickCombatTeam(team),c.combat,c.snapshotArtifactEffects).spd;
 }
 function sheetForCombat(team,index,target){
  const speed=value=>combatSpeed(team,index,value);
@@ -159,7 +164,7 @@ export function autoTunePerfect(input){
 export function quickSpeedTarget(team,config){
  if(!config.masterId)return null;
  const sheetSpd=config.syncMinimum??Number(config.manual.sheet.spd);if(!Number.isFinite(sheetSpd)||sheetSpd<=0)return null;const unit={master:config.masterId,element:config.masterId%10,base:config.manual.base};
- const combatSpd=combatAttributes(unit,{total:{...config.manual.sheet,spd:sheetSpd}},{},{...team,sheetSpeedFormula:true,guildSpd:0},config.combat).spd;
+ const combatSpd=combatAttributes(unit,{total:{...config.manual.sheet,spd:sheetSpd}},{},quickCombatTeam(team),config.combat,config.snapshotArtifactEffects).spd;
  return {combatSpd,runeSpd:Math.max(0,sheetSpd-Number(unit.base.spd)),hasTarget:config.syncMinimum!=null};
 }
 

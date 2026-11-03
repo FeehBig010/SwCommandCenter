@@ -146,3 +146,31 @@ npm start              # site + cron: terça às 23:59, America/Sao_Paulo
 ```
 
 O cron exige um processo Node permanentemente ativo e armazenamento persistente; um host puramente estático entrega apenas as imagens do último build. [Configuração, fonte, logs e operação](docs/ASSETS.md).
+
+## Calculadora Livre · presets do SWEX
+
+A calculadora inicia com os slots vazios em toda nova abertura, inclusive após
+importar uma conta. Rascunhos antigos não são apagados do armazenamento nem
+carregados automaticamente. Durante a mesma abertura, trocar de área mantém a
+montagem temporária de cada área.
+
+Use **Presets do JSON** para pesquisar por área, nome do time ou monstro e
+selecionar um preset importado. Siege, Arena Regular/Interserver, RTA, Cairos,
+Dimensional, Rift/R5 e ToA mantêm seus slots nativos, inclusive posições vazias.
+A verificação usa uma cópia da ficha, do líder e dos equipamentos da conta; o
+preset original e os outros módulos permanecem intactos.
+
+**Simular sincronia** aplica as metas automáticas apenas à cópia da calculadora.
+**Voltar aos valores do JSON** recarrega o preset original. A conferência inicial
+preserva as velocidades reais, em vez de ajustar os seguidores automaticamente.
+As torres do JSON são usadas nessa conferência; a montagem manual e a simulação
+continuam usando as regras existentes de torres máximas.
+
+A seleção de RTA respeita a atribuição de runas de World Arena. Quando o JSON
+contém menos de seis runas para um monstro, a interface identifica o equipamento
+incompleto. Para manter uma montagem temporária antes de sair da calculadora,
+exporte a imagem ou utilize **Construir Time** nos modos compatíveis.
+
+Validação específica: `node --test tests/quick-presets.test.mjs`. O comando
+`npm run test:browser` inclui abertura vazia, seleção de todas as áreas,
+verificação/simulação, integridade do JSON e layout mobile.

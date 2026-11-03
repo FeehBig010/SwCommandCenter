@@ -13,6 +13,16 @@ const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message)
 try{
  await page.goto(`${origin}/__qa__/seed`);await page.evaluate(async quickPlans=>{localStorage.setItem('has_completed_onboarding','true');const db=await new Promise((resolve,reject)=>{const r=indexedDB.open('d8stino-siege-v1',1);r.onupgradeneeded=()=>r.result.createObjectStore('data');r.onerror=()=>reject(r.error);r.onsuccess=()=>resolve(r.result);});await new Promise((resolve,reject)=>{const tx=db.transaction('data','readwrite');tx.objectStore('data').put(quickPlans,'quickPlans');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});db.close();},plans);
  await page.goto(`${origin}/#/quick`);await page.getByRole('heading',{name:'Calculadora Livre',exact:true}).waitFor();assert.equal(await page.locator('.wizard-ruler').count(),0);assert.equal(await page.locator('.summary-monster-card').count(),3);assert.equal(await page.locator('.official-monster-sheet').count(),0);
+ assert.equal(await page.locator('.summary-monster-card [data-png-name="Escolher monstro"]').count(),3,'A saved calculator draft must not prefill a new visit');
+ for(const [area,plan]of Object.entries(plans)){
+  await page.locator(`#quick-tab-${area}`).click();
+  for(const [index,config]of plan.configs.entries()){
+   const search=page.getByRole('combobox',{name:`Monstro livre ${index+1}`,exact:true});await search.fill(config.label);
+   await page.getByRole('option').filter({has:page.getByText(config.label,{exact:true})}).first().click();
+  }
+  await page.locator('.summary-monster-card').first().getByRole('spinbutton',{name:`${plan.configs[0].label} runas livres spd`,exact:true}).fill('100');
+ }
+ await page.locator('#quick-tab-siege').click();
  await page.locator('.summary-portrait .portrait-photo.is-loaded').nth(2).waitFor();await page.evaluate(()=>document.fonts.ready);
  for(const viewport of [{width:1366,height:768},{width:1280,height:720},{width:1024,height:768},{width:800,height:900},{width:390,height:844},{width:320,height:740}]){
   await page.setViewportSize(viewport);await page.evaluate(()=>scrollTo(0,0));

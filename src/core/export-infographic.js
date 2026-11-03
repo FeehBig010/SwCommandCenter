@@ -1,7 +1,7 @@
 import {equivalentSkillIds} from './CollabMapping.js';
 import {orderRuneSets} from './rune-sets.js';
 import {SETS,FOUR} from './data.js';
-import {quickPreview,quickOrderLocked} from './quick-calculator.js';
+import {quickPreview,quickOrderLocked,quickCombatTeam} from './quick-calculator.js';
 import {firstRotationSafe,combatAttributes,scenarioForTeam,simulateCombat} from './speedTuner.js';
 import {calculateStats,artifactBonus,artifactEffects,setCounts} from './optimizer.js';
 import {currentRuneIds} from './loadouts.js';
@@ -39,7 +39,7 @@ export function createInfographic(team,account=null,{builds=null,options={}}={})
   const base=c.manual?.base||unit?.base||monsterBase(c.masterId);
   const stats=c.manual?.sheet?{total:c.manual.sheet}:build?.stats?.total?build.stats:unit&&gear.length===ids.length?calculateStats(unit,gear,artifactBonus(account,equippedUnit)):null;
   const counts=build?.counts||setCounts(gear),effects=unit?artifactEffects(account,equippedUnit,c.artifacts!==false):{};
-  const combat=build?.stats?.combat||(stats&&base?combatAttributes({master:c.masterId,element:c.masterId%10,base},stats,counts,manual?{...team,sheetSpeedFormula:true,towerSpd:15,guildSpd:0}:team,c.combat,effects):null);
+  const combat=build?.stats?.combat||(stats&&base?combatAttributes({master:c.masterId,element:c.masterId%10,base},stats,counts,manual?quickCombatTeam(team):team,c.combat,effects):null);
   if(combat)actors.push({key:c.key,master:c.masterId,name:c.label,spd:combat.spd,rawSpd:combat.rawSpd,combat:c.combat,effects,attributes:combat,will:(counts[15]||0)>=2,nemesisSets:Math.floor((counts[14]||0)/2)});
   const rows=statsOrder.map(key=>({key,base:base?finite(base[key]):null,bonus:stats?.total&&base?finite(stats.total[key])-finite(base[key]):null,total:stats?.total?finite(stats.total[key]):null}));
   const runes=Array.from({length:6},(_,slot)=>{const r=gear.find(r=>r.slot===slot+1);return r?{slot:slot+1,set:r.set,name:SETS[r.set]||'Runa',level:r.level,stars:r.stars,icon:SETS[r.set]?`/game-icons/runes/${SETS[r.set].toLowerCase()}.png`:null}:null;});
