@@ -1,9 +1,17 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-04T03:01:08.410Z",
+  "fetchedAt": "2026-11-04T10:49:28.574Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/event/313/96224",
+      "url": "https://www.withhive.com/event/313/96224",
+      "title": "Rune & Artifact Free Removal Event",
+      "category": "event",
+      "publishedAt": "2026-11-04T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/8066/20241002/dc5cef4eb85577bc7b88097d0b445b6a.jpg"
+    },
     {
       "id": "https://www.withhive.com/notice/313/96162",
       "url": "https://www.withhive.com/notice/313/96162",
