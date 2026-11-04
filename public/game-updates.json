@@ -1,9 +1,17 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-04T10:49:28.574Z",
+  "fetchedAt": "2026-11-04T18:37:46.660Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/notice/313/96260",
+      "url": "https://www.withhive.com/notice/313/96260",
+      "title": "[Summoners War] Developer's Note: Dimension Arena Update (Modified)",
+      "category": "developer",
+      "publishedAt": "2026-11-04T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
     {
       "id": "https://www.withhive.com/event/313/96224",
       "url": "https://www.withhive.com/event/313/96224",
