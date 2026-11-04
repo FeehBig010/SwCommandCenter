@@ -1,3 +1,4 @@
+import {balanceCurrentTiming} from './team-balance.js';
 import {equivalentSkillIds} from './CollabMapping.js';
 import {orderRuneSets} from './rune-sets.js';
 import {SETS,FOUR} from './data.js';
@@ -52,10 +53,10 @@ export function createInfographic(team,account=null,{builds=null,options={}}={})
    level:unit?(unit.level||null):base?40:null,stars:unit?(unit.stars||null):base?6:null,awakened:Math.floor(c.masterId/10)%10>0,planning:!unit,statsKnown:!!stats,selectedBuild:!!build,
    stats:rows,runes,artifacts,sets,desiredSets:!gear.length,skills:abilities,leader:activeLeader?team.leader:leader,activeLeader,
    combatSpd:combat?.spd??null,runeSpd:stats?.total&&base?Math.max(0,finite(stats.total.spd)-finite(base.spd)):null,artifactSpd:finite(c.combat?.artifactSpd),
-   goals:statsOrder.filter(key=>Number(c.goals?.[key])>0).map(key=>({key,value:Number(c.goals[key]),additional:c.basis==='bonus'&&!['cr','cd','res','acc'].includes(key)}))};
+   goals:statsOrder.flatMap(key=>{const balanced=team.balanceEnabled&&c.balance?.minimums?.[key]!=null,value=Number(balanced?c.balance.minimums[key]:c.goals?.[key]);return value>0?[{key,value,additional:!balanced&&c.basis==='bonus'&&!['cr','cd','res','acc'].includes(key),...(balanced?{combat:key==='spd',preferred:c.balance.required?.[key]===false}:{})}]:[];})};
  });
  let preview;
- if(manual)preview=quickPreview(team);
+ if(manual&&team.balanceEnabled){const timing=balanceCurrentTiming(team);preview=timing?{...timing.preview,referenceEnemy:timing.referenceSpeed}:quickPreview(team);}else if(manual)preview=quickPreview(team);
  else if(actors.length===configs.length){
   const configured=scenarioForTeam(team,actors),enemy=Number(team.enemyCombatSpd)||0;
   const scenario=simulateCombat([...configured.actors,...(!configured.actors.some(a=>a.enemy)&&enemy>0?[{key:'infographic-enemy',name:'Inimigo',spd:enemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true});

@@ -33,7 +33,7 @@ export function quickLeader(master){return catalogLeader(master);}
 // Synchronization is chosen by identity, including restored legacy plans.
 // Manual teams keep automatic follower targets. Explicit JSON verification
 // preserves the equipped sheets until the player requests a simulation.
-export function quickOrderLocked(team){return team?.speedMode!=='snapshot';}
+export function quickOrderLocked(team){return !['snapshot','free'].includes(team?.speedMode);}
 export function autoTuneQuickTeam(input){
  if(!quickOrderLocked(input))return {...quickCombatTeam(input),automaticSync:null,syncAudit:null,perfectTuneAudit:null,configs:input.configs.map(c=>({...c,autoSpeed:false,syncMinimum:null,syncCombatTarget:null}))};
  const strategy=automaticSyncStrategy(input),team={...input,orderMode:'auto',autoOpener:true,autoEnemyPassives:true,towerSpd:15,guildSpd:0,perfectTune:strategy.kind==='strict',automaticSync:strategy,syncAudit:null,perfectTuneAudit:null,configs:input.configs.map((c,i)=>({...c,autoSpeed:i>0,syncMinimum:null,syncCombatTarget:null}))};

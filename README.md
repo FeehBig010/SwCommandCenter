@@ -174,3 +174,53 @@ exporte a imagem ou utilize **Construir Time** nos modos compatíveis.
 Validação específica: `node --test tests/quick-presets.test.mjs`. O comando
 `npm run test:browser` inclui abertura vazia, seleção de todas as áreas,
 verificação/simulação, integridade do JSON e layout mobile.
+
+### Balança de builds · busca conjunta
+
+Na Calculadora Livre, os cards mostram a ficha **Base + Bônus**, os seis slots de
+runas reais, os artefatos equipados e os conjuntos. Ao selecionar um monstro da
+conta, a cópia exata do inventário é carregada. As montagens continuam temporárias;
+a página inicial e os presets salvos não são alterados.
+
+- **Prioridades e mínimos**: marque atributos e ajuste os pesos de 1 a 5. TC não
+  é exigida quando não selecionada. Um mínimo pode ser obrigatório ou apenas uma
+  preferência. Escolha também conjuntos e atributos principais dos slots 2/4/6
+  como obrigatórios ou preferidos.
+- **Escolher runas**: fixe uma peça por ID em qualquer um dos seis slots. A trava
+  indica uma exigência para a próxima busca; a ficha só muda ao visualizar uma
+  alternativa. Liberar a peça remove a exigência. Filtros e paginação mantêm
+  todas as peças disponíveis acessíveis, respeitando bloqueios e reservas.
+- **Ordem de ação**: use as setas para ordenar os monstros sem mover a liderança.
+  Cada ligação aceita **Exigir sincronia** ou **Mais próximo possível**. É possível
+  exigir apenas o primeiro par e aproximar o restante, ou aproximar todo o time.
+- **Buscar builds no JSON**: utiliza o Worker existente para gerar candidatos e
+  alocar peças para o time inteiro, sem reutilizar runas. Considera as reservas,
+  times prioritários e bloqueios locais configurados. A pool de atribuições RTA
+  permanece separada do equipamento principal.
+- **Atual / Alternativas A–C**: visualize até três resultados distintos nos mesmos
+  cards. Indicadores nos atributos mostram metas não atendidas. Se as exigências
+  não forem alcançadas, o resultado é uma **Aproximação**, sem habilitar Aplicar.
+  Uma nova busca pode também não encontrar melhora: a build atual permanece.
+- **Aplicar alternativa**: revalida todas as peças, metas e ticks no Worker. Aplica
+  somente à montagem temporária da calculadora; não equipa nada no jogo nem
+  altera o JSON. Mudanças de regra/inventário invalidam os resultados anteriores.
+  **Restaurar preset original** permite recuperar a composição importada.
+
+A avaliação usa a primeira rotação real do motor de ticks e as habilidades
+**garantidas conhecidas**. O buff SPD da Adriana e de sua equivalente Water Pure
+Vanilla Cookie é aplicado após sua ação, sem inventar boost ATB. Eventos manuais
+podem especificar outras ações, alvos ou condições. Sem defesa informada, existe
+uma referência explícita de inimigo com a SPD do abridor menos 1. Sincronia
+nesse cenário **não garante ausência de corte contra qualquer defesa**. O líder
+é preservado independentemente da ordem de ação.
+
+A busca é heurística e limitada por candidatos/combinações, não uma garantia de
+máximo global. O progresso corresponde ao trabalho executado, sem atrasos
+artificiais, e a busca pode ser cancelada. Artefatos permanecem equipados; não há
+reatribuição de artefatos nem projeção de grinds/gemas. **Ajustes manuais**, a
+simulação anterior, o Card Técnico e as exportações continuam disponíveis.
+
+Validação: `node --test tests/team-balance.test.mjs` e
+`node tests/browser/team-balance.mjs` (com Vite de testes em `E2E_BASE_URL`).
+`npm run test:browser` executa também as regressões de densidade, presets e demais
+áreas. Os cenários usam exclusivamente contas fictícias e armazenamento isolado.

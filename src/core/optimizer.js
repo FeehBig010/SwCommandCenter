@@ -1,3 +1,4 @@
+import {weightedStatUtility} from './balance-profile.js';
 import {targetDistance} from './target-goals.js';
 import {monsterOpener} from './monsterDatabase.js';
 import {assertMainPool} from './equipment-pools.js';
@@ -57,19 +58,20 @@ export function goalValue(stats,config,key){if(config.raidGoals&&stats.combat){i
 export function goalReport(stats,config){const rows=STATS.filter(k=>Number(config.goals[k])>0).map(key=>{const target=Number(config.goals[key]);const actual=goalValue(stats,config,key);return {key,target,actual,missing:Math.max(0,target-actual),met:actual>=target};});if(Number(config.combatSpd)>0){const target=Number(config.combatSpd),actual=stats.combat?.spd??stats.total.spd;rows.push({key:'combatSpd',target,actual,missing:Math.max(0,target-actual),met:actual>=target});}return rows;}
 function setRequirements(c){const req={};for(const id of c.sets.filter(Boolean))req[id]=(req[id]||0)+(FOUR.has(id)?4:2);return req;}
 function setsValid(counts,req){return Object.entries(req).every(([id,n])=>(counts[id]||0)>=n);}
-function objective(stats,c){const focuses=c.focuses?normalizeFocuses(c.focuses):[];if(focuses.length)return focuses.reduce((n,key)=>n+objective(stats,{...c,focuses:[],objective:GOAL_PRESETS[key].objective}),0)/focuses.length;const s=c.rawPower&&stats.combat?stats.combat:stats.total;if(c.rawPower&&!['spd','cr'].includes(c.objective)){const ehp=s.hp*(1140+3.5*s.def)/1000/300000,damage=stats.damage?stats.damage.total/100000:s.atk*(1+Math.min(100,s.cr)/100*s.cd/100)/10000;return c.objective==='hp'?ehp:c.objective==='damage'?damage:ehp+damage;}switch(c.objective){case 'cr':return Math.min(s.cr,100)/100;case 'spd':return Math.min(s.spd/400,1.5);case 'hp':return Math.min(s.hp/70000,1.5);case 'damage':if(stats.damage)return stats.damage.total/100000;return Math.min((s.atk*(1+Math.min(100,s.cr)/100*s.cd/100))/10000,1.5);default:return Math.min(s.hp/60000+s.def/2500+s.spd/350,3)/3;}}
+function objective(stats,c){if(c.balanceWeights)return weightedStatUtility(stats,c.balanceWeights,c.balanceScales);const focuses=c.focuses?normalizeFocuses(c.focuses):[];if(focuses.length)return focuses.reduce((n,key)=>n+objective(stats,{...c,focuses:[],objective:GOAL_PRESETS[key].objective}),0)/focuses.length;const s=c.rawPower&&stats.combat?stats.combat:stats.total;if(c.rawPower&&!['spd','cr'].includes(c.objective)){const ehp=s.hp*(1140+3.5*s.def)/1000/300000,damage=stats.damage?stats.damage.total/100000:s.atk*(1+Math.min(100,s.cr)/100*s.cd/100)/10000;return c.objective==='hp'?ehp:c.objective==='damage'?damage:ehp+damage;}switch(c.objective){case 'cr':return Math.min(s.cr,100)/100;case 'spd':return Math.min(s.spd/400,1.5);case 'hp':return Math.min(s.hp/70000,1.5);case 'damage':if(stats.damage)return stats.damage.total/100000;return Math.min((s.atk*(1+Math.min(100,s.cr)/100*s.cd/100))/10000,1.5);default:return Math.min(s.hp/60000+s.def/2500+s.spd/350,3)/3;}}
 function evaluate(stats,c,counts,progress=1){if(c.matchTarget){const distance=targetDistance(stats,c,counts,progress);return {deficit:distance,utility:1/(1+distance)};}let deficit=Number(c.combatSpd)>0?Math.max(0,c.combatSpd*progress-stats.combat.spd)/c.combatSpd:0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0){const desired=target*progress;const actual=goalValue(stats,c,k);deficit+=Math.max(0,desired-actual)/Math.max(target,1);}}
  let preference=0;if(!c.strictSets){const req=setRequirements(c);preference=Object.entries(req).reduce((s,[id,n])=>s+Math.min((counts[id]||0)/n,1),0)*0.03;}
+ if(c.balancePreferredSets)for(const id of c.balancePreferredSets)preference+=.03*Math.min(1,(counts[id]||0)/(FOUR.has(id)?4:2));
  return {deficit,utility:objective(stats,c)+preference};
 }
 function compare(a,b){return a.deficit-b.deficit||b.utility-a.utility;}
 function rankRune(r,unit,c){const s=statsFromVector(unit,r.vector,{},{}),v=s.bonus;if(c.matchTarget){let distance=0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0){const desired=c.basis==='total'||['cr','cd','res','acc'].includes(k)?target-unit.base[k]:target;distance+=Math.abs(v[k]-desired/6)/target;}}return 1/(1+distance);}let n=0;for(const k of STATS){const target=Number(c.goals[k]);if(target>0)n+=v[k]/target;}return n+(Number(c.combatSpd)>0?v.spd/c.combatSpd:0)+objective(s,c)*0.35;}
 function pickPool(pool,unit,c,depth){
- const score=r=>rankRune(r,unit,c);const sorted=pool.slice().sort((a,b)=>score(b)-score(a));const chosen=new Map();
+ const score=r=>rankRune(r,unit,c)+(Number(c.balancePreferredMains?.[r.slot])===r.main?.[0]?0.15:0);const sorted=pool.slice().sort((a,b)=>score(b)-score(a));const chosen=new Map();
  const take=rs=>rs.forEach(r=>chosen.set(variantKey(r),r));take(sorted.slice(0,depth));
- for(const id of c.sets.filter(Boolean))take(sorted.filter(r=>r.set===id).slice(0,depth));
+ for(const id of [...c.sets,...(c.balancePreferredSets||[])].filter(Boolean))take(sorted.filter(r=>r.set===id).slice(0,depth));
  // Keep distinct stat extremes, so a balanced scalar ranking does not erase useful trades.
- for(const k of STATS.filter(k=>Number(c.goals[k])>0||k==='spd'&&Number(c.combatSpd)>0||k===c.objective||(c.objective==='damage'&&c.damage?.enabled)))take(pool.slice().sort((a,b)=>statsFromVector(unit,b.vector,{},{}).bonus[k]-statsFromVector(unit,a.vector,{},{}).bonus[k]).slice(0,Math.ceil(depth/2)));
+ for(const k of STATS.filter(k=>Number(c.balanceWeights?.[k])>0||Number(c.goals[k])>0||k==='spd'&&Number(c.combatSpd)>0||k===c.objective||(c.objective==='damage'&&c.damage?.enabled)))take(pool.slice().sort((a,b)=>statsFromVector(unit,b.vector,{},{}).bonus[k]-statsFromVector(unit,a.vector,{},{}).bonus[k]).slice(0,Math.ceil(depth/2)));
  if(c.matchTarget){take(pool.slice().sort((a,b)=>a.vector[8]-b.vector[8]).slice(0,Math.ceil(depth/2)));take(pool.filter(r=>unit.runeIds.includes(r.id)));}
  return [...chosen.values()];
 }
