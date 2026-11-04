@@ -228,3 +228,9 @@ Validação: `node --test tests/team-balance.test.mjs` e
 `node tests/browser/team-balance.mjs` (com Vite de testes em `E2E_BASE_URL`).
 `npm run test:browser` executa também as regressões de densidade, presets e demais
 áreas. Os cenários usam exclusivamente contas fictícias e armazenamento isolado.
+
+### Central de Siege: confrontos pessoais
+
+A entrada **Ataques e Counters** começa pela defesa inimiga. Cadastre três monstros e seu líder, depois use **Vincular meu time** para escolher um preset de ataque ou montar a composição manualmente. Estratégia e ordem de foco são opcionais; salvar não registra uma vitória. Defesas inimigas ficam no armazenamento local `siegeTargets`, separado das próprias defesas e dos modelos da guilda. Confrontos existentes são indexados sem alterar seus registros.
+
+**Meu acervo de ataques** abre os editores existentes. **Minhas Defesas** reúne as próprias defesas e o planejador simultâneo. O **Espaço da Guilda** mantém seus controles e permissões. O vínculo com um preset guarda uma cópia independente e uma referência local; não altera a build original nem compartilha automaticamente. A timeline pessoal aparece sob demanda em **Ver foco e ticks deste ataque**.

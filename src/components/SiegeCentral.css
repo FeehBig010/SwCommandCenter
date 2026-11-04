@@ -175,3 +175,28 @@
  .siege-detail .builder-controls.compact{flex-wrap:nowrap}
  .team-name-edit[open]>.field{left:auto;right:0}
 }
+
+/* Confrontation-first personal workspace. Existing editors stay behind the collection. */
+.siege-central-heading .siege-space-tabs{grid-template-columns:repeat(3,auto);min-width:0}
+.siege-central .siege-role-filter[hidden]{display:none}
+.siege-return-confrontations{margin-right:auto}
+.siege-attack-desk .siege-master-tools>.button{white-space:normal;min-height:44px}
+.siege-slot-filter>summary{cursor:pointer;padding:6px 0;font-size:11px;color:#acb7c2}
+.siege-slot-filter[open] .siege-directed-search{margin-top:12px}
+.siege-confrontation-detail{min-height:430px}
+.siege-confrontation-empty{display:flex;min-height:380px;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px}
+.siege-confrontation-empty h2{font-size:22px;margin:0}.siege-confrontation-empty p{max-width:370px;font:13px/1.6 Inter,system-ui,sans-serif;color:#a4b1bf;margin:0 0 10px}
+.siege-empty-symbol{display:flex;align-items:center;gap:8px;color:#c4ab6a;margin-bottom:10px}
+.siege-target-form header{margin-bottom:24px}.siege-target-form h2{font-size:22px;margin:8px 0}
+.siege-target-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-bottom:20px}
+.siege-target-slot{min-width:0;display:grid;justify-items:start;gap:12px}.siege-target-slot>.monster-portrait{width:64px;height:64px}.siege-target-slot>.monster-combobox{width:100%;min-width:0}.siege-target-slot .button[aria-pressed=true]{background:#b99b4a1c;color:#e1c991}
+.siege-target-form footer{display:flex;gap:8px;margin-top:26px}.siege-target-form footer .button{min-height:44px}
+.siege-personal-comparisons .siege-comparison-row{grid-template-columns:minmax(200px,.7fr) minmax(0,1.3fr);background:#111b25}
+.siege-personal-comparisons .siege-row-defense{background:#ffffff03}
+.siege-personal-comparisons .siege-counters-stack{max-height:65vh;border:0;margin-top:8px}
+.siege-personal-comparisons .siege-row-unit>small:empty,.siege-personal-comparisons .siege-row-unit>.siege-sets:empty{display:none}
+.siege-personal-comparisons .siege-row-defense .siege-row-unit .monster-portrait{width:48px;height:48px}
+.siege-counter-notes{font:12px/1.6 Inter,system-ui,sans-serif;color:#bbc5ce;white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0 14px}
+.siege-personal-comparisons .siege-comparisons-heading h2{font-size:19px}
+@media(max-width:1100px){.siege-personal-comparisons .siege-comparison-row{grid-template-columns:minmax(0,1fr)}.siege-personal-comparisons .siege-row-defense{border-right:0;border-bottom:1px solid var(--siege-border)}}
+@media(max-width:600px){.siege-central-heading .siege-space-tabs{grid-template-columns:1fr 1fr 1fr}.siege-space-tabs button{flex-direction:column;min-height:60px;line-height:1.4;padding:8px 4px}.siege-target-slots{grid-template-columns:minmax(0,1fr)}.siege-target-slot{grid-template-columns:48px minmax(0,1fr);align-items:center}.siege-target-slot>.monster-portrait{width:48px;height:48px}.siege-target-slot>.button{grid-column:2}.siege-confrontation-empty{padding:12px;min-height:290px}.siege-confrontation-empty h2{font-size:20px}.siege-target-form h2{font-size:20px}.siege-attack-desk .siege-master-footer{grid-template-columns:1fr}.siege-personal-comparisons button{min-height:44px}}
