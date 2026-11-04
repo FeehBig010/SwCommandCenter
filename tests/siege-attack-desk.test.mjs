@@ -35,3 +35,17 @@ test('authorized guild defenses merge into the same live search without duplicat
  assert.equal(rows.length,2);assert.equal(rows[0].attacks.length,2);assert.deepEqual(rows[0].sources,['Meu acervo','Guilda']);
  assert.equal(rows[0].attacks[1].sharedSource,true);assert.deepEqual([guild,other],snapshot);
 });
+
+test('editing a personal defense preserves offense, clears stale results on identity change and leaves guild records untouched',async()=>{
+ const {editSiegeConfrontation}=await import('../src/core/siege-attack-desk.js');
+ const account=quickPresetAccount(),team=teamFromGameDeck(account.accountPresets[0],account),target=cleanSiegeTarget({members,leaderIndex:0,leader:null});
+ const counter={...cleanSiegeCounter({name:'Attack',offense:portableTeam(team,account),enemyDefense:members,siege:{defenseLeader:null,killOrder:[2,0,1]}}),id:'old',outcome:'win',personalTeamId:team.id};
+ const guild={key:'cloud:test',id:'shared',name:'Shared',cloud:true,counter,team:counter.offense};
+ const row=personalSiegeConfrontations([target],[counter],[],account,[guild])[0],snapshot=structuredClone({counter,guild,team});
+ const reordered={...target,members:[members[0],members[2],members[1]]};
+ const same=editSiegeConfrontation({targets:[target],matchups:[counter],teams:[team],row,target:reordered});
+ assert.equal(same.changed,false);assert.equal(same.matchups[0].id,'old');assert.deepEqual(same.matchups[0].siege.killOrder,[1,0,2]);
+ const changed=editSiegeConfrontation({targets:[target],matchups:[counter],teams:[team],row,target:{...target,members:[members[0],members[1],{masterId:10101,label:'Novo'}]}});
+ assert.equal(changed.changed,true);assert.notEqual(changed.matchups[0].id,'old');assert.equal(changed.matchups[0].outcome,'unrecorded');assert.deepEqual(changed.matchups[0].offense,counter.offense);assert.equal(changed.matchups[0].personalTeamId,team.id);assert.deepEqual(changed.matchups[0].siege.killOrder,[0,1]);assert.deepEqual({counter,guild,team},snapshot);
+ assert.throws(()=>editSiegeConfrontation({row:{...row,sources:['Guilda']},target}),/apenas/);
+});

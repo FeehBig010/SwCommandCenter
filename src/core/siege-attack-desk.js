@@ -63,3 +63,23 @@ export function personalSiegeConfrontations(targets=[],matchups=[],teams=[],acco
  for(const row of groups.values())row.record??={key:row.key,name:row.name,team:{mode:'defense',leaderIndex:row.leaderIndex,configs:row.members},targetOnly:true};
  return [...groups.values()];
 }
+
+// Editing a personal enemy never writes to guild records or changes equipment.
+export function editSiegeConfrontation({targets=[],matchups=[],teams=[],row,target:raw}){
+ if(!row?.sources?.includes('Meu acervo'))throw new Error('Edite apenas as defesas do seu acervo.');
+ const target=cleanSiegeTarget(raw),key=siegeTargetKey(target),changed=key!==row.key;
+ const matches=t=>siegeTargetKey(t)===row.key;
+ const updatedTargets=targets.filter(t=>!matches(t));
+ if(!updatedTargets.some(t=>siegeTargetKey(t)===key))updatedTargets.push(target);
+ function patch(input){
+  const previous=input.enemyDefense,used=new Set(),mapping=previous.map(m=>{const i=target.members.findIndex((next,j)=>!used.has(j)&&Number(next.masterId)===Number(m.masterId));if(i>=0)used.add(i);return i;});
+  const killOrder=(input.siege?.killOrder||[]).map(i=>mapping[i]).filter(i=>i>=0);
+  return {...input,enemyDefense:structuredClone(target.members),siege:{...input.siege,defenseLeader:target.leader,defenseLeaderIndex:target.leaderIndex,killOrder}};
+ }
+ const localIds=new Set(row.attacks.filter(r=>!r.sharedSource&&!r.fromPersonalTeam).map(r=>r.id));
+ return {targets:updatedTargets,matchups:matchups.map(m=>localIds.has(m.id)?{...patch(m),...(changed?{id:crypto.randomUUID(),outcome:'unrecorded'}:{})}:m),teams:teams.map(t=>{
+  if(t.mode!=='attack'||t.gameMode!=='siege'||t.enemyDefense?.length!==3)return t;
+  const spec=t.siege||{};if(!matches({members:t.enemyDefense,leader:spec.defenseLeader||null,leaderIndex:spec.defenseLeaderIndex||0}))return t;
+  return patch(t);
+ }),target,changed};
+}

@@ -1,7 +1,7 @@
 import {useMemo,useState} from 'react';
 import SiegeAccountTimeline from './SiegeAccountTimeline';
 import {siegeKillRanks,siegeCounterContext} from '../core/siege-search';
-import {Copy,Plus,Shield,Swords,ChevronDown} from 'lucide-react';
+import {Copy,Plus,Shield,Swords,ChevronDown,Pencil} from 'lucide-react';
 import {siegeComparisonRows} from '../core/siege-central';
 import {LABELS,SETS} from '../core/data';
 import {orderRuneSets} from '../core/rune-sets';
@@ -22,13 +22,18 @@ function Lineup({members,ranks=[],compact=false}){
  })}</div>;
 }
 
-function CounterAttack({record,feedback,onCopy,onInspect,onReact,account,busy,feedbackBusy,active,onActivate,options,defenseMembers,personal=false}){
+function CounterNotes({record,onSave}){
+ const [editing,setEditing]=useState(false),[text,setText]=useState(record.description||''),[error,setError]=useState('');
+ return <div className="siege-inline-notes">{editing?<form onSubmit={async e=>{e.preventDefault();try{await onSave(record,text);setEditing(false);setError('');}catch(e){setError(e.message);}}}><label className="field"><span>Comentários / Estratégia</span><textarea aria-label={`Comentários / Estratégia — ${record.name}`} maxLength={1000} rows={3} value={text} onChange={e=>setText(e.target.value)}/></label><div className="button-group"><button type="submit" className="button small">Salvar comentário</button><button type="button" className="button small" onClick={()=>{setEditing(false);setError('');}}>Cancelar</button></div>{error&&<p role="alert">{error}</p>}</form>:<>{record.description&&<p className="siege-counter-notes">{record.description}</p>}<button type="button" className="button small siege-note-edit" onClick={()=>{setText(record.description||'');setEditing(true);}}><Pencil size={12}/>{record.description?'Editar comentário':'Adicionar comentário'}</button></>}</div>;
+}
+
+function CounterAttack({record,feedback,onCopy,onInspect,onReact,account,busy,feedbackBusy,active,onActivate,options,defenseMembers,personal=false,onSaveNote}){
  const f=record.counter?feedback(record):null,rate=f?.winRate??null;
  const contextual=useMemo(()=>siegeCounterContext(record,defenseMembers),[record,defenseMembers]);
  return <article className={`siege-row-attack${personal?' siege-compact-attack':''}${active?' active-counter':''}`} aria-label={`Ataque — ${record.name}`}>
   <header><div><span className="eyebrow"><Swords size={14}/>ATAQUE / COUNTER</span><h3>{record.name}</h3></div><span className={`siege-rate-badge ${rate===null?'unknown':rate===100?'perfect':rate>=80?'good':'low'}`} title={f?`${f.total} relato(s) de vitória ou derrota · ${f.scope==='guild'?'Guilda':'Registro local'}`:'Sem resultados registrados'}>{rate===null?'Sem partidas':`${rate}% win`}</span></header>
   <p className="siege-row-author">Registrado por {f?.author||'Membro da guilda'}{f?.scope==='device'?' · registro local':''}{record.cloud&&record.row?.moderation_status==='pending'?' · Pendente de aprovação':''}</p>
-  <LeaderLabel leader={record.team.leader}/><Lineup members={record.team.configs} compact={personal}/>{personal&&<details className="siege-attack-sheet"><summary>Ver atributos e conjuntos</summary><Lineup members={record.team.configs}/></details>}{record.description&&<p className="siege-counter-notes">{record.description}</p>}
+  <LeaderLabel leader={record.team.leader}/><Lineup members={record.team.configs} compact={personal}/>{personal&&<details className="siege-attack-sheet"><summary>Ver atributos e conjuntos</summary><Lineup members={record.team.configs}/></details>}{personal&&!record.sharedSource&&onSaveNote?<CounterNotes record={record} onSave={onSaveNote}/>:record.description&&<p className="siege-counter-notes">{record.description}</p>}
   {record.counter&&<button type="button" className="button small siege-counter-focus" aria-pressed={active} onClick={onActivate}>Ver foco e ticks deste ataque</button>}
   <footer><button type="button" className="button primary" disabled={busy||!account} onClick={()=>onCopy(contextual)} title={!account?'Importe seu SWEX para sincronizar a composição':undefined}><Copy size={15}/>{personal&&!record.sharedSource?(record.personalTeamId?'Abrir meu time':'Carregar no acervo'):'Copiar para Mim'}</button><button type="button" className="button small" onClick={()=>onInspect(contextual)}>{personal&&!record.fromPersonalTeam&&!record.sharedSource?'Editar vínculo':'Ver detalhes'}</button>
   {f&&<div className="siege-row-results" aria-label={`Meu resultado — ${record.name}`}>{[['win','Vitória'],['loss','Derrota']].map(([value,label])=><button key={value} type="button" className="button small" aria-pressed={f.outcome===value} disabled={feedbackBusy||!f.available} onClick={()=>onReact(record,'outcome',f.outcome===value?null:value)}>{label}</button>)}<small>{f.total} relato(s){f.scope==='device'?' · local':''}</small></div>}</footer>
@@ -36,7 +41,7 @@ function CounterAttack({record,feedback,onCopy,onInspect,onReact,account,busy,fe
 
 }
 
-export default function SiegeGuildRows({records=[],rows:providedRows,feedback,onCopy,onAdd,onInspect,onReact,account,busy,feedbackBusy,options,personal=false}){
+export default function SiegeGuildRows({records=[],rows:providedRows,feedback,onCopy,onAdd,onInspect,onReact,account,busy,feedbackBusy,options,personal=false,onEditDefense,onSaveNote}){
  const [activeKey,setActiveKey]=useState(null);
  const rows=providedRows||siegeComparisonRows(records);
  return <section className={`siege-comparisons${personal?' siege-personal-comparisons':''}`} aria-label={personal?'Meus confrontos — Defesa versus Ataque':'Counters da guilda — Defesa versus Ataque'}>
@@ -44,16 +49,16 @@ export default function SiegeGuildRows({records=[],rows:providedRows,feedback,on
   {!rows.length&&<p className="siege-empty-list">Nenhuma composição corresponde aos filtros. Importe modelos ou conecte sua guilda.</p>}
   {rows.map(row=>{const active=row.attacks.find(r=>r.key===activeKey)||row.attacks[0],ranks=siegeKillRanks(row.members,active?.counter);return <article className="siege-comparison-row" key={row.key} aria-label={`Defesa versus Ataque — ${row.name}`}>
    <section className="siege-row-defense" aria-label="Defesa inimiga">
-    <header><span className="eyebrow"><Shield size={14}/>DEFESA</span><h3>{row.members.length?row.name:'Defesa não informada'}</h3></header>
+    <header><span className="eyebrow"><Shield size={14}/>DEFESA</span><h3>{personal?'Defesa que vou enfrentar':row.members.length?row.name:'Defesa não informada'}</h3></header>
     {row.members.length?<><LeaderLabel leader={row.leader}/><Lineup members={row.members} ranks={ranks}/></>:<p className="fineprint">{row.record.row?.target_defense||'Ataque compartilhado sem uma defesa vinculada.'}</p>}
-    <div className="button-group">{row.members.length>0&&<button type="button" className="button small" disabled={busy} onClick={()=>onAdd(row)}><Plus size={14}/>{personal?'Vincular meu time':'Adicionar Counter'}</button>}{!personal&&row.record.team.mode==='defense'&&<button type="button" className="button small" onClick={()=>onInspect(row.record)}>Ver metas da defesa</button>}</div>
+    <div className="button-group">{personal&&row.sources?.includes('Meu acervo')&&onEditDefense&&<button type="button" className="button small siege-edit-defense" disabled={busy} onClick={()=>onEditDefense(row)}><Pencil size={13}/>Editar defesa</button>}{row.members.length>0&&<button type="button" className="button small" disabled={busy} onClick={()=>onAdd(row)}><Plus size={14}/>{personal?'Vincular meu time':'Adicionar Counter'}</button>}{!personal&&row.record.team.mode==='defense'&&<button type="button" className="button small" onClick={()=>onInspect(row.record)}>Ver metas da defesa</button>}</div>
    </section>
    <section className="siege-row-attacks" aria-label="Ataques recomendados">
     {!row.attacks.length&&<div className="siege-row-no-counter"><Swords size={24}/><p>{personal?'Vincule um preset ou selecione seu trio.':'Nenhum counter registrado para esta defesa.'}</p></div>}
     {row.attacks.length>1?<details className="siege-counters-accordion" open={personal||undefined}>
      <summary className="button primary siege-counter-toggle"><span>Ver {row.attacks.length} Counters Disponíveis</span><ChevronDown size={18} aria-hidden="true"/></summary>
-     <div className="siege-counters-stack" role="region" tabIndex={0} aria-label="Counters disponíveis">{row.attacks.map(record=><CounterAttack key={record.key} record={record} feedback={feedback} onCopy={onCopy} onInspect={onInspect} onReact={onReact} account={account} busy={busy} feedbackBusy={feedbackBusy} active={active===record} onActivate={()=>setActiveKey(key=>key===record.key?null:record.key)} options={options} defenseMembers={row.members} personal={personal}/>)}</div>
-    </details>:row.attacks.map(record=><CounterAttack key={record.key} record={record} feedback={feedback} onCopy={onCopy} onInspect={onInspect} onReact={onReact} account={account} busy={busy} feedbackBusy={feedbackBusy} active={active===record} onActivate={()=>setActiveKey(key=>key===record.key?null:record.key)} options={options} defenseMembers={row.members} personal={personal}/>)}
+     <div className="siege-counters-stack" role="region" tabIndex={0} aria-label="Counters disponíveis">{row.attacks.map(record=><CounterAttack key={record.key} record={record} feedback={feedback} onCopy={onCopy} onInspect={onInspect} onReact={onReact} account={account} busy={busy} feedbackBusy={feedbackBusy} active={active===record} onActivate={()=>setActiveKey(key=>key===record.key?null:record.key)} options={options} defenseMembers={row.members} personal={personal} onSaveNote={onSaveNote}/>)}</div>
+    </details>:row.attacks.map(record=><CounterAttack key={record.key} record={record} feedback={feedback} onCopy={onCopy} onInspect={onInspect} onReact={onReact} account={account} busy={busy} feedbackBusy={feedbackBusy} active={active===record} onActivate={()=>setActiveKey(key=>key===record.key?null:record.key)} options={options} defenseMembers={row.members} personal={personal} onSaveNote={onSaveNote}/>)}
    </section>
    {active&&(!personal||activeKey===active.key)&&<section className="siege-comparison-timeline" aria-label={`Ticks da minha conta — ${active.name}`}><h3>{active.name} · Minha conta</h3><SiegeAccountTimeline record={active} defenseMembers={row.members} account={account} options={options}/></section>}
   </article>;})}
