@@ -56,3 +56,7 @@ test('preset search spans areas, accented dungeon names, monsters and both Arena
  const a=quickPresetAccount(),presets=hydrateAccountPresets(a);assert.equal(quickPresetChoices(presets,'dragao')[0].id,'qa-dragao');assert.equal(quickPresetChoices(presets,'sacreon')[0].id,'qa-dimensao');
  assert.ok(quickPresetChoices(presets,'Tiana').length>1);assert.equal(quickPresetChoices(presets,'interserver')[0].id,'qa-interserver');assert.equal(quickPresetArea(presets[1]),'Arena Regular');assert.equal(quickPresetArea(presets[2]),'Arena Interserver');assert.deepEqual(quickPresetChoices(presets,'inexistente'),[]);
 });
+test('active calculator area scopes preset search while explicit all-areas access preserves every native mode',()=>{
+ const presets=hydrateAccountPresets(quickPresetAccount());for(const area of ['siege','arena','cairos','rta','rift','dimensional','toa']){const filtered=quickPresetChoices(presets,'',area);assert.ok(filtered.length);assert.ok(filtered.every(p=>p.gameMode===area));}
+ assert.deepEqual(quickPresetChoices(presets,'dragao','siege'),[]);assert.equal(quickPresetChoices(presets,'dragao','all')[0].id,'qa-dragao');assert.equal(quickPresetChoices(presets,'interserver','arena')[0].id,'qa-interserver');assert.deepEqual(quickPresetChoices([], '', 'siege'),[]);
+});

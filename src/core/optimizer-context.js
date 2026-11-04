@@ -13,7 +13,7 @@ export function importedPreset(team,account){
 }
 export function optimizerActionLabel(teams,account){const active=teams.filter(t=>t.active!==false);const n=active.filter(t=>importedPreset(t,account)).length;return n===active.length&&n?'Procurar Melhorias (Auditoria)':n?'Auditar Presets e Construir Times':'Construir Time (Buscar Runas)';}
 export function optimizerPresets(account,area,context='regular'){
- return presetsForArea(account?.accountPresets,area,null,context).filter(p=>p.unitIds.length<=({siege:3,arena:4}[area]||0)&&(area!=='siege'||['defense_deck_list','guildsiege_defense_deck_unit_list'].includes(p.sourceKey)));
+ return presetsForArea(account?.accountPresets,area,null,context).filter(p=>p.unitIds.length<=({siege:3,arena:4}[area]||0));
 }
 export function optimizerAreaTeams(teams,account,area,context='regular'){
  const allowed=new Set(optimizerPresets(account,area,context).map(p=>p.id));

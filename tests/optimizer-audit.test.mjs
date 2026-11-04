@@ -68,11 +68,11 @@ test('manual construction uses only unassigned loose runes and ignores imaginary
  for(const rune of account.runes.slice())account.runes.push(loose(rune.id+100,rune));
  const result=optimizeAdvanced(account,[team],options);assert.equal(result.builds.length,3);assert.ok(result.builds.every(b=>b.runeIds.every(id=>id>100)));assert.ok(result.builds.every(b=>!b.upgrades?.length));assert.equal(result.options.maxGrindsGems,false);
 });
-test('area filtering excludes other modes, non-defense Siege sources, Interserver and malformed slot counts',()=>{
+test('area filtering includes Siege attacks and defenses while excluding other modes and Interserver and malformed slot counts',()=>{
  const {account,team}=fixture();const sourceAttack={...account.accountPresets[0],id:'attack',sourceKey:'deck_list',mode:'attack'};
  const arena={...sourceAttack,id:'arena',gameMode:'arena',unitIds:[1,2,3,4]},inter={...arena,id:'inter',arenaContext:'interserver'},bad={...account.accountPresets[0],id:'bad',unitIds:[1,2,3,4]};account.accountPresets.push(sourceAttack,arena,inter,bad);
  const other=[team,{...team,id:'attack',sourceDeckId:'attack'},{...team,id:'wrong',gameMode:'arena',configs:[...team.configs,blankConfig()]},{...team,id:'manual',sourceDeckId:null}];
- assert.deepEqual(optimizerAreaTeams(other,account,'siege').map(t=>t.id),['team','manual']);assert.deepEqual(optimizerPresets(account,'siege').map(p=>p.id),['json-deck']);assert.deepEqual(optimizerPresets(account,'arena').map(p=>p.id),['arena']);
+ assert.deepEqual(optimizerAreaTeams(other,account,'siege').map(t=>t.id),['team','attack','manual']);assert.deepEqual(optimizerPresets(account,'siege').map(p=>p.id),['json-deck','attack']);assert.deepEqual(optimizerPresets(account,'arena').map(p=>p.id),['arena']);
  assert.equal(resultForTeams({teamIds:['arena-team'],builds:[]},[team]),null);assert.equal(resultForTeams({teamIds:[team.id],builds:[]},[team]).teamIds[0],team.id);
  assert.equal(optimizerActionLabel([team],account),'Procurar Melhorias (Auditoria)');assert.equal(optimizerActionLabel([other[3]],account),'Construir Time (Buscar Runas)');assert.equal(importedPreset({...team,configs:team.configs.map((c,i)=>i===0?{...c,unitId:999}:c)},account),null);
  assert.throws(()=>optimizeAdvanced(account,[{...team,gameMode:'siege',configs:[...team.configs,blankConfig()]}],options),/incompatível/);

@@ -1,7 +1,8 @@
+import QuickPresetPicker from './components/QuickPresetPicker';
 import AppearanceMenu from './components/AppearanceMenu';
 import OptimizerWorkspace from './components/OptimizerWorkspace';
 import {quickOptimizerPlan} from './core/quick-optimizer-plan';
-import {optimizerAreaTeams,optimizerActionLabel,resultForTeams} from './core/optimizer-context';
+import {optimizerAreaTeams,optimizerActionLabel,resultForTeams,optimizerPresets,importedPreset} from './core/optimizer-context';
 import './components/OptimizerAudit.css';
 import {startSummoning} from './core/import-cinematic';
 import ImportSummoning from './components/ImportSummoning';
@@ -34,7 +35,7 @@ import AccountCloudControls from './components/AccountCloudControls';
 import TowerSettings from './components/TowerSettings';
 import {teamsForArea} from './core/deckManager';
 import {normalizeFocuses} from './core/team-ux';
-import {prepareImportedTeams,quickPlansFromAccount,hydrateAccountPresets,reconcileStoredPresets,accountPresetPage} from './core/account-teams';
+import {teamFromGameDeck,prepareImportedTeams,quickPlansFromAccount,hydrateAccountPresets,reconcileStoredPresets,accountPresetPage} from './core/account-teams';
 import {applyDiagnosticPlan,plannedReservations} from './core/loadouts';
 import {normalizeArenaSettings} from './core/arena';
 import { lazy, Suspense, useCallback,useEffect,useMemo,useRef,useState } from 'react';
@@ -85,6 +86,7 @@ export default function App(){
  const updatePveScene=useCallback((area,scene)=>setPveScenes(all=>all[area]===scene?all:{...all,[area]:scene}),[]);
  const [tourRequested,setTourRequested]=useState(()=>readFlag(ONBOARDING_PENDING_KEY));
  const [optimizerArea,setOptimizerArea]=useState('siege');
+ const [optimizerPresetIntent,setOptimizerPresetIntent]=useState(null);
  const [navigationIntent,setNavigationIntent]=useState(null);
  function navigate(page){setNavigationIntent(null);setPage(page);}
  function openDashboardArea(area,intent={}){setNavigationIntent({...intent,id:crypto.randomUUID(),area});if(area==='cairos')updatePveScene(area,'gbah');if(area==='rift')updatePveScene(area,'r5');if(area==='arena'){setArenaContext('regular');setArenaSpace('personal');}setPage(area);}
@@ -184,13 +186,21 @@ export default function App(){
  const accountSync=useAccountSync({userId:auth.session?.user.id,ready,loginAccount:portalLoginAccount?.isDemo?null:portalLoginAccount,onRestore:(imported,{isCurrent}={})=>installAccount(imported,{navigate:false,shouldInstall:isCurrent})});
  useEffect(()=>{if(auth.session?.user.id||page!=='portal')setPortalLoginAccount(null);},[auth.session?.user.id,page]);
  const addEditorTeam=()=>setTeams(v=>[...v,{...makeTeam(editorArea),...(editorArea==='arena'?{mode:arenaMode||'attack',arenaContext}:{}),towerSpd:15,guildSpd:0}]);
- const editorPanel=<OptimizerWorkspace onAdd={addEditorTeam} account={account} area={editorArea} onArea={area=>{setOptimizerArea(area);if(page==='arena')setPage('optimizer');setResult(null);}} arenaContext={arenaContext} onArenaContext={switchArenaContext} options={options} busy={running} onUpload={()=>fileRef.current.click()} setup={<> {!account&&<div className="entry-shortcut"><button type="button" className="button" onClick={()=>setPage('quick')}>Usar Calculadora Rápida (Modo Livre)</button><button type="button" className="button" onClick={()=>setPage('portal')}>Escolher modo de entrada</button></div>}
+ function loadOptimizerPreset(preset){
+  if(running||!optimizerPresets(account,editorArea,arenaContext).some(p=>p.id===preset.id))throw new Error('Este preset pertence a outra área ou contexto.');
+  const existing=teamsForArea(teams,editorArea,null,arenaContext).find(t=>t.sourceDeckId===preset.id&&importedPreset(t,account));
+  if(page==='arena')setArenaMode(preset.mode==='attack'?'attack':'defense');
+  if(existing){setOptimizerPresetIntent({teamId:existing.id,token:crypto.randomUUID()});notify(`${preset.name} já está na lista desta área. Seus ajustes foram preservados.`);return;}
+  const team=teamFromGameDeck(preset,account,{...makeTeam(editorArea),...(editorArea==='arena'?{arenaContext}: {})});
+  setTeams(all=>[...all,team]);setOptimizerPresetIntent({teamId:team.id,token:crypto.randomUUID()});setResult(null);notify(`${preset.name} carregado no otimizador.`);
+ }
+ const editorPanel=<OptimizerWorkspace presets={<QuickPresetPicker key={`${editorArea}:${arenaContext}`} account={account} area={editorArea} presets={optimizerPresets(account,editorArea,arenaContext)} onLoad={loadOptimizerPreset} allowAreaChange={false} disabled={running}/>} onAdd={addEditorTeam} account={account} area={editorArea} onArea={area=>{setOptimizerArea(area);if(page==='arena')setPage('optimizer');setResult(null);}} arenaContext={arenaContext} onArenaContext={switchArenaContext} options={options} busy={running} onUpload={()=>fileRef.current.click()} setup={<> {!account&&<div className="entry-shortcut"><button type="button" className="button" onClick={()=>setPage('quick')}>Usar Calculadora Rápida (Modo Livre)</button><button type="button" className="button" onClick={()=>setPage('portal')}>Escolher modo de entrada</button></div>}
 {!account&&<div className="import-zone" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();if(!running)importFile(e.dataTransfer.files[0]);}}><Upload size={25}/><div><h2>Comece pelo seu JSON do SWEX</h2><p>Arraste o arquivo aqui ou use “Importar JSON”. Sem login, seus dados ficam neste navegador. Com login, novos uploads são salvos no seu backup privado.</p></div><button className="button primary" onClick={()=>fileRef.current.click()}>Selecionar arquivo</button></div>}
 
  </>}> {page==='arena'&&<label className="field arena-mode-inline"><span>Modo Arena</span><select aria-label="Modo Arena" value={arenaMode||'attack'} onChange={e=>{const mode=e.target.value;setArenaMode(mode);setTeams(all=>all.some(t=>isArenaContext(t,arenaContext)&&t.mode===mode)?all:[...all,{...makeTeam('arena'),arenaContext,mode}]);}}><option value="attack">Ataque</option><option value="defense">Defesa</option></select></label>}
 
 
-   <fieldset disabled={running} className="editor-fieldset"><TeamEditor advanced allTeams={allLocalTeams} reservedIds={reservedIds} onOptimizeTeam={startSearch} teams={editorTeams} diagnostics={diagnosis.reports} diagnosisBusy={diagnosis.busy} onApplyDiagnosis={applyDiagnosis} account={account} options={options} onOptions={setOptions} onSavePlan={()=>downloadJSON({type:'d8stino-plan',version:1,teams,options:{speedTick:options.speedTick,strictMode:options.strictMode,maxGrindsGems:options.maxGrindsGems}},'siege-plano.json')} onLoadPlan={()=>planRef.current.click()} builds={signature===resultSignature&&result?.builds.length?result.builds:null} onChange={changeEditorTeams} onAdd={addEditorTeam}/></fieldset>
+   <fieldset disabled={running} className="editor-fieldset"><TeamEditor advanced selectionIntent={optimizerPresetIntent} allTeams={allLocalTeams} reservedIds={reservedIds} onOptimizeTeam={startSearch} teams={editorTeams} diagnostics={diagnosis.reports} diagnosisBusy={diagnosis.busy} onApplyDiagnosis={applyDiagnosis} account={account} options={options} onOptions={setOptions} onSavePlan={()=>downloadJSON({type:'d8stino-plan',version:1,teams,options:{speedTick:options.speedTick,strictMode:options.strictMode,maxGrindsGems:options.maxGrindsGems}},'siege-plano.json')} onLoadPlan={()=>planRef.current.click()} builds={signature===resultSignature&&result?.builds.length?result.builds:null} onChange={changeEditorTeams} onAdd={addEditorTeam}/></fieldset>
    <div className="search-bar"><div className="search-options"><select aria-label="Profundidade da busca" disabled={running} value={options.depth} onChange={e=>setOptions({...options,depth:e.target.value})}><option value="fast">Busca rápida</option><option value="balanced">Busca equilibrada</option><option value="deep">Busca profunda</option></select><button className="icon-button" aria-label="Configurações da busca" title="Configurações da busca" onClick={()=>setAdvanced(!advanced)}><Settings2 size={19}/></button></div><div className="search-action"><span>{activeCount} monstros · distribuição conjunta</span>{running?<button className="button" onClick={stopSearch}><Square size={15}/>Cancelar</button>:<button className="button primary" disabled={!account||missing.length>0||activeCount===0} onClick={()=>startSearch('visible')}><Compass size={17}/>{optimizerActionLabel(editorTeams,account)}</button>}</div></div>
    {missing.length>0&&<p className="inline-notice">Selecione uma unidade para {missing.map(c=>c.label).join(', ')} ou desmarque “Incluir na otimização” para buscar os demais.</p>}
    {advanced&&<fieldset disabled={running} className="advanced-options"><label className="check-label"><input type="checkbox" checked={options.respectLocks} onChange={e=>setOptions({...options,respectLocks:e.target.checked})}/>Respeitar bloqueios de runas do jogo</label><label className="check-label"><input type="checkbox" checked={options.artifacts} onChange={e=>setOptions({...options,artifacts:e.target.checked})}/>Considerar artefatos equipados (atributos e dano)</label><label className="check-label">Nível mínimo da runa<select aria-label="Nível mínimo da runa" value={options.minLevel} onChange={e=>setOptions({...options,minLevel:Number(e.target.value)})}><option value={0}>+0</option><option value={9}>+9</option><option value={12}>+12</option><option value={15}>+15</option></select></label><p>{reservedCount} runas reservadas por builds salvas. Auditoria preserva os atributos principais e só busca trocas no estoque livre. Pedras disponíveis são exibidas como projeções separadas, sem consumir o inventário.</p></fieldset>}

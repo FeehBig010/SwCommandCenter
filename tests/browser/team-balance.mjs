@@ -9,7 +9,7 @@ const account=quickPresetAccount(),browser=await chromium.launch({headless:true,
 await context.route('**/*',r=>{const u=new URL(r.request().url());if(u.origin===origin){if(u.pathname==='/__qa__/seed')return r.fulfill({contentType:'text/html',body:'<title>Fixture setup</title>'});return r.continue();}if(u.hostname.endsWith('.supabase.co'))return r.fulfill({json:u.pathname.endsWith('get_engine_settings')?{default_speed_tick:7,max_teams:10,maintenance_mode:false}:[]});return r.abort();});
 await context.addInitScript(()=>{const NativeWorker=window.Worker;window.balanceWorkerUrls=[];window.Worker=class extends NativeWorker{constructor(url,options){super(url,options);window.balanceWorkerUrls.push(String(url));}};});
 const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
-async function load(){await page.locator('.quick-preset-picker>summary').click();await page.getByRole('combobox',{name:'Carregar preset do JSON',exact:true}).selectOption('qa-siege');}
+async function load(){await page.locator('.quick-preset-picker>summary').click();await page.locator('[data-preset-id="qa-siege"]').click();}
 async function search(){await page.getByRole('button',{name:'Buscar builds no JSON',exact:true}).click();await page.getByRole('button',{name:/Alternativa A/}).waitFor({timeout:60000});}
 async function storedAccount(){return page.evaluate(async()=>{const db=await new Promise(resolve=>{const r=indexedDB.open('d8stino-siege-v1',1);r.onsuccess=()=>resolve(r.result);});const value=await new Promise(resolve=>{const r=db.transaction('data').objectStore('data').get('account');r.onsuccess=()=>resolve(r.result);});db.close();return value;});}
 try{

@@ -154,8 +154,12 @@ importar uma conta. Rascunhos antigos não são apagados do armazenamento nem
 carregados automaticamente. Durante a mesma abertura, trocar de área mantém a
 montagem temporária de cada área.
 
-Use **Presets do JSON** para pesquisar por área, nome do time ou monstro e
-selecionar um preset importado. Siege, Arena Regular/Interserver, RTA, Cairos,
+Use **Presets do JSON** para pesquisar por nome do time ou monstro e carregar
+um preset pelas miniaturas da composição. A área ativa é filtrada automaticamente;
+**Área dos presets → Todas as áreas** mantém o acesso às outras categorias.
+A lista renderiza somente uma janela de resultados, com retratos carregados
+conforme aparecem. No Otimizador, o mesmo seletor fica no cabeçalho e lista
+ataques e defesas apenas da área/contexto ativo, sem substituir ajustes existentes. Siege, Arena Regular/Interserver, RTA, Cairos,
 Dimensional, Rift/R5 e ToA mantêm seus slots nativos, inclusive posições vazias.
 A verificação usa uma cópia da ficha, do líder e dos equipamentos da conta; o
 preset original e os outros módulos permanecem intactos.

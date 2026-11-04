@@ -15,9 +15,9 @@ export function quickPresetArea(preset){
  return stage?.[1]||QUICK_AREA_LABELS[area]||'Outra área';
 }
 const fold=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-export function quickPresetChoices(presets=[],query=''){
+export function quickPresetChoices(presets=[],query='',area='all'){
  const tokens=fold(query).trim().split(/\s+/).filter(Boolean);
- return presets.filter(p=>p&&Array.isArray(p.unitIds)&&tokens.every(token=>fold([p.name,quickPresetArea(p),p.gameMode,...(p.members||[]).map(m=>m?.name||'')].join(' ')).includes(token)));
+ return presets.filter(p=>p&&Array.isArray(p.unitIds)&&(area==='all'||p.gameMode===area)&&tokens.every(token=>fold([p.name,quickPresetArea(p),p.gameMode,...(p.members||[]).map(m=>m?.name||'')].join(' ')).includes(token)));
 }
 
 // Work on a fresh copy of the native formation. No local preset, unit, rune or
