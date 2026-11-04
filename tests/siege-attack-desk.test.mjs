@@ -24,3 +24,14 @@ test('empty defenses survive without counters, no outcomes invented; own defense
  assert.deepEqual(personalSiegeConfrontations([],[],[{...team,mode:'defense'}],account),[]);assert.deepEqual(team,snapshot);
  assert.equal(personalSiegeConfrontations([null,target],[],[],account).length,1);
 });
+
+test('authorized guild defenses merge into the same live search without duplicating local counters or changing shared data',()=>{
+ const account=quickPresetAccount(),team=teamFromGameDeck(account.accountPresets[0],account),counter={...cleanSiegeCounter({name:'Meu ataque',offense:portableTeam(team,account),enemyDefense:members,siege:{defenseLeader:null}}),id:'mine'};
+ const local={key:'local:mine',id:'mine',name:'Meu ataque',counter,team:counter.offense};
+ const guild={...local,key:'cloud:authorized',id:'authorized',cloud:true,row:{guild_id:'authorized'},name:'Ataque da guilda'};
+ const other={...guild,key:'cloud:another',name:'Outra defesa',counter:{...counter,enemyDefense:[members[2],members[0],members[1]]}};
+ const snapshot=structuredClone([guild,other]);
+ const rows=personalSiegeConfrontations([], [counter], [],account,[local,guild,other]);
+ assert.equal(rows.length,2);assert.equal(rows[0].attacks.length,2);assert.deepEqual(rows[0].sources,['Meu acervo','Guilda']);
+ assert.equal(rows[0].attacks[1].sharedSource,true);assert.deepEqual([guild,other],snapshot);
+});

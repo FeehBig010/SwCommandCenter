@@ -8,16 +8,16 @@ import {orderRuneSets} from '../core/rune-sets';
 import MonsterPortrait from './MonsterPortrait';
 import {LeaderLabel} from './SiegeCounterComposer';
 
-function Lineup({members,ranks=[]}){
- return <div className="siege-row-lineup">{members.map((m,i)=>{
+function Lineup({members,ranks=[],compact=false}){
+ return <div className={`siege-row-lineup${compact?' siege-lineup-compact':''}`}>{members.map((m,i)=>{
   const tick=Number(m.maxTick);
   const speed=Number(m.bonusSpd)||Number(m.goals?.spd)||0;
   const bonus=Number(m.bonusSpd)>0||m.basis==='bonus';
   return <div className="siege-row-unit" key={i}>
    <span className="siege-focus-portrait"><MonsterPortrait unit_master_id={m.masterId} name={m.label}/>{ranks[i]!=null&&<b className="siege-focus-rank" aria-label={`${ranks[i]}º alvo: ${m.label}`}>{ranks[i]}</b>}</span><strong>{m.label}</strong>
-   {(tick>0||speed>0||Number(m.combatSpd)>0)&&<span className="siege-row-speed">{tick>0?`Tick esperado ${tick}`:''}{speed?`${tick?' · ':''}Meta ${bonus?'+':''}${speed} SPD`:Number(m.combatSpd)>0?`${tick?' · ':''}Meta ${m.combatSpd} Combat SPD`:''}</span>}
-   <small>{Object.entries(m.goals||{}).filter(([key,value])=>key!=='spd'&&Number(value)>0).map(([key,value])=>`${LABELS[key]} ${m.basis==='bonus'&&!['cr','cd','res','acc'].includes(key)?'+':''}${Number(value).toLocaleString('pt-BR')}`).join(' · ')}</small>
-   <div className="siege-sets">{orderRuneSets(m.sets||[]).filter(id=>SETS[id]).map((id,j)=><img key={j} className="rune-set-icon" src={`/game-icons/runes/${SETS[id].toLowerCase()}.png`} alt={SETS[id]} title={SETS[id]}/>)}</div>
+   {!compact&&(tick>0||speed>0||Number(m.combatSpd)>0)&&<span className="siege-row-speed">{tick>0?`Tick esperado ${tick}`:''}{speed?`${tick?' · ':''}Meta ${bonus?'+':''}${speed} SPD`:Number(m.combatSpd)>0?`${tick?' · ':''}Meta ${m.combatSpd} Combat SPD`:''}</span>}
+   {!compact&&<><small>{Object.entries(m.goals||{}).filter(([key,value])=>key!=='spd'&&Number(value)>0).map(([key,value])=>`${LABELS[key]} ${m.basis==='bonus'&&!['cr','cd','res','acc'].includes(key)?'+':''}${Number(value).toLocaleString('pt-BR')}`).join(' · ')}</small>
+   <div className="siege-sets">{orderRuneSets(m.sets||[]).filter(id=>SETS[id]).map((id,j)=><img key={j} className="rune-set-icon" src={`/game-icons/runes/${SETS[id].toLowerCase()}.png`} alt={SETS[id]} title={SETS[id]}/>)}</div></>}
   </div>;
  })}</div>;
 }
@@ -25,12 +25,12 @@ function Lineup({members,ranks=[]}){
 function CounterAttack({record,feedback,onCopy,onInspect,onReact,account,busy,feedbackBusy,active,onActivate,options,defenseMembers,personal=false}){
  const f=record.counter?feedback(record):null,rate=f?.winRate??null;
  const contextual=useMemo(()=>siegeCounterContext(record,defenseMembers),[record,defenseMembers]);
- return <article className={`siege-row-attack${active?' active-counter':''}`} aria-label={`Ataque — ${record.name}`}>
+ return <article className={`siege-row-attack${personal?' siege-compact-attack':''}${active?' active-counter':''}`} aria-label={`Ataque — ${record.name}`}>
   <header><div><span className="eyebrow"><Swords size={14}/>ATAQUE / COUNTER</span><h3>{record.name}</h3></div><span className={`siege-rate-badge ${rate===null?'unknown':rate===100?'perfect':rate>=80?'good':'low'}`} title={f?`${f.total} relato(s) de vitória ou derrota · ${f.scope==='guild'?'Guilda':'Registro local'}`:'Sem resultados registrados'}>{rate===null?'Sem partidas':`${rate}% win`}</span></header>
   <p className="siege-row-author">Registrado por {f?.author||'Membro da guilda'}{f?.scope==='device'?' · registro local':''}{record.cloud&&record.row?.moderation_status==='pending'?' · Pendente de aprovação':''}</p>
-  <LeaderLabel leader={record.team.leader}/><Lineup members={record.team.configs}/>{record.description&&<p className="siege-counter-notes">{record.description}</p>}
+  <LeaderLabel leader={record.team.leader}/><Lineup members={record.team.configs} compact={personal}/>{personal&&<details className="siege-attack-sheet"><summary>Ver atributos e conjuntos</summary><Lineup members={record.team.configs}/></details>}{record.description&&<p className="siege-counter-notes">{record.description}</p>}
   {record.counter&&<button type="button" className="button small siege-counter-focus" aria-pressed={active} onClick={onActivate}>Ver foco e ticks deste ataque</button>}
-  <footer><button type="button" className="button primary" disabled={busy||!account} onClick={()=>onCopy(contextual)} title={!account?'Importe seu SWEX para sincronizar a composição':undefined}><Copy size={15}/>{personal?(record.personalTeamId?'Abrir meu time':'Carregar no acervo'):'Copiar para Mim'}</button><button type="button" className="button small" onClick={()=>onInspect(contextual)}>{personal&&!record.fromPersonalTeam?'Editar vínculo':'Ver detalhes'}</button>
+  <footer><button type="button" className="button primary" disabled={busy||!account} onClick={()=>onCopy(contextual)} title={!account?'Importe seu SWEX para sincronizar a composição':undefined}><Copy size={15}/>{personal&&!record.sharedSource?(record.personalTeamId?'Abrir meu time':'Carregar no acervo'):'Copiar para Mim'}</button><button type="button" className="button small" onClick={()=>onInspect(contextual)}>{personal&&!record.fromPersonalTeam&&!record.sharedSource?'Editar vínculo':'Ver detalhes'}</button>
   {f&&<div className="siege-row-results" aria-label={`Meu resultado — ${record.name}`}>{[['win','Vitória'],['loss','Derrota']].map(([value,label])=><button key={value} type="button" className="button small" aria-pressed={f.outcome===value} disabled={feedbackBusy||!f.available} onClick={()=>onReact(record,'outcome',f.outcome===value?null:value)}>{label}</button>)}<small>{f.total} relato(s){f.scope==='device'?' · local':''}</small></div>}</footer>
  </article>;
 

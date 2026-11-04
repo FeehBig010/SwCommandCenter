@@ -21,10 +21,10 @@ function TargetForm({onSave,onCancel}){
  </form>;
 }
 
-export default function SiegeAttackDesk({targets=[],onTargetsChange,matchups=[],onMatchupsChange,teams,account,options,running,feedback,feedbackBusy,onReact,onOpenTeam,onCopy,author}){
+export default function SiegeAttackDesk({sharedRecords=[],onInspectShared,targets=[],onTargetsChange,matchups=[],onMatchupsChange,teams,account,options,running,feedback,feedbackBusy,onReact,onOpenTeam,onCopy,author}){
  const [query,setQuery]=useState(''),[debounced,setDebounced]=useState(''),[slots,setSlots]=useState(['','','']),[selectedKey,setSelectedKey]=useState(null),[adding,setAdding]=useState(false),[composer,setComposer]=useState(null),[notice,setNotice]=useState('');
  useEffect(()=>{const timer=setTimeout(()=>setDebounced(query),200);return()=>clearTimeout(timer);},[query]);
- const allRows=useMemo(()=>personalSiegeConfrontations(targets,matchups,teams,account),[targets,matchups,teams,account]);
+ const allRows=useMemo(()=>personalSiegeConfrontations(targets,matchups,teams,account,sharedRecords),[targets,matchups,teams,account,sharedRecords]);
  const rows=useMemo(()=>filterSiegeDefenses(allRows,{query:query?debounced:'',slots}),[allRows,debounced,query==='',slots]);
  const selected=rows.find(r=>r.key===selectedKey)||rows[0];
  function select(row){setSelectedKey(row.key);setAdding(false);setComposer(null);setNotice('');}
@@ -39,10 +39,10 @@ export default function SiegeAttackDesk({targets=[],onTargetsChange,matchups=[],
   setQuery('');setSlots(['','','']);setComposer(null);setNotice('Counter salvo no seu acervo. Nenhuma batalha foi registrada.');
  }
  function open(record){const own=teams.find(t=>t.id===record.personalTeamId&&t.mode==='attack');if(own)onOpenTeam(own);else onCopy(record);}
- function inspect(record){if(record.fromPersonalTeam){open(record);return;}setComposer({record});setNotice('');}
+ function inspect(record){if(record.sharedSource){onInspectShared(record);return;}if(record.fromPersonalTeam){open(record);return;}setComposer({record});setNotice('');}
  return <div className="siege-workspace siege-attack-desk">
-  <aside className="siege-master" aria-label="Defesas inimigas do meu acervo">
-   <div className="siege-master-tools"><DefenseSearch compact query={query} onQuery={setQuery} slots={slots} onSlots={setSlots}/><button type="button" className="button primary" disabled={running} onClick={()=>{setAdding(true);setComposer(null);setNotice('');}}><Plus size={15}/>Cadastrar defesa inimiga</button></div>
+  <aside className="siege-master" aria-label="Buscar defesas pessoais e da guilda">
+   <div className="siege-master-tools"><span className="siege-search-heading">LOCALIZAR DEFESA</span><DefenseSearch compact query={query} onQuery={setQuery} slots={slots} onSlots={setSlots}/><small className="siege-search-scope">Meu acervo + guilda · busca automática</small><button type="button" className="button primary" disabled={running} onClick={()=>{setAdding(true);setComposer(null);setNotice('');}}><Plus size={15}/>Cadastrar defesa inimiga</button></div>
    <SiegeDefenseGallery rows={rows} selectedKey={!adding?selected?.key:null} onSelect={select}/>
    <div className="siege-master-footer"><button type="button" className="button small" disabled={running} onClick={()=>onOpenTeam()}><Swords size={15}/>Meu acervo de ataques <ChevronDown size={13}/></button></div>
   </aside>

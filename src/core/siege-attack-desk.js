@@ -1,6 +1,6 @@
 import {normalizeLeader} from './leaders.js';
 import {catalogLeader} from './leader-catalog.js';
-import {personalSiegeTeams,siegeGuildRecords} from './siege-central.js';
+import {personalSiegeTeams,siegeGuildRecords,siegeComparisonRows} from './siege-central.js';
 import {portableTeam} from './hub.js';
 import {cleanSiegeCounter} from './siege.js';
 
@@ -30,14 +30,14 @@ export function registerSiegeTarget(targets,raw){
  return {target:existing||target,targets:existing?targets:[...targets,target],duplicate:!!existing};
 }
 
-export function personalSiegeConfrontations(targets=[],matchups=[],teams=[],account){
+export function personalSiegeConfrontations(targets=[],matchups=[],teams=[],account,sharedRecords=[]){
  const groups=new Map();
  function group(target){
   const key=siegeTargetKey(target);let row=groups.get(key);
-  if(!row){row={key,name:'Defesa inimiga',members:target.members,leader:target.leader,leaderIndex:target.leaderIndex,attacks:[],defenseSeed:{enemyDefense:target.members,defenseLeader:target.leader,defenseLeaderIndex:target.leaderIndex}};groups.set(key,row);}
+  if(!row){row={key,name:'Defesa inimiga',members:target.members,leader:target.leader,leaderIndex:target.leaderIndex,attacks:[],sources:[],defenseSeed:{enemyDefense:target.members,defenseLeader:target.leader,defenseLeaderIndex:target.leaderIndex}};groups.set(key,row);}
   return row;
  }
- for(const raw of targets)try{group(cleanSiegeTarget(raw));}catch{/* Keep invalid legacy records in storage, outside the rendered index. */}
+ for(const raw of targets)try{const row=group(cleanSiegeTarget(raw));if(!row.sources.includes('Meu acervo'))row.sources.push('Meu acervo');}catch{/* Keep invalid legacy records in storage, outside the rendered index. */}
  const personal=personalSiegeTeams(teams).filter(t=>t.mode==='attack');
  const records=siegeGuildRecords([],matchups,[],null).map(record=>({...record,personalTeamId:matchups.find(m=>m.id===record.id)?.personalTeamId}));
  for(const team of personal){
@@ -46,7 +46,18 @@ export function personalSiegeConfrontations(targets=[],matchups=[],teams=[],acco
  }
  for(const record of records){
   const target={members:record.counter.enemyDefense,leaderIndex:record.counter.siege.defenseLeaderIndex,leader:record.counter.siege.defenseLeader},row=group(target);
-  row.attacks.push(record);row.record??=record;
+  row.attacks.push(record);row.record??=record;if(!row.sources.includes('Meu acervo'))row.sources.push('Meu acervo');
+ }
+ // Only records already authorized/scoped by SiegeCentral enter this index.
+ const known=new Set(records.map(r=>r.key));
+ for(const shared of sharedRecords.filter(r=>!known.has(r.key)).flatMap(record=>siegeComparisonRows([record]))){
+  if(shared.members.length!==3)continue;
+  const record=shared.record,index=record.counter?.siege.defenseLeaderIndex??record.team.leaderIndex??0;
+  const row=group({members:shared.members,leader:shared.leader,leaderIndex:index});
+  for(const attack of shared.attacks)if(!row.attacks.some(r=>r.key===attack.key))row.attacks.push({...attack,sharedSource:true});
+  row.record??=record;
+  const source=record.cloud?'Guilda':record.favorite?'Favorito':'Modelo local';
+  if(!row.sources.includes(source))row.sources.push(source);
  }
  // The shared comparison view needs a defense record, including for empty targets.
  for(const row of groups.values())row.record??={key:row.key,name:row.name,team:{mode:'defense',leaderIndex:row.leaderIndex,configs:row.members},targetOnly:true};
