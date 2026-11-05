@@ -1,3 +1,4 @@
+import {monsterPickerOptions} from '../src/core/monster-variants.js';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {MONSTER_CATALOG} from '../src/core/monsters.js';
 import {filterMonsterOptions} from '../src/core/monster-search.js';
@@ -13,10 +14,10 @@ import {teamCardHeading,createTeamCard} from '../src/core/team-card.js';
 const opts={...DEFAULT_OPTIONS,depth:'fast'};
 function fixture(){return normalizeAccount({wizard_info:{wizard_id:10,wizard_name:'QA'},towers:{glorySpd:15,guildSpd:5},deco_list:[{deco_id:6,level:20,secret:'SECRET'}],runes:[],unit_list:[18311,16111,28212].map((master,i)=>({unit_id:i+1,unit_master_id:master,attribute:master%10,unit_level:40,class:6,con:700,atk:800,def:650,spd:100,critical_rate:15,critical_damage:50,resist:15,accuracy:0,skills:[{skill_id:111,level:4},{skill_id:112,level:2}],runes:Array.from({length:6},(_,j)=>({rune_id:i*10+j+1,slot_no:j+1,set_id:j<4?13:15,class:6,upgrade_curr:15,pri_eff:j===1?[8,42]:[1,100],sec_eff:[[2,8,0,5],[8,3,0,2]]}))})),session_key:'SECRET',friend_list:['SECRET']});}
 
-test('family search includes all five elements and both awakened/unawakened forms',()=>{
- const family=filterMonsterOptions(MONSTER_CATALOG,'Totemista');assert.equal(family.length,10);assert.deepEqual([...new Set(family.map(m=>m.element))].sort(),[1,2,3,4,5]);for(const name of ['Aaliyah','Nora','Riley','Ella','Maya'])assert.ok(family.some(m=>m.name===name));assert.equal(filterMonsterOptions(MONSTER_CATALOG,'Totemist').length,10);assert.equal(filterMonsterOptions(MONSTER_CATALOG,'Totémista Nora').length,1);
+test('family search covers all five elements using awakened choices and unawakened-name aliases',()=>{
+ const family=filterMonsterOptions(MONSTER_CATALOG,'Totemista');assert.equal(family.length,5);assert.deepEqual([...new Set(family.map(m=>m.element))].sort(),[1,2,3,4,5]);for(const name of ['Aaliyah','Nora','Riley','Ella','Maya'])assert.ok(family.some(m=>m.name===name));assert.equal(filterMonsterOptions(MONSTER_CATALOG,'Totemist').length,5);assert.equal(filterMonsterOptions(MONSTER_CATALOG,'Totémista Nora').length,1);
  for(const q of ['Panda','Paladin','Ifrit'])assert.equal(new Set(filterMonsterOptions(MONSTER_CATALOG,q).map(m=>m.element)).size,5);
- assert.equal(filterMonsterOptions(MONSTER_CATALOG,'').length,MONSTER_CATALOG.length);assert.ok(filterMonsterOptions(MONSTER_CATALOG,'a').length>40);
+ assert.equal(filterMonsterOptions(MONSTER_CATALOG,'').length,monsterPickerOptions(MONSTER_CATALOG).length);assert.ok(filterMonsterOptions(MONSTER_CATALOG,'a').length>40);
 });
 test('deck categories and dungeons are strict even with unknown or contradictory metadata',()=>{
  const p=[{id:'a',gameMode:'arena',unitIds:[1,2,3,4]},{id:'s',gameMode:'siege',unitIds:[1,2,3]},{id:'d',gameMode:'cairos',dungeon:'db12',unitIds:[1,2,3,4,5]},{id:'g',gameMode:'cairos',dungeon:'gb12',unitIds:[1,2,3,4,5]},{id:'?',gameMode:null,unitIds:[1,2,3]}];

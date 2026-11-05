@@ -258,3 +258,9 @@ Na grade visual, os retratos têm 56px e os nomes aparecem ao passar o mouse; a 
 ### Guild Center removido
 
 O módulo intermediário Guild Center foi retirado da aplicação e do menu. O cartão correspondente da Home aponta para **Counters Pessoais**, na Central de Siege existente. URLs antigas `#/guild-center` são normalizadas para `#/siege`, inclusive após recarregar. Os cadastros pessoais, dados de guilda e serviços de nuvem não foram apagados ou migrados. A rota privada legada do Guild Intelligence permanece compatível; seus botões de retorno e gestão apontam para a Central de Siege.
+
+### Versões e ordem do catálogo visual
+
+O seletor reúne entradas não despertadas na primeira forma despertada verificada pelo vínculo `awakens_to` da API SWARFARM. Formas sem despertar são ocultadas no catálogo manual. Primeiro e segundo despertar continuam distintos, assim como os IDs reais de collab e de suas versões originais. O texto da busca aceita nomes de família, nomes despertados e nomes das equivalências de collab confirmadas por grupo de habilidades, elemento, despertar, raridade e atributos base.
+
+A referência está em `monster-variants.json`, com URL pública, hash e campos documentados. A ordenação segue `family_id` do jogo em ordem crescente, depois elemento e despertar; não há datas oficiais de lançamento na fonte, e nenhuma data é presumida. Escolhas vindas do SWEX mantêm seus IDs de instância e seus equipamentos; somente a apresentação do retrato pode usar a forma despertada.
