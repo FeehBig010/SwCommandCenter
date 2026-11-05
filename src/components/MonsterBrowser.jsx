@@ -5,7 +5,7 @@ import {ELEMENTS} from '../core/data';
 import {filterMonsterBrowser,indexMonsterBrowser,monsterNaturalStars,toggleMonsterFilter} from '../core/monster-browser';
 import MonsterPortrait from './MonsterPortrait';
 import './MonsterBrowser.css';
-const ELEMENT_FILES={1:'water',2:'fire',3:'wind',4:'light',5:'dark'},PAGE_SIZE=48;
+const ELEMENT_FILES={1:'water',2:'fire',3:'wind',4:'light',5:'dark'},PAGE_SIZE=120;
 export default function MonsterBrowser({label,options,value,onSelect,onClose,disabled=false}){
  const dialog=useRef(null),search=useRef(null),close=useRef(onClose),id=useId();close.current=onClose;
  const [query,setQuery]=useState(''),[stars,setStars]=useState([]),[elements,setElements]=useState([]),[page,setPage]=useState(0),[view,setView]=useState('grid');
