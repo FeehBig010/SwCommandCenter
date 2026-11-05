@@ -5,7 +5,7 @@ import {QUICK_AREA_LABELS,quickPresetArea,quickPresetChoices} from '../core/quic
 import MonsterPortrait from './MonsterPortrait';
 import './PresetPicker.css';
 const ROW=88,HEIGHT=352;
-function PresetList({presets,onLoad,disabled}){
+export function PresetList({presets,onLoad,disabled}){
  const root=useRef(),id=useId(),[scroll,setScroll]=useState(0),[active,setActive]=useState(0);
  const start=Math.min(Math.max(0,presets.length-1),Math.max(0,Math.floor(scroll/ROW)-2)),end=Math.min(presets.length,start+8),indices=[...new Set([...Array.from({length:end-start},(_,i)=>start+i),...(presets[active]?[active]:[])])].sort((a,b)=>a-b);
  function move(index){const next=Math.max(0,Math.min(presets.length-1,index)),node=root.current;setActive(next);if(next*ROW<node.scrollTop)node.scrollTop=next*ROW;else if((next+1)*ROW>node.scrollTop+HEIGHT)node.scrollTop=(next+1)*ROW-HEIGHT;setScroll(node.scrollTop);}

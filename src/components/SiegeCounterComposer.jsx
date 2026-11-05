@@ -7,6 +7,7 @@ import {cleanSiegeCounter} from '../core/siege';
 import {portableTeam,copyTeamToOptimizer} from '../core/hub';
 import {autoFillTeam} from '../core/team-autofill';
 import MonsterCombobox from './MonsterCombobox';
+import TeamPresetPicker from './TeamPresetPicker';
 import SiegeKillOrder from './SiegeKillOrder';
 import MonsterPortrait from './MonsterPortrait';
 import {MonsterEditor} from './TeamEditor';
@@ -48,7 +49,7 @@ export default function SiegeCounterComposer({initial,teams=[],account,onSave,on
      <div className="siege-counter-lineup">{draft.enemyDefense.map((m,i)=><MonsterCombobox key={i} label={`Defesa ${i+1}`} options={SIEGE_CHOICES} value={String(m?.masterId||'')} onChange={choice=>selectDefender(i,choice)}/>)}</div>
     </fieldset>
    </details>}
-   <div className="siege-offense-entry" role="group" aria-label="Como cadastrar o ataque">{[['preset','Usar um preset definido'],['manual','Cadastrar ataque que ganha deles']].map(([key,label])=><button key={key} type="button" className="button small" aria-pressed={entryMode===key} onClick={()=>{setEntryMode(key);if(key==='manual')setPersonalTeamId(null);}}>{label}</button>)}</div><div className="siege-counter-meta"><label className="field"><span>Nome do counter</span><input required maxLength={100} value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label>{entryMode==='preset'&&<label className="field"><span>Preencher com meu time</span><select aria-label="Preencher com meu time" defaultValue={initialPresetId||''} onChange={e=>{const t=teams.find(t=>t.id===e.target.value);if(t)try{setOffense(hydrate(portableTeam(t,account)));setPersonalTeamId(t.id);setError('');}catch(e){setError(e.message);}}}><option value="">Criar do zero</option>{teams.filter(t=>t.mode==='attack'&&t.configs.length===3).map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>}</div>
+   <div className="siege-offense-entry" role="group" aria-label="Como cadastrar o ataque">{[['preset','Usar um preset definido'],['manual','Cadastrar ataque que ganha deles']].map(([key,label])=><button key={key} type="button" className="button small" aria-pressed={entryMode===key} onClick={()=>{setEntryMode(key);if(key==='manual')setPersonalTeamId(null);}}>{label}</button>)}</div><div className="siege-counter-meta"><label className="field"><span>Nome do counter</span><input required maxLength={100} value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label>{entryMode==='preset'&&<TeamPresetPicker teams={teams} account={account} selectedId={personalTeamId} disabled={busy} onSelect={t=>{if(!t){setPersonalTeamId(null);return;}try{setOffense(hydrate(portableTeam(t,account)));setPersonalTeamId(t.id);setError('');}catch(e){setError(e.message);}}}/>}</div>
    <div className="siege-offense-workspace">
     <section className="siege-counter-panel siege-counter-attack" aria-label="Painel de Ataque / Counter">
      <h3>Ataque / Counter</h3>
