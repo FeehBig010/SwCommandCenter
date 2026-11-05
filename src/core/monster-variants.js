@@ -39,3 +39,6 @@ export function monsterPickerOptions(options){
  }
  return [...choices.values()].sort(compareCollectionOptions);
 }
+
+// The search options must include current verified releases, not only legacy names.
+export function verifiedCatalogNames(){return Object.fromEntries((variants.catalog_ids||[]).map(id=>[id,variants.units[id][0]]));}

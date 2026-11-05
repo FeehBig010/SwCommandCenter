@@ -22,3 +22,13 @@ test('collection uses ascending game family IDs and elements, independent of alp
  const choices=monsterPickerOptions([option(29715,'Fiona'),option(15713,'Seara'),option(10114,'Neal'),option(10112,'Iselia'),option(10111,'Elucia')]);
  assert.deepEqual(choices.map(o=>o.master),[10111,10112,10114,15713,29715]);assert.deepEqual(collectionOrder(29715).slice(0,3),[29700,5,1]);
 });
+
+test('current verified releases feed the real catalog: Driana is Wind Justice, awakened 34213 and never Adriana',async()=>{
+ const {MONSTER_CATALOG,monsterImageSources}=await import('../src/core/monsters.js');
+ const driana=MONSTER_CATALOG.find(o=>o.master===34213);assert.equal(driana.name,'Driana');assert.equal(driana.element,3);
+ const index=indexMonsterBrowser(MONSTER_CATALOG);
+ for(const query of ['Driana','Justice'])assert.ok(filterMonsterBrowser(index,{query,stars:[5],elements:[3]}).some(o=>o.master===34213));
+ assert.ok(!filterMonsterBrowser(index,{query:'Driana',elements:[1]}).some(o=>o.master===34213));assert.equal(MONSTER_CATALOG.find(o=>o.master===26811).name,'Adriana');
+ assert.ok(monsterImageSources(34213).some(url=>url.endsWith('/unit_icon_0202_1_3.png')));
+ assert.ok(!filterMonsterBrowser(index,{query:'Justice'}).some(o=>o.master===34203));
+});

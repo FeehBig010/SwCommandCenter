@@ -1,3 +1,4 @@
+import {verifiedCatalogNames} from './monster-variants.js';
 import {COLLAB_PORTRAIT_FILES} from './collab-portrait-files.js';
 import {MONSTER_IMAGE_INDEX_URL,COMMUNITY_MONSTER_CDN,SWARFARM_MONSTER_CDN,readPortraitIndex,parseCommunityPortraitIndex} from './monster-image-index.js';
 import {LOCAL_MONSTER_MANIFEST,safePortraitFilename,localMonsterImage} from './monster-assets.js';
@@ -7,7 +8,7 @@ import catalog from './catalog.json' with { type: 'json' };
 // Public SWARFARM filename snapshot; current sources/update steps: docs/ASSETS.md.
 import images from './monster-images.json' with { type: 'json' };
 
-const completeCatalog={...Object.fromEntries(Object.entries(metadata.monsters).filter(([id,m])=>m.obtainable&&[1,2,3,4,5].includes(Number(id)%10)).map(([id,m])=>[id,m.name])),...catalog};
+const completeCatalog={...Object.fromEntries(Object.entries(metadata.monsters).filter(([id,m])=>m.obtainable&&[1,2,3,4,5].includes(Number(id)%10)).map(([id,m])=>[id,m.name])),...catalog,...verifiedCatalogNames()};
 export const MONSTER_CATALOG=Object.entries(completeCatalog)
  .filter(([id,name])=>Number(id)>=10000&&name)
  .map(([id,name])=>({master:Number(id),name,element:Number(id)%10}))
