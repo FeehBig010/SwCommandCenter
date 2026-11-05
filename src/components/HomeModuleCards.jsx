@@ -1,8 +1,8 @@
 import {useEffect, useRef, useState} from 'react';
-import {ArrowUpRight, ChevronLeft, ChevronRight, Gem, Shield, Users} from 'lucide-react';
+import {ArrowUpRight, ChevronLeft, ChevronRight, Gem, Shield, Swords} from 'lucide-react';
 import {HOME_MODULES, homeCardFromKey} from '../core/home-modules';
 
-const ICONS = {account: Shield, build: Gem, guild: Users};
+const ICONS = {account: Shield, build: Gem, siege: Swords};
 
 function CardArt({module}) {
   const [failed, setFailed] = useState(false);
@@ -10,7 +10,7 @@ function CardArt({module}) {
     {!failed && <img className={`home-card-art art-${module.id}`} src={module.image}
       alt={module.imageAlt} decoding="async" onError={() => setFailed(true)}/>}
     <span className="home-card-shade" aria-hidden="true"/>
-    {module.id === 'guild' && <img className="home-card-crest" src="/art/home/guild-crest.webp" alt="" decoding="async"/>}
+    {module.id === 'siege' && <img className="home-card-crest" src="/art/home/guild-crest.webp" alt="" decoding="async"/>}
     {module.id === 'build' && <span className="home-card-runes" aria-hidden="true">
       {['violent', 'swift', 'will'].map(set => <span key={set}><img src={`/game-icons/runes/${set}.png`} alt="" decoding="async"/></span>)}
     </span>}

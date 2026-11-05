@@ -1,0 +1,21 @@
+import {chromium} from 'playwright';
+import assert from 'node:assert/strict';
+import {mkdir} from 'node:fs/promises';
+import {quickPresetAccount} from '../fixtures/quick-presets.mjs';
+import {teamFromGameDeck} from '../../src/core/account-teams.js';
+const origin=process.env.E2E_BASE_URL||'http://127.0.0.1:5294',out='/workspace/artifacts/remove-guild-center';await mkdir(out,{recursive:true});
+const account=quickPresetAccount(),attack=teamFromGameDeck(account.accountPresets[0],account),defense={...structuredClone(attack),id:'own-defense',mode:'defense',name:'Minha defesa QA'},teams=[attack,defense];
+const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/chromium',args:['--no-sandbox']}),context=await browser.newContext({viewport:{width:1440,height:900},reducedMotion:'reduce'});
+await context.route('**/*',r=>{const u=new URL(r.request().url());if(u.origin===origin){if(u.pathname==='/__qa__/seed')return r.fulfill({body:'QA'});return r.continue();}if(u.hostname.endsWith('.supabase.co'))return r.fulfill({json:u.pathname.endsWith('get_engine_settings')?{default_speed_tick:7,max_teams:100,maintenance_mode:false}:[]});return r.abort();});
+const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+async function stored(key){return page.evaluate(async key=>{const db=await new Promise(resolve=>{const r=indexedDB.open('d8stino-siege-v1',1);r.onsuccess=()=>resolve(r.result);});return new Promise(resolve=>{const r=db.transaction('data').objectStore('data').get(key);r.onsuccess=()=>{db.close();resolve(r.result);};});},key);}
+async function openCounter(){const panel=page.locator('.siege-counter-disclosure').first();await panel.waitFor({state:'attached'});if((await panel.getAttribute('open'))===null)await panel.locator(':scope>summary').click();}
+try{
+ await page.goto(origin+'/__qa__/seed');await page.evaluate(async({account,teams})=>{localStorage.setItem('has_completed_onboarding','true');const db=await new Promise(resolve=>{const r=indexedDB.open('d8stino-siege-v1',1);r.onupgradeneeded=()=>r.result.createObjectStore('data');r.onsuccess=()=>resolve(r.result);});await new Promise(resolve=>{const tx=db.transaction('data','readwrite');tx.objectStore('data').put(account,'account');tx.objectStore('data').put(teams,'teams');tx.oncomplete=resolve;});db.close();},{account,teams});
+ await page.goto(origin+'/#/guild-center');await page.getByRole('heading',{name:'Central de Siege',exact:true}).waitFor();await page.waitForURL('**/#/siege');assert.equal(await page.getByRole('button',{name:'Guild Center',exact:true}).count(),0);assert.equal(await page.getByRole('heading',{name:'Guild Center',exact:true}).count(),0);await page.reload();await page.getByRole('heading',{name:'Central de Siege',exact:true}).waitFor();
+ await page.getByRole('navigation',{name:'Navegação principal'}).getByRole('button',{name:'Calculadora Livre',exact:true}).click();await page.getByRole('heading',{name:'Calculadora Livre',exact:true}).waitFor();await page.getByRole('navigation',{name:'Navegação principal'}).getByRole('button',{name:'Central de Siege',exact:true}).click();await page.getByRole('heading',{name:'Central de Siege',exact:true}).waitFor();
+ for(const width of [1440,390]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:out+`/counters-${width}.png`});}
+ assert.deepEqual(await stored('account'),account);assert.deepEqual(errors,[]);
+ const guest=await browser.newContext();await guest.route('**/*',r=>new URL(r.request().url()).origin===origin?r.continue():r.abort());const anonymous=await guest.newPage();await anonymous.goto(origin+'/#/guild-center');await anonymous.getByRole('heading',{name:'🔒 Área reservada',exact:true}).waitFor();await anonymous.waitForURL('**/#/siege');assert.equal(await anonymous.getByRole('heading',{name:'Guild Center',exact:true}).count(),0);await guest.close();
+ console.log('PASS: Guild Center removed from sidebar and application, legacy URLs redirect to Siege with refresh support, personal counters/calculator reachable, unchanged account, protected guest access, desktop/mobile without overflow or runtime errors.');
+}catch(e){console.error(await page.locator('body').innerText(),errors);throw e;}finally{await browser.close();}

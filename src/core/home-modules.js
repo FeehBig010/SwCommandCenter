@@ -15,9 +15,9 @@ export const HOME_MODULES = Object.freeze([
     image: '/art/home/build-scene.webp', imageAlt: 'Portal dimensional do laboratório de builds',
   },
   {
-    id: 'guild', title: 'Guild Center', page: 'guild-center',
-    description: 'Estratégia, colaboração e inteligência para sua guilda.',
-    detail: 'Siege · Counters · Guild Intelligence',
+    id: 'siege', title: 'Counters Pessoais', page: 'siege',
+    description: 'Encontre defesas e organize seus ataques e estratégias.',
+    detail: 'Defesas inimigas · Ataques · Estratégias',
     scene: '/art/home/guild-scene.webp',
     image: '/art/home/guild-scene.webp', imageAlt: 'Fortaleza da guilda ao anoitecer',
   },

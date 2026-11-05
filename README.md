@@ -254,3 +254,7 @@ Os campos compartilhados de busca têm um botão de grade **Explorar monstros po
 As estrelas naturais vêm de uma referência pública da API SWARFARM, com fonte e hash em `src/core/monster-natural-stars.json`. Elas não usam a graduação atual de seis estrelas da unidade nem aumentam com o despertar secundário. IDs sem classificação conhecida continuam pesquisáveis por nome, sem receber uma raridade presumida.
 
 Na grade visual, os retratos têm 56px e os nomes aparecem ao passar o mouse; a visualização em lista mantém nomes e informações visíveis. Busca e filtros permanecem disponíveis enquanto somente a área de resultados rola. Home/End e as setas permitem percorrer todo o catálogo pelo teclado.
+
+### Guild Center removido
+
+O módulo intermediário Guild Center foi retirado da aplicação e do menu. O cartão correspondente da Home aponta para **Counters Pessoais**, na Central de Siege existente. URLs antigas `#/guild-center` são normalizadas para `#/siege`, inclusive após recarregar. Os cadastros pessoais, dados de guilda e serviços de nuvem não foram apagados ou migrados. A rota privada legada do Guild Intelligence permanece compatível; seus botões de retorno e gestão apontam para a Central de Siege.
