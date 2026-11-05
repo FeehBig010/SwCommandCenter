@@ -1,3 +1,4 @@
+import {normalizeDefenseIdentity} from './defense-identity.js';
 import {normalizeLeader} from './leaders.js';
 import {catalogLeader} from './leader-catalog.js';
 import {personalSiegeTeams,siegeGuildRecords,siegeComparisonRows} from './siege-central.js';
@@ -9,13 +10,13 @@ import {cleanSiegeCounter} from './siege.js';
 export function cleanSiegeTarget(raw){
  if(!raw||!Array.isArray(raw.members)||raw.members.length!==3)throw new Error('Selecione os três monstros da defesa inimiga.');
  const members=raw.members.map(m=>{
-  const masterId=Number(m?.masterId),label=String(m?.label||'').trim();
+  m=normalizeDefenseIdentity(m);const masterId=Number(m?.masterId),label=String(m?.label||'').trim();
   if(!Number.isSafeInteger(masterId)||masterId<10000||!label||label.length>80)throw new Error('Complete os três monstros da defesa inimiga.');
   return {masterId,label};
  });
  const leaderIndex=Number(raw.leaderIndex??0);
  if(!Number.isInteger(leaderIndex)||leaderIndex<0||leaderIndex>2)throw new Error('Selecione um líder válido.');
- return {id:typeof raw.id==='string'&&raw.id.length<=80?raw.id:crypto.randomUUID(),members,leaderIndex,leader:Object.hasOwn(raw,'leader')?normalizeLeader(raw.leader):catalogLeader(members[leaderIndex].masterId)};
+ return {id:typeof raw.id==='string'&&raw.id.length<=80?raw.id:crypto.randomUUID(),members,leaderIndex,leader:Object.hasOwn(raw,'leader')&&Number(raw.members[leaderIndex]?.masterId)===members[leaderIndex].masterId&&!(raw.leader==null&&members[leaderIndex].masterId>=29711&&members[leaderIndex].masterId<=29715)?normalizeLeader(raw.leader):catalogLeader(members[leaderIndex].masterId)};
 }
 
 export function siegeTargetKey(target){

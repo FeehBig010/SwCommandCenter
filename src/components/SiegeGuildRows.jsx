@@ -1,20 +1,20 @@
 import {useMemo,useState} from 'react';
 import SiegeAccountTimeline from './SiegeAccountTimeline';
 import {siegeKillRanks,siegeCounterContext} from '../core/siege-search';
-import {Copy,Plus,Shield,Swords,ChevronDown,Pencil} from 'lucide-react';
+import {Copy,Plus,Shield,Swords,ChevronDown,Pencil,Crown} from 'lucide-react';
 import {siegeComparisonRows} from '../core/siege-central';
 import {LABELS,SETS} from '../core/data';
 import {orderRuneSets} from '../core/rune-sets';
 import MonsterPortrait from './MonsterPortrait';
 import {LeaderLabel} from './SiegeCounterComposer';
 
-function Lineup({members,ranks=[],compact=false}){
+function Lineup({members,ranks=[],compact=false,leaderIndex=null}){
  return <div className={`siege-row-lineup${compact?' siege-lineup-compact':''}`}>{members.map((m,i)=>{
   const tick=Number(m.maxTick);
   const speed=Number(m.bonusSpd)||Number(m.goals?.spd)||0;
   const bonus=Number(m.bonusSpd)>0||m.basis==='bonus';
   return <div className="siege-row-unit" key={i}>
-   <span className="siege-focus-portrait"><MonsterPortrait unit_master_id={m.masterId} name={m.label}/>{ranks[i]!=null&&<b className="siege-focus-rank" aria-label={`${ranks[i]}º alvo: ${m.label}`}>{ranks[i]}</b>}</span><strong>{m.label}</strong>
+   <span className="siege-focus-portrait"><MonsterPortrait unit_master_id={m.masterId} name={m.label}/>{leaderIndex===i&&<span className="siege-defense-crown" title={`Líder: ${m.label}`} aria-label={`Líder da defesa: ${m.label}`}><Crown size={13}/></span>}{ranks[i]!=null&&<b className="siege-focus-rank" aria-label={`${ranks[i]}º alvo: ${m.label}`}>{ranks[i]}</b>}</span><strong>{m.label}</strong>
    {!compact&&(tick>0||speed>0||Number(m.combatSpd)>0)&&<span className="siege-row-speed">{tick>0?`Tick esperado ${tick}`:''}{speed?`${tick?' · ':''}Meta ${bonus?'+':''}${speed} SPD`:Number(m.combatSpd)>0?`${tick?' · ':''}Meta ${m.combatSpd} Combat SPD`:''}</span>}
    {!compact&&<><small>{Object.entries(m.goals||{}).filter(([key,value])=>key!=='spd'&&Number(value)>0).map(([key,value])=>`${LABELS[key]} ${m.basis==='bonus'&&!['cr','cd','res','acc'].includes(key)?'+':''}${Number(value).toLocaleString('pt-BR')}`).join(' · ')}</small>
    <div className="siege-sets">{orderRuneSets(m.sets||[]).filter(id=>SETS[id]).map((id,j)=><img key={j} className="rune-set-icon" src={`/game-icons/runes/${SETS[id].toLowerCase()}.png`} alt={SETS[id]} title={SETS[id]}/>)}</div></>}
@@ -54,8 +54,8 @@ export default function SiegeGuildRows({records=[],rows:providedRows,feedback,on
   {rows.map(row=>{const active=row.attacks.find(r=>r.key===activeKey)||row.attacks[0],ranks=siegeKillRanks(row.members,active?.counter);return <article className="siege-comparison-row" key={row.key} aria-label={`Defesa versus Ataque — ${row.name}`}>
    <section className="siege-row-defense" aria-label="Defesa inimiga">
     <header><span className="eyebrow"><Shield size={14}/>DEFESA</span><h3>{personal?'Defesa que vou enfrentar':row.members.length?row.name:'Defesa não informada'}</h3></header>
-    {row.members.length?<><LeaderLabel leader={row.leader}/><Lineup members={row.members} ranks={ranks}/></>:<p className="fineprint">{row.record.row?.target_defense||'Ataque compartilhado sem uma defesa vinculada.'}</p>}
-    <div className="button-group">{personal&&row.sources?.includes('Meu acervo')&&onEditDefense&&<button type="button" className="button small siege-edit-defense" disabled={busy} onClick={()=>onEditDefense(row)}><Pencil size={13}/>Editar defesa</button>}{row.members.length>0&&<button type="button" className="button small" disabled={busy} onClick={()=>onAdd(row)}><Plus size={14}/>{personal?'Vincular meu time':'Adicionar Counter'}</button>}{!personal&&row.record.team.mode==='defense'&&<button type="button" className="button small" onClick={()=>onInspect(row.record)}>Ver metas da defesa</button>}</div>
+    {row.members.length?<><LeaderLabel leader={row.leader}/><Lineup members={row.members} ranks={ranks} leaderIndex={row.leaderIndex??row.record.counter?.siege.defenseLeaderIndex??row.record.team.leaderIndex??0}/></>:<p className="fineprint">{row.record.row?.target_defense||'Ataque compartilhado sem uma defesa vinculada.'}</p>}
+    <div className="button-group">{personal&&row.sources?.includes('Meu acervo')&&onEditDefense&&<button type="button" className="button small siege-edit-defense" disabled={busy} onClick={()=>onEditDefense(row)}><Pencil size={13}/>Editar defesa</button>}{row.members.length>0&&<button type="button" className="button small" disabled={busy} onClick={()=>onAdd(row,personal?'preset':undefined)}><Plus size={14}/>{personal?'Usar um preset definido':'Adicionar Counter'}</button>}{personal&&row.members.length>0&&<button type="button" className="button small" disabled={busy} onClick={()=>onAdd(row,'manual')}><Plus size={14}/>Cadastrar ataque que ganha deles</button>}{!personal&&row.record.team.mode==='defense'&&<button type="button" className="button small" onClick={()=>onInspect(row.record)}>Ver metas da defesa</button>}</div>
    </section>
    <section className="siege-row-attacks" aria-label="Ataques recomendados">
     {!row.attacks.length&&<div className="siege-row-no-counter"><Swords size={24}/><p>{personal?'Vincule um preset ou selecione seu trio.':'Nenhum counter registrado para esta defesa.'}</p></div>}
