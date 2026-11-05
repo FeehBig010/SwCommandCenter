@@ -8,7 +8,6 @@ export function monsterNaturalStars(option){
 export function indexMonsterBrowser(options){return options.map(option=>({option,text:monsterSearchText(option),stars:monsterNaturalStars(option)}));}
 export function filterMonsterBrowser(index,{query='',stars=[],elements=[]}={}){
  const tokens=normalizeSearch(query).trim().split(/\s+/).filter(Boolean);
- if(!tokens.length&&!stars.length&&!elements.length)return [];
  return index.filter(row=>(!stars.length||stars.includes(row.stars))&&(!elements.length||elements.includes(Number(row.option.element)))&&tokens.every(t=>row.text.includes(t))).map(row=>row.option);
 }
 export function toggleMonsterFilter(values,value){return values.includes(value)?values.filter(v=>v!==value):[...values,value];}

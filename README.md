@@ -249,8 +249,8 @@ A lista de counters se adapta à quantidade: até três ataques aparecem diretam
 
 ### Seleção visual de monstros
 
-Os campos compartilhados de busca têm um botão de grade **Explorar monstros por ícones**. O catálogo começa vazio e permite combinar múltiplas estrelas naturais e elementos, pesquisar por nome/família e alternar entre grade e lista. Selecionar um retrato preenche somente o campo que abriu o painel, inclusive no cadastro de ataques sem os monstros na conta. Escape fecha o catálogo e devolve o foco. O pop-up ocupa quase toda a tela e exibe no máximo 120 resultados por página, com avatares carregados sob demanda.
+Os campos compartilhados de busca têm um botão de grade **Explorar monstros por ícones**. O catálogo abre com todos os monstros disponíveis no campo e permite combinar múltiplas estrelas naturais e elementos, pesquisar por nome/família e alternar entre grade e lista. Selecionar um retrato preenche somente o campo que abriu o painel, inclusive no cadastro de ataques sem os monstros na conta. Escape fecha o catálogo e devolve o foco. O pop-up ocupa quase toda a tela e usa rolagem contínua, sem paginação. Somente as linhas próximas à área visível são renderizadas, com retratos carregados sob demanda; todos os resultados permanecem acessíveis.
 
 As estrelas naturais vêm de uma referência pública da API SWARFARM, com fonte e hash em `src/core/monster-natural-stars.json`. Elas não usam a graduação atual de seis estrelas da unidade nem aumentam com o despertar secundário. IDs sem classificação conhecida continuam pesquisáveis por nome, sem receber uma raridade presumida.
 
-Na grade visual, os retratos têm 56px e os nomes aparecem ao passar o mouse; a visualização em lista mantém nomes e informações visíveis. Busca, filtros e paginação permanecem disponíveis enquanto somente a área de resultados rola.
+Na grade visual, os retratos têm 56px e os nomes aparecem ao passar o mouse; a visualização em lista mantém nomes e informações visíveis. Busca e filtros permanecem disponíveis enquanto somente a área de resultados rola. Home/End e as setas permitem percorrer todo o catálogo pelo teclado.
