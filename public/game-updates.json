@@ -1,9 +1,17 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-05T00:21:52.980Z",
+  "fetchedAt": "2026-11-05T07:53:41.561Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/event/313/96273",
+      "url": "https://www.withhive.com/event/313/96273",
+      "title": "Secret Dungeon for 3★ [Imp Champion] (Fire) Open!",
+      "category": "event",
+      "publishedAt": "2026-11-05T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261103/cb838a08e26add69b693a5e699ac7ec3.jpg"
+    },
     {
       "id": "https://www.withhive.com/notice/313/96260",
       "url": "https://www.withhive.com/notice/313/96260",
