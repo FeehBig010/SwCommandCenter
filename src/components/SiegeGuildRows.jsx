@@ -1,7 +1,7 @@
 import {useMemo,useState} from 'react';
 import SiegeAccountTimeline from './SiegeAccountTimeline';
 import {siegeKillRanks,siegeCounterContext} from '../core/siege-search';
-import {Copy,Plus,Shield,Swords,ChevronDown,Pencil,Crown} from 'lucide-react';
+import {Copy,Plus,Shield,Swords,ChevronDown,ChevronLeft,ChevronRight,Pencil,Crown} from 'lucide-react';
 import {siegeComparisonRows} from '../core/siege-central';
 import {LABELS,SETS} from '../core/data';
 import {orderRuneSets} from '../core/rune-sets';
@@ -45,6 +45,15 @@ function CounterAttack({record,feedback,onCopy,onInspect,onReact,account,busy,fe
 
 }
 
+function CounterList({records,render,onPage}){
+ const [requested,setRequested]=useState(0),pages=Math.ceil(records.length/3),page=Math.min(requested,Math.max(0,pages-1)),many=records.length>3;
+ function change(next){setRequested(next);onPage();}
+ return <div className={`siege-counter-list ${many?'is-paginated':'is-roomy'}`}>
+  {many&&<nav className="siege-counter-pagination" aria-label="Páginas de counters"><span role="status">{page*3+1}–{Math.min((page+1)*3,records.length)} de {records.length} counters</span><div><button type="button" className="icon-button" aria-label="Counters anteriores" disabled={page===0} onClick={()=>change(page-1)}><ChevronLeft size={17}/></button><span>{page+1} / {pages}</span><button type="button" className="icon-button" aria-label="Próximos counters" disabled={page===pages-1} onClick={()=>change(page+1)}><ChevronRight size={17}/></button></div></nav>}
+  <div className="siege-counter-page" role="region" aria-label="Counters disponíveis">{records.map((record,index)=><div key={record.key} className="siege-counter-page-item" hidden={many&&Math.floor(index/3)!==page}>{render(record)}</div>)}</div>
+ </div>;
+}
+
 export default function SiegeGuildRows({records=[],rows:providedRows,feedback,onCopy,onAdd,onInspect,onReact,account,busy,feedbackBusy,options,personal=false,onEditDefense,onSaveNote}){
  const [activeKey,setActiveKey]=useState(null);
  const rows=providedRows||siegeComparisonRows(records);
@@ -59,10 +68,8 @@ export default function SiegeGuildRows({records=[],rows:providedRows,feedback,on
    </section>
    <section className="siege-row-attacks" aria-label="Ataques recomendados">
     {!row.attacks.length&&<div className="siege-row-no-counter"><Swords size={24}/><p>{personal?'Vincule um preset ou selecione seu trio.':'Nenhum counter registrado para esta defesa.'}</p></div>}
-    {row.attacks.length>1?<details className="siege-counters-accordion" open={personal||undefined}>
-     <summary className="button primary siege-counter-toggle"><span>Ver {row.attacks.length} Counters Disponíveis</span><ChevronDown size={18} aria-hidden="true"/></summary>
-     <div className="siege-counters-stack" role="region" tabIndex={0} aria-label="Counters disponíveis">{row.attacks.map(record=><CounterAttack key={record.key} record={record} feedback={feedback} onCopy={onCopy} onInspect={onInspect} onReact={onReact} account={account} busy={busy} feedbackBusy={feedbackBusy} active={active===record} onActivate={()=>setActiveKey(key=>key===record.key?null:record.key)} options={options} defenseMembers={row.members} personal={personal} onSaveNote={onSaveNote} onClose={()=>setActiveKey(key=>key===record.key?null:key)}/>)}</div>
-    </details>:row.attacks.map(record=><CounterAttack key={record.key} record={record} feedback={feedback} onCopy={onCopy} onInspect={onInspect} onReact={onReact} account={account} busy={busy} feedbackBusy={feedbackBusy} active={active===record} onActivate={()=>setActiveKey(key=>key===record.key?null:record.key)} options={options} defenseMembers={row.members} personal={personal} onSaveNote={onSaveNote} onClose={()=>setActiveKey(key=>key===record.key?null:key)}/>)}
+    <CounterList records={row.attacks} onPage={()=>setActiveKey(null)} render={record=><CounterAttack key={record.key} record={record} feedback={feedback} onCopy={onCopy} onInspect={onInspect} onReact={onReact} account={account} busy={busy} feedbackBusy={feedbackBusy} active={active===record} onActivate={()=>setActiveKey(key=>key===record.key?null:record.key)} options={options} defenseMembers={row.members} personal={personal} onSaveNote={onSaveNote} onClose={()=>setActiveKey(key=>key===record.key?null:key)}/>}/>
+
    </section>
    {active&&activeKey===active.key&&<section className="siege-comparison-timeline" aria-label={`Ticks da minha conta — ${active.name}`}><h3>{active.name} · Minha conta</h3><SiegeAccountTimeline record={active} defenseMembers={row.members} account={account} options={options}/></section>}
   </article>;})}
