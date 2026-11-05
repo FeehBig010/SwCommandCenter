@@ -246,3 +246,9 @@ Nos counters de Siege, **Usar um preset definido** preenche a offense a partir d
 A defesa exibe uma coroa no monstro líder. A família Magic Order Swordsinger recebeu nomes, atributos e líderes dos IDs exatos 29701–29705 / 29711–29715 a partir do espelho público da API SWARFARM (`Millet0217/summonerswar-tool/swarfarm/monsters_raw.json`; proveniência em `monster-metadata.json`). Defesas manuais antigas que usavam um nome desperto no ID não desperto são corrigidas ao carregar; IDs de unidades SWEX não são convertidos. Fiona desperta (29715) tem líder de 28% SPD para Guilda; 29705 é a forma não desperta e não possui essa habilidade.
 
 A lista de counters se adapta à quantidade: até três ataques aparecem diretamente, com avatares maiores. A partir de quatro, a navegação mostra três por página e indica a faixa e o total. Trocar de página recolhe a timeline ativa, preservando comentários ainda em edição nos counters.
+
+### Seleção visual de monstros
+
+Os campos compartilhados de busca têm um botão de grade **Explorar monstros por ícones**. O catálogo começa vazio e permite combinar múltiplas estrelas naturais e elementos, pesquisar por nome/família e alternar entre grade e lista. Selecionar um retrato preenche somente o campo que abriu o painel, inclusive no cadastro de ataques sem os monstros na conta. Escape fecha o catálogo e devolve o foco. São exibidos no máximo 48 resultados por página, com avatares carregados sob demanda.
+
+As estrelas naturais vêm de uma referência pública da API SWARFARM, com fonte e hash em `src/core/monster-natural-stars.json`. Elas não usam a graduação atual de seis estrelas da unidade nem aumentam com o despertar secundário. IDs sem classificação conhecida continuam pesquisáveis por nome, sem receber uma raridade presumida.
