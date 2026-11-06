@@ -35,3 +35,5 @@
 /* Manual speed is the primary calculator control, independent of JSON tools. */
 .quick-density .summary-monster-card>.quick-speed-controls{grid-column:1/-1;width:100%;min-width:0;padding-top:8px}.quick-density .quick-speed-controls input[type=range]{height:4px}.quick-density .quick-speed-controls[inert]{opacity:.45}.quick-density .quick-build-tools{grid-column:1/-1;width:100%;min-width:0;border-top:1px solid #2d3b46;margin-top:5px}.quick-density .quick-build-tools>summary{cursor:pointer;min-height:36px;display:flex;align-items:center;font:11px Inter,system-ui,sans-serif;color:#a9b9c5}.quick-density .quick-build-tools .balance-card-actions{margin-bottom:6px}
 @media(max-width:700px){.quick-density .quick-build-tools>summary{min-height:44px}}
+.quick-density .quick-auto-sync{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:6px 0 10px;font:11px Inter,system-ui,sans-serif;color:#b9c7d1}.quick-density .quick-auto-sync>input{accent-color:#b69b52}.quick-density .quick-auto-sync .technical-help>button{min-width:24px;min-height:24px;width:24px;height:24px;padding:0}
+@media(max-width:700px){.quick-density .quick-auto-sync{min-height:44px;font-size:11px}}

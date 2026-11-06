@@ -182,7 +182,13 @@ verificação/simulação, integridade do JSON e layout mobile.
 ### Balança de builds · busca conjunta
 
 A Calculadora Livre abre vazia e mantém o slider de SPD visível na frente de
-cada card. Selecionar um monstro, mesmo com SWEX carregado, usa somente sua
+cada card. Na montagem manual, informar a SPD do abridor calcula automaticamente
+os mínimos dos seguidores quando o time está completo, com os boosts/buffs
+conhecidos no cenário atual. Os seguidores exibem **SPD de combate necessária**;
+são metas, sem equipar runas. Desmarcar **Calcular SPD dos seguidores automaticamente**
+permite digitar as velocidades individuais. Presets do JSON preservam suas fichas
+reais até o jogador pedir a simulação; as ligações por par continuam regulando
+a busca de builds no inventário. Selecionar um monstro, mesmo com SWEX carregado, usa somente sua
 identidade e atributos base: não carrega runas, conjuntos, artefatos ou bônus
 do inventário. **Presets do JSON** é a ação explícita para importar uma cópia
 do equipamento. As ferramentas de builds/runas e ajustes avançados ficam
