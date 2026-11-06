@@ -28,7 +28,7 @@ export function* normalizeAccountSteps(raw){
  const runeMap=new Map(),artifactMap=new Map(),locked=new Set((raw.rune_lock_list||[]).map(x=>number(typeof x==='object'?x?.rune_id:x)));
  function addRune(r,owner){
   if(!r||!Number.isSafeInteger(r.rune_id)||r.slot_no<1||r.slot_no>6||!Array.isArray(r.pri_eff))return;
-  runeMap.set(r.rune_id,{id:r.rune_id,slot:r.slot_no,set:number(r.set_id),stars:number(r.class)%10,ancient:number(r.class)>10,level:number(r.upgrade_curr),owner:number(owner??r.occupied_id),main:effect(r.pri_eff),innate:effect(r.prefix_eff),subs:(r.sec_eff||[]).map(effect),locked:locked.has(r.rune_id)});
+  runeMap.set(r.rune_id,{id:r.rune_id,slot:r.slot_no,set:number(r.set_id),stars:number(r.class)%10,ancient:number(r.class)>10,level:number(r.upgrade_curr),owner:number(owner??r.occupied_id),main:effect(r.pri_eff),innate:effect(r.prefix_eff),subs:(r.sec_eff||[]).map(effect),locked:locked.has(r.rune_id),...([1,2,3,4,5,11,12,13,14,15].includes(Number(r.extra))?{originalQuality:Number(r.extra)%10}:{}),...([1,2,3,4,5,11,12,13,14,15].includes(Number(r.rank))?{quality:Number(r.rank)%10}:{})});
  }
  function addArtifact(a,owner){const id=a?.rid??a?.artifact_id;if(Number.isSafeInteger(id)&&id>0)artifactMap.set(id,{id,owner:number(owner??a.occupied_id),type:number(a.type),element:number(a.attribute),style:number(a.unit_style),main:effect(a.pri_effect??a.pri_eff),subs:normalizeArtifactSubstats(a),level:number(a.level)});}
  for(let i=0;i<raw.runes.length;i++){addRune(raw.runes[i]);if(i%256===0)yield {percent:20+Math.floor(i/Math.max(1,raw.runes.length)*15),message:'Extraindo runas'};}

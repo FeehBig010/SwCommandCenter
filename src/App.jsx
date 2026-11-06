@@ -68,6 +68,7 @@ const CairosHub=lazy(()=>import('./components/CairosHub'));
 import { cleanTemplate,SLOT_MAINS } from './core/guild';
 import { initialTeams,makeTeam,blankConfig,DEFAULT_OPTIONS,SETS,STATS,GAME_MODES,restoreTeam } from './core/data';
 import { readStore,writeStore,clearStore,downloadJSON } from './core/storage';
+const RuneIntelligence=lazy(()=>import('./pages/RuneIntelligence'));
 const RuneWorkshop=lazy(()=>import('./pages/RuneWorkshop'));
 const QuickCalculator=lazy(()=>import('./components/QuickCalculator'));
 const NAV=NAV_ITEMS.map(({key,label,icon})=>[key,label,icon]);
@@ -104,6 +105,7 @@ export default function App(){
  useEffect(()=>{const path=/^\/admin(?:\/|$)/.test(window.location.pathname)&&page!=='admin'?'/':window.location.pathname;window.history.replaceState(null,'',`${path}${window.location.search}#/${page}`);},[page]);
  useEffect(()=>{if(ready)writeStore('progression',history).catch(()=>notify('Não foi possível salvar o histórico local.',true));},[history,ready]);
  const importRef=useRef(null),fileRef=useRef(),planRef=useRef(),workerRef=useRef(),resultsRef=useRef();
+ const intelligenceSavedRuneIds=useMemo(()=>saved.filter(s=>s.accountId===account?.id).flatMap(s=>(s.result?.builds||[]).flatMap(b=>b.runeIds||[])),[saved,account?.id]);
  const reservedIds=[...new Set(saved.filter(s=>s.accountId===account?.id&&s.locked).flatMap(s=>s.result.builds.flatMap(b=>b.runeIds)))];
  const signature=JSON.stringify({teams,options,reservedIds,importedAt:account?.importedAt});
  function notify(message,error=false){setToast({message,error});}
@@ -227,6 +229,7 @@ export default function App(){
   {page==='dashboard'&&<Suspense fallback={<p>Preparando Central…</p>}><AccountDashboard onUpload={()=>fileRef.current.click()} onDemo={useDemoAccount} cloudLoading={accountSync.status==='loading'} account={account} teams={allLocalTeams} options={options} reservedIds={reservedIds} onNavigate={openDashboardArea}/></Suspense>}
   {page==='updates'&&<Suspense fallback={<p role="status">Carregando notícias…</p>}><GameUpdates/></Suspense>}
   {page==='about'&&<About onNavigate={setPage}/>}
+  {page==='rune-intelligence'&&<Suspense fallback={<p>Carregando análise de runas…</p>}><RuneIntelligence key={account?.id||'empty'} savedRuneIds={intelligenceSavedRuneIds}/></Suspense>}
   {page==='workshop'&&<Suspense fallback={<p>Carregando oficina…</p>}><RuneWorkshop navigationIntent={navigationIntent}/></Suspense>}
   {page==='inventory'&&<Inventory account={account} teams={allLocalTeams} options={options} reservedIds={reservedIds} onApply={applyTreasure} onToggleLock={toggleLock}/>}
   {page==='saved'&&<><div className="page-intro"><h1>Builds salvas.</h1><p>Preserve suas escolhas. Reserve runas antes de montar novos times.</p></div>{!currentSaved.length?<div className="empty-results"><FileText size={30}/><p>Suas builds aparecerão aqui depois da primeira busca.</p><button className="button" onClick={()=>setPage('optimizer')}>Abrir otimizador</button></div>:currentSaved.map(s=><article className="saved-item" key={s.id}><div><h2>{s.name}</h2><p>{new Date(s.createdAt).toLocaleString('pt-BR')} · {s.result.builds.length} monstros · {s.locked?'Runas reservadas':'Sem reserva'}</p></div><div className="button-group"><button className="button small" onClick={()=>{setTeams(s.teams.map(restoreTeam));setOptimizerArea(s.teams.every(t=>t.gameMode==='arena')?'arena':'siege');if(s.teams.every(t=>t.gameMode==='arena')){setArenaContext(arenaContextOf(s.teams[0]));setArenaMode(s.teams[0].mode);}setOptions({...DEFAULT_OPTIONS,...s.options,speedTick:7});setResult(s.result);setResultSignature('');setPage(s.teams.every(t=>t.gameMode==='arena')?'arena':'optimizer');}}>Abrir</button><button className="button small" onClick={()=>setSaved(saved.map(x=>x.id===s.id?{...x,locked:!x.locked}:x))}>{s.locked?<UnlockKeyhole size={15}/>:<LockKeyhole size={15}/>} {s.locked?'Liberar':'Reservar'}</button><button className="icon-button" aria-label={`Excluir build ${s.name}`} onClick={()=>setSaved(saved.filter(x=>x.id!==s.id))}><Skull size={17}/></button></div></article>)}<p className="scope-note">Salvas neste navegador e nesta conta. Use a exportação de planos ou resultados para levar suas configurações a outro dispositivo.</p></>}

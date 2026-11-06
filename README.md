@@ -266,3 +266,12 @@ O seletor reúne entradas não despertadas na primeira forma despertada verifica
 A referência está em `monster-variants.json`, com URL pública, hash e campos documentados. A ordenação segue `family_id` do jogo em ordem crescente, depois elemento e despertar; não há datas oficiais de lançamento na fonte, e nenhuma data é presumida. Escolhas vindas do SWEX mantêm seus IDs de instância e seus equipamentos; somente a apresentação do retrato pode usar a forma despertada.
 
 Os IDs despertados e obtíveis verificados em `monster-variants.json` também alimentam a lista principal de nomes. Isso evita que lançamentos já presentes na referência, como **Driana — Justice de Vento, 5★ (34213)**, fiquem ausentes dos seletores. A inclusão atualiza nomes e escolhas do catálogo, sem alterar atributos ou IDs das unidades do SWEX.
+
+### Rune Intelligence / Reapp Analyzer
+
+No menu **Rune Intelligence** (`#/rune-intelligence`), analise o SWEX local em
+segundo plano: ranking explicado, reapps normais/Ancient separados, proteções,
+gemas/grinds compatíveis, lacunas e shortlist. Saldos de 800/200 são planejamento
+manual, sem consumo ou probabilidade prometida. Reimporte o SWEX para recuperar
+a raridade original que versões anteriores não preservavam.
+[Critérios, fórmula própria, dados e limitações](docs/RUNE_INTELLIGENCE.md).
