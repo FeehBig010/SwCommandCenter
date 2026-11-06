@@ -181,10 +181,13 @@ verificação/simulação, integridade do JSON e layout mobile.
 
 ### Balança de builds · busca conjunta
 
-Na Calculadora Livre, os cards mostram a ficha **Base + Bônus**, os seis slots de
-runas reais, os artefatos equipados e os conjuntos. Ao selecionar um monstro da
-conta, a cópia exata do inventário é carregada. As montagens continuam temporárias;
-a página inicial e os presets salvos não são alterados.
+A Calculadora Livre abre vazia e mantém o slider de SPD visível na frente de
+cada card. Selecionar um monstro, mesmo com SWEX carregado, usa somente sua
+identidade e atributos base: não carrega runas, conjuntos, artefatos ou bônus
+do inventário. **Presets do JSON** é a ação explícita para importar uma cópia
+do equipamento. As ferramentas de builds/runas e ajustes avançados ficam
+recolhidas na montagem manual. As montagens são temporárias; a página inicial,
+o JSON e os presets originais não são alterados.
 
 - **Prioridades e mínimos**: marque atributos e ajuste os pesos de 1 a 5. TC não
   é exigida quando não selecionada. Um mínimo pode ser obrigatório ou apenas uma

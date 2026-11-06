@@ -20,3 +20,8 @@ test('set picker and Swift checkbox preserve rune contribution, replace incompat
  const again=toggleQuickSwift(violent,'slot-0',true);assert.deepEqual(again.configs[0].sets,[3,15]);assert.equal(quickRuneSpeed(again.configs[0]),150);
  assert.equal(updateQuickRuneSpeed(t,'slot-0',-1),t);assert.equal(updateQuickRuneSpeed(t,'slot-0','invalid'),t);
 });
+
+test('choosing a SWEX monster copies only its base stats and identity, never equipment or the prior manual build',async()=>{
+ const {selectQuickMonster}=await import('../src/core/quick-calculator.js');const base={hp:10000,atk:800,def:600,spd:108,cr:15,cd:50,res:15,acc:0},unit={id:71,master:13413,name:'Lushen',base,runeIds:[1,2,3,4,5,6],artifactIds:[90],sheetStats:{...base,spd:320},sets:[3,15]};const config={...quickConfig(13911),sets:[13,15],snapshotArtifactEffects:{artifactIds:[90]},sourceRuneCount:6,manual:{base,sheet:{...base,spd:320}}},before=structuredClone(unit),next=selectQuickMonster(config,unit);
+ assert.equal(next.unitId,71);assert.equal(next.key,config.key);assert.deepEqual(next.manual.base,base);assert.deepEqual(next.manual.sheet,base);assert.deepEqual(next.sets,[]);assert.equal(next.snapshotArtifactEffects,undefined);assert.equal(next.sourceRuneCount,undefined);assert.equal(quickRuneSpeed(next),0);assert.equal(next.equipmentSource,'manual');assert.deepEqual(unit,before);assert.notEqual(next.manual.base,base);assert.notEqual(next.manual.sheet,base);
+});

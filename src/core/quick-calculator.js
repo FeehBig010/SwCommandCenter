@@ -11,7 +11,7 @@ export function quickConfig(master=null,name='Escolher monstro'){
  return {...blankConfig(null,name),masterId:master,sets:[],basis:'total',manual:{base,sheet:{...base}}};
 }
 export function quickTeam(area='siege',dungeon=null){return {...makeTeam(area),...(dungeon?{dungeon,destination:dungeon}:{}),towerSpd:15,guildSpd:0,sheetSpeedFormula:true,autoEnemyPassives:true,autoOpener:true,orderMode:'auto',perfectTune:false,configs:Array.from({length:pveSlots(area,dungeon)||GAME_MODES[area]?.slots||3},()=>quickConfig())};}
-export function selectQuickMonster(config,option){return {...quickConfig(option?.master,option?.name),key:config.key,autoSpeed:config.autoSpeed};}
+export function selectQuickMonster(config,option){const next=quickConfig(option?.master,option?.name),base={...(option?.base||next.manual.base)};return {...next,key:config.key,autoSpeed:config.autoSpeed,unitId:option?.id||null,equipmentSource:'manual',manual:{base,sheet:{...base}}};}
 export const quickCombatTeam=team=>({...team,towerSpd:team.speedMode==='snapshot'?Number(team.towerSpd)||0:15,guildSpd:team.speedMode==='snapshot'?Number(team.guildSpd)||0:0,sheetSpeedFormula:true});
 
 export function quickPreview(input,{captureCheckpoints=false,actorCache=null,includeReference=true,captureReadiness=false}={}){
