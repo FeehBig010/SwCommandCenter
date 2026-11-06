@@ -40,7 +40,7 @@ Critérios conservadores: 6★, originalmente Legend, conjunto conhecido que nã
 Intangible, pool principal, +12 a +15, quatro secundários distintos e suportados,
 SPD secundário base **menor** que 20 (configurável). Abaixo de +12: REVISAR,
 pois os atributos ainda não estão revelados; não se recomenda gastar reapp às cegas.
-Innates prioritárias: ACC 6–8, TC 5–6, DC 7, RES 8; outras podem ser habilitadas.
+Innates prioritárias: ACC 6–8, TC 5–6, DC 7, RES 8; somente HP/ATK/DEF flat podem ser habilitadas; HP%/ATK%/DEF% e SPD não entram.
 Filtros de inelegibilidade são explicados individualmente.
 
 A classificação respeita esta precedência:
@@ -70,7 +70,7 @@ Exclui grinds e innate. Para Ancient, são apenas unidades de comparação próp
 
 Fatores da prioridade, expostos na ficha da runa:
 
-- Innate prioritária: +20; outra habilitada no avançado: +8.
+- Innate prioritária: +20; flat habilitada: +8. Innates prioritárias precedem flats na ordenação.
 - Lacuna da categoria: `round(20 × max(0,metaQuantidade - rápidas)/metaQuantidade)`.
 - Set prioritário: +10. Slot prioritário: +5. Ambos configuráveis.
 - Oportunidade de recuperar rolls: `round((100 - Q) × 0,30)`.
@@ -171,11 +171,63 @@ Worker usa o conteúdo dos critérios/reservas/builds, evitando reiniciar soment
 porque um render criou uma nova referência de array. Não há atraso decorativo.
 
 A equivalência com o algoritmo do SWLens continua **não verificada**. Sua página
-está bloqueada por política de rede neste ambiente. Os critérios públicos foram
-solicitados ao usuário; até recebê-los, o índice próprio documentado permanece,
-sem afirmar que reproduz o cálculo da referência.
+está bloqueada por política de rede neste ambiente. Os critérios públicos foram fornecidos pelo usuário e implementados na pré-seleção
+(ver seção abaixo). O índice próprio documentado permanece distinto do RL Score e
+do Priority Score, cujas fórmulas não foram fornecidas.
 
 Validação da correção: `npm test` com **551 aprovados, 0 falhas**, build aprovado,
 e teste Chromium de seleção estrita, exclusão de Hero/raridade desconhecida,
 planejamento limitado à seleção, persistência de controles durante atualização
 e ausência de Worker redundante ao abrir/fechar o menu mobile.
+
+## Pré-seleção pelos critérios públicos fornecidos · versão 2
+
+Fonte funcional: texto enviado pelo usuário em 06/11/2026, atribuído ao guia
+[SWLens Re-App Calculator](https://www.swlens.io/guides/reapp-calc).
+A página não foi verificada independentemente neste ambiente; não se importou
+código, fórmula privada ou dataset. Preservam-se os quatro sets e slots 2–6
+pedidos pelo usuário, embora o texto informe que o SWLens começa com Violent/Will.
+
+A lista padrão é uma **pré-seleção**, cruzando Legend original, 6★, tipo, set/slot
+selecionado, SPD secundário base <20 configurável e as regras a seguir:
+
+| Slot | Principal aceita |
+|---|---|
+| 1 | ATK flat (a principal válida do slot) |
+| 2 | SPD |
+| 3 | DEF flat (a principal válida do slot) |
+| 4 | HP%, ATK%, DEF%, TC% ou DC% |
+| 5 | HP flat (a principal válida do slot) |
+| 6 | HP%, ATK%, DEF% ou ACC%; RES% fica fora |
+
+ACC 6–8, TC 5–6, DC 7 e RES 8 são as innates prioritárias.
+A opção avançada aceita **somente** HP/ATK/DEF flat, ordenadas depois das
+prioritárias, mesmo quando a nota local for maior. HP%/ATK%/DEF%, SPD e sem innate
+são rejeitadas. O antigo toggle genérico foi restringido a flats.
+
+Abaixo de +12, quando já existe SPD secundário, a runa sai das pré-candidatas e
+aparece na etapa **Evoluir para +12**. Sem SPD secundário, pode aparecer como
+pré-candidata antecipada; continua REVISAR e fora do plano de consumo até +12.
+As restrições operacionais do jogo e proteções locais continuam valendo.
+
+**RL Score:** a descrição recebida informa corte <300, mas não sua fórmula.
+`reference.rlScore=null`, `rlLimit=300`, `rlVerified=false` e
+`fullyVerified=false` tornam a pendência explícita. Nenhuma nota local é usada
+como substituto, nem multiplicada para fingir a escala RL. A lista não afirma
+ter aprovado os oito filtros completos. O detalhe e o cabeçalho identificam
+pré-seleção com RL pendente; o badge **REAPP LOCAL**, a nota **prioridade local**
+e o planejamento distinguem a análise própria. Antes de gastar, é necessário
+validar esse requisito externamente. Não há requisição privada nem consumo real.
+O Priority Score proprietário também não é reproduzido.
+
+Em Lacunas, destacam-se até três categorias observadas com maior déficit por
+pool normal/Ancient, entre Swift/Despair/Violent/Will e a seleção atual de
+slots/principais. Usa o déficit real para a quantidade/meta de SPD configurada,
+com desempate determinístico por set/slot/principal. É uma comparação local,
+sem alegar equivalência com a fórmula não publicada de prioridade do SWLens.
+
+Validação da versão 2: **555 testes aprovados, 0 falhas**, incluindo 18 testes
+focados do módulo, os cinco exemplos fornecidos e a matriz de principais/innates.
+Build aprovado. Chromium desktop/mobile aprovou pré-seleção, fila +12, flats
+opcionais, separação de notas locais, filtros, persistência, ausência de desmontagem
+dos resultados e ausência de Worker redundante ao abrir/fechar o menu.

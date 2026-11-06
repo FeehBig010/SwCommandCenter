@@ -4,3 +4,4 @@
 @media(prefers-reduced-motion:reduce){.rune-intelligence *{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
 .rune-intelligence .ri-tabs>button{flex:0 0 auto}
 .ri-update-status{min-height:20px;margin:8px 0;color:#9cafbd;font-size:11px}
+.ri-gap-highlights{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0 16px;font-size:11px;color:#aabac6}.ri-gap-highlights>strong{font-weight:500;color:#d4c18c}.ri-gap-highlights>span{padding:5px 8px;border:1px solid #33424d;border-radius:5px;background:#101b25}

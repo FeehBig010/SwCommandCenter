@@ -27,7 +27,7 @@ test('base SPD excludes grind exactly once, also ignores innate and main SPD',()
 test('conservative eligibility requires original Legend 6 stars +12, selected innate, SPD below ceiling and valid set/pool',()=>{
  assert.equal(reappEligibility(rune()).eligible,true);
  for(const patch of [{stars:5},{originalQuality:4},{originalQuality:undefined},{level:9},{level:NaN},{set:25},{set:99},{slot:1,main:[2,63]},{main:[2,0]},{subs:[[2,8],[8,6],[4,8],[9,6]]},{pool:'rta'},{subs:[]},{subs:[[8,6],[8,5],[2,8],[4,8]]},{innate:[12,5]},{innate:[]},{subs:[[8,20],[2,8],[4,8],[9,6]]}])assert.equal(reappEligibility(rune(1,patch)).eligible,false,JSON.stringify(patch));
- assert.equal(reappEligibility(rune(1,{innate:[11,7]}),{advancedInnates:true}).eligible,true);
+ assert.equal(reappEligibility(rune(1,{innate:[1,300]}),{advancedInnates:true}).eligible,true);
  for(const [stat,value] of [[12,6],[12,8],[9,5],[9,6],[10,7],[11,8]])assert.equal(innatePriority(rune(1,{innate:[stat,value]})).preferred,true);
  assert.equal(reappEligibility(rune(1,{subs:[[8,21],[10,7],[4,8],[9,6]]}),{maxBaseSpd:22}).eligible,true);
 });
@@ -77,4 +77,28 @@ test('selected sets and slots are hard Legend-6-star boundaries for lists/planni
  for(const patch of [{set:14},{set:8},{slot:1},{stars:5},{originalQuality:4},{originalQuality:undefined}])assert.equal(runeInReappScope(rune(1,patch)),false,JSON.stringify(patch));
  assert.equal(runeInReappScope(rune(1,{set:10,slot:3})),true);assert.equal(runeInReappScope(rune(),{prioritySets:[]}),false);assert.equal(runeInReappScope(rune(),{prioritySlots:[]}),false);
  const rows=[{classification:'REAPP',rune:rune(1)},{classification:'REAPP',rune:rune(2,{set:14})},{classification:'REAPP',rune:rune(3,{originalQuality:4})},{classification:'REAPP',rune:rune(4,{slot:1})}];assert.equal(planReapps(rows).normal.candidateCount,1);assert.deepEqual(planReapps(rows).normal.stages[0].runeIds,[1]);assert.equal(planReapps(rows,{prioritySets:[]}).normal.plannedAttempts,0);
+});
+
+test('public reference rules accept only the documented mains, optional flats and upgrade queues, without inventing RL',async()=>{
+ const {publicReappSelection}=await import('../src/core/rune-intelligence.js'),settings={prioritySlots:[1,2,3,4,5,6],selectionVersion:2};
+ const allowed={1:[3],2:[8],3:[5],4:[2,4,6,9,10],5:[1],6:[2,4,6,12]};
+ for(const slot of [1,2,3,4,5,6])for(const main of [1,2,3,4,5,6,8,9,10,11,12])assert.equal(publicReappSelection(rune(1,{slot,main:[main,42]}),settings).matches,allowed[slot].includes(main),`${slot}:${main}`);
+ for(const innate of [[2,8],[4,8],[6,8],[8,6],[0,0],[]])assert.equal(publicReappSelection(rune(1,{innate}),{advancedInnates:true}).matches,false);
+ for(const innate of [[1,300],[3,18],[5,18]]){assert.equal(publicReappSelection(rune(1,{innate})).matches,false);assert.equal(publicReappSelection(rune(1,{innate}),{advancedInnates:true}).matches,true);}
+ const speed=publicReappSelection(rune(1,{level:9}));assert.equal(speed.matches,false);assert.equal(speed.canReviewAfterUpgrade,true);
+ const noSpeed=rune(1,{level:0,subs:[[1,375,0,0],[4,8,0,0],[6,8,0,0],[9,6,0,0]]}),result=publicReappSelection(noSpeed);assert.equal(result.matches,true);assert.equal(result.rlScore,null);assert.equal(result.rlLimit,300);assert.equal(result.fullyVerified,false);assert.equal(reappEligibility(noSpeed).eligible,false);assert.equal(planReapps([{rune:noSpeed,classification:'REAPP'}]).normal.plannedAttempts,0);
+ assert.equal(publicReappSelection(rune(1,{level:9,main:[1,200]})).canReviewAfterUpgrade,false);
+});
+test('accepted flat innates follow the preferred innates even when the local score would rank them higher',()=>{
+ const report=analyze(account([rune(1,{subs:[[8,19,0,0],[4,8,0,0],[6,8,0,0],[9,6,0,0]]}),rune(2,{innate:[1,300],subs:[[8,1,0,0],[4,1,0,0],[6,1,0,0],[9,1,0,0]]})]),{settings:{advancedInnates:true}});assert.ok(report.rows.find(r=>r.rune.id===2).score>report.rows.find(r=>r.rune.id===1).score);assert.deepEqual(report.rows.map(r=>r.rune.id),[1,2]);
+});
+test('the five user examples pass the public preselection without implying full RL verification',async()=>{
+ const {publicReappSelection}=await import('../src/core/rune-intelligence.js');
+ for(const [slot,set,innate,spd,main] of [[3,13,[12,8],0,5],[3,13,[11,8],4,5],[1,3,[11,8],19,3],[5,3,[12,8],17,1],[4,13,[10,7],14,2]]){
+  const values={1:375,2:8,3:20,4:8,5:20,6:8,9:6,10:7,11:8,12:8},types=[2,6,4,9,10,11,12,1,3,5].filter(id=>id!==main&&id!==innate[0]&&!(slot===1&&[5,6].includes(id))&&!(slot===3&&[3,4].includes(id))),subs=[...(spd?[[8,spd,0,0]]:[]),...types.map(id=>[id,values[id],0,0])].slice(0,4);
+  const selection=publicReappSelection(rune(1,{slot,set,innate,subs,main:[main,42]}),{prioritySlots:[1,2,3,4,5,6],selectionVersion:2});assert.equal(selection.matches,true);assert.equal(selection.rlVerified,false);
+ }
+});
+test('speed gap highlights use observed categories only and keep Normal/Ancient separated',()=>{
+ const rows=[];for(let i=0;i<8;i++)rows.push(rune(i+1,{set:[13,15,3,10][i%4],ancient:i>=4}));rows.push(rune(99,{set:14}));const report=analyze(account(rows));assert.equal(report.speedGaps.normal.length,3);assert.equal(report.speedGaps.ancient.length,3);assert.ok(report.speedGaps.normal.every(g=>!g.ancient&&[3,10,13,15].includes(g.set)));assert.ok(report.speedGaps.ancient.every(g=>g.ancient));assert.deepEqual(report.speedGaps.normal.map(g=>g.key),analyze(account(rows.toReversed())).speedGaps.normal.map(g=>g.key));
 });

@@ -2,9 +2,10 @@ import {SETS} from './data.js';
 import {accountStamp} from './loadouts.js';
 import {compatibleCrafts,simulateRuneCraft} from './rune-crafts.js';
 
-export const INTELLIGENCE_VERSION=1;
+export const INTELLIGENCE_VERSION=2;
 export const REAPP_DEFAULTS=Object.freeze({maxBaseSpd:20,targetSpd:20,targetCount:3,protectEquipped:true,advancedInnates:false,selectionVersion:2,prioritySets:[3,10,13,15],prioritySlots:[2,3,4,5,6],normalBudget:800,ancientBudget:200,batchSize:10});
 const ROLL={1:375,2:8,3:20,4:8,5:20,6:8,8:6,9:6,10:7,11:8,12:8};
+export const REAPP_MAIN_BY_SLOT={1:[3],2:[8],3:[5],4:[2,4,6,9,10],5:[1],6:[2,4,6,12]};
 const MAIN_BY_SLOT={1:[3],2:[1,2,3,4,5,6,8],3:[5],4:[1,2,3,4,5,6,9,10],5:[1],6:[1,2,3,4,5,6,11,12]};
 const round=n=>Math.round(n*10)/10;
 const number=(n,fallback,min,max)=>Number.isFinite(Number(n))?Math.max(min,Math.min(max,Number(n))):fallback;
@@ -18,7 +19,7 @@ export function runeCategory(rune){return `${rune.ancient?'ancient':'normal'}:${
 export function innatePriority(rune,advanced=false){
  const [stat,value]=rune.innate||[];
  if(stat===12&&value>=6&&value<=8||stat===9&&value>=5&&value<=6||stat===10&&value===7||stat===11&&value===8)return {preferred:true,points:20};
- return {preferred:false,points:advanced&&ROLL[stat]&&value>0?8:0};
+ return {preferred:false,points:advanced&&[1,3,5].includes(stat)&&value>0?8:0};
 }
 // Own utility index: normal six-star max-roll reference units, eight substat
 // rolls at 100. Not SWLens efficiency, a probability or an Ancient roll ceiling.
@@ -34,12 +35,25 @@ export function reappEligibility(rune,settings=REAPP_DEFAULTS){
  if(rune.originalQuality!==5)reasons.push(rune.originalQuality==null?'Raridade original ausente: reimporte o SWEX.':'A runa não é originalmente Legend.');
  if(!SETS[rune.set]||rune.set===25||rune.pool==='rta')reasons.push('Conjunto ou pool sem suporte de reapp validado.');
  if(!MAIN_BY_SLOT[rune.slot]?.includes(rune.main?.[0])||!(rune.main?.[1]>0))reasons.push('Slot ou propriedade principal inválida.');
- if(rune.level<12)reasons.push('Revele os quatro secundários (+12) antes de decidir.');
+ if(!REAPP_MAIN_BY_SLOT[rune.slot]?.includes(rune.main?.[0]))reasons.push('Principal fora dos critérios de reapp para este slot.');
+ if(rune.level<12)reasons.push('Revele os quatro secundários (+12) antes de consumir reapps.');
  if(rune.level>15||rune.subs?.length!==4||new Set((rune.subs||[]).map(e=>e[0])).size!==4||(rune.subs||[]).some(e=>!ROLL[e[0]]||!Number.isFinite(e[1])||e[1]<0)||!Number.isFinite(rune.level))reasons.push('Secundários ou nível incompletos/incompatíveis.');
  if((rune.subs||[]).some(e=>e[0]===rune.main?.[0]||e[0]===rune.innate?.[0]||!Number.isFinite(Number(e[3]||0))||Number(e[3]||0)<0))reasons.push('Atributos repetem principal/innate ou possuem grind inválido.');
  if(runeBaseSpd(rune)>=s.maxBaseSpd)reasons.push(`SPD base fora do filtro (< ${s.maxBaseSpd}).`);
  if(!innatePriority(rune,s.advancedInnates).points)reasons.push('Innate fora da seleção conservadora.');
  return {eligible:!reasons.length,reasons};
+}
+// Only the public criteria supplied by the user are reproducible. Neither
+// the opaque RL Score nor SWLens Priority Score is inferred from our local index.
+export function publicReappSelection(rune,settings=REAPP_DEFAULTS){
+ const s=reappSettings(settings),innate=innatePriority(rune,s.advancedInnates),needsUpgrade=rune.level<12&&(rune.subs||[]).some(e=>e[0]===8),reasons=[];
+ if(!runeInReappScope(rune,s))reasons.push('Fora da seleção Legend 6★, conjunto, slot ou pool.');
+ if(!REAPP_MAIN_BY_SLOT[rune.slot]?.includes(rune.main?.[0]))reasons.push('Principal não aceita neste slot.');
+ if(!innate.points)reasons.push('Innate não aceita. Percentuais HP/ATK/DEF e SPD não entram.');
+ if(runeBaseSpd(rune)>=s.maxBaseSpd)reasons.push(`SPD secundário base deve ser menor que ${s.maxBaseSpd}.`);
+ if(needsUpgrade)reasons.push('Abaixo de +12 com SPD secundário: evolua antes de avaliar.');
+ if(!Number.isInteger(rune.level)||rune.level<0||rune.level>15||!(rune.main?.[1]>0))reasons.push('Nível ou principal inválidos.');
+ return {matches:!reasons.length,canReviewAfterUpgrade:needsUpgrade&&reasons.length===1,needsUpgrade,reasons,innateTier:innate.preferred?0:innate.points?1:2,rlScore:null,rlLimit:300,rlVerified:false,fullyVerified:false};
 }
 function linkRune(map,id,label){if(!Number.isSafeInteger(Number(id)))return;const labels=map.get(Number(id))||new Set();labels.add(label);map.set(Number(id),labels);}
 function inventoryContext(account,teams,options,reservedIds){
@@ -74,7 +88,7 @@ function craftSuggestions(rune,crafts){
 }
 export function planReapps(rows,settings=REAPP_DEFAULTS){
  const s=reappSettings(settings);
- return Object.fromEntries([['normal',s.normalBudget],['ancient',s.ancientBudget]].map(([kind,budget])=>{const candidates=rows.filter(r=>runeInReappScope(r.rune,s)&&r.classification==='REAPP'&&r.rune.ancient===(kind==='ancient'));const count=Math.min(candidates.length,budget),ids=candidates.slice(0,count).map(r=>r.rune.id);return [kind,{budget,candidateCount:candidates.length,plannedAttempts:count,remaining:budget-count,stages:Array.from({length:Math.ceil(count/s.batchSize)},(_,i)=>({stage:i+1,runeIds:ids.slice(i*s.batchSize,(i+1)*s.batchSize),attempts:Math.min(s.batchSize,count-i*s.batchSize)}))}];}));
+ return Object.fromEntries([['normal',s.normalBudget],['ancient',s.ancientBudget]].map(([kind,budget])=>{const candidates=rows.filter(r=>publicReappSelection(r.rune,s).matches&&reappEligibility(r.rune,s).eligible&&r.classification==='REAPP'&&r.rune.ancient===(kind==='ancient'));const count=Math.min(candidates.length,budget),ids=candidates.slice(0,count).map(r=>r.rune.id);return [kind,{budget,candidateCount:candidates.length,plannedAttempts:count,remaining:budget-count,stages:Array.from({length:Math.ceil(count/s.batchSize)},(_,i)=>({stage:i+1,runeIds:ids.slice(i*s.batchSize,(i+1)*s.batchSize),attempts:Math.min(s.batchSize,count-i*s.batchSize)}))}];}));
 }
 export function analyzeRunes(account,{teams=[],options={},reservedIds=[],settings={},now=Date.now()}={}){
  const s=reappSettings(settings),runes=[...new Map((account?.runes||[]).map(r=>[r.id,r])).values()].filter(r=>Number.isSafeInteger(r.id)&&r.id>0),gaps=runeGaps(runes,s),byCategory=new Map(gaps.map(g=>[g.key,g])),warnings=[];
@@ -83,7 +97,7 @@ export function analyzeRunes(account,{teams=[],options={},reservedIds=[],setting
  if(runes.some(r=>r.originalQuality==null))warnings.push('Há runas sem raridade original. Reimporte o SWEX para analisar a elegibilidade.');
  const ctx=inventoryContext(account,teams,options,reservedIds),craftGroups=new Map();for(const c of account.crafts||[]){const key=`${!!c.ancient}:${c.set}`;if(!craftGroups.has(key))craftGroups.set(key,[]);craftGroups.get(key).push(c);}
  const rows=runes.map(rune=>{
-  const quality=runeQuality(rune),spd=runeBaseSpd(rune),group=byCategory.get(runeCategory(rune)),innate=innatePriority(rune,s.advancedInnates),eligibility=reappEligibility(rune,s),equipped=ctx.equipped.get(rune.id),builds=ctx.builds.get(rune.id),locked=rune.locked||ctx.protectedIds.has(rune.id),protectedRune=locked||!!builds?.size||s.protectEquipped&&!!equipped?.size;
+  const reference=publicReappSelection(rune,s),quality=runeQuality(rune),spd=runeBaseSpd(rune),group=byCategory.get(runeCategory(rune)),innate=innatePriority(rune,s.advancedInnates),eligibility=reappEligibility(rune,s),equipped=ctx.equipped.get(rune.id),builds=ctx.builds.get(rune.id),locked=rune.locked||ctx.protectedIds.has(rune.id),protectedRune=locked||!!builds?.size||s.protectEquipped&&!!equipped?.size;
   const factors=[{label:'Innate',points:innate.points},{label:'Lacuna da categoria',points:Math.round(group.scarcity*20)},{label:'Conjunto prioritário',points:s.prioritySets.includes(rune.set)?10:0},{label:'Slot prioritário',points:s.prioritySlots.includes(rune.slot)?5:0},{label:'Potencial de recuperar rolls',points:Math.round((100-quality)*.3)},{label:'Sinergia atual preservável',points:-runeSynergy(rune)},{label:'Custo dos atributos atuais',points:-Math.round(quality*.35)},{label:'SPD já disponível',points:-Math.round(spd*1.2)},{label:'Proteção / vínculo',points:protectedRune?-100:equipped?.size?-20:0}];
   const score=Math.max(0,Math.min(100,factors.reduce((n,f)=>n+f.points,0))),improvements=!protectedRune&&rune.level>=12?craftSuggestions(rune,craftGroups.get(`${!!rune.ancient}:${rune.set}`)||[]):[];
   let classification='REVISAR',reasons=[...eligibility.reasons];if(rune.main?.[0]===8)reasons.push('SPD na principal: meta de SPD secundário não se aplica a esta categoria.');
@@ -92,7 +106,7 @@ export function analyzeRunes(account,{teams=[],options={},reservedIds=[],setting
   else if(improvements.length){classification='GEMAR/GRINDAR';reasons.unshift('Há pedra compatível no inventário para melhoria sem reapp (teto de roll, sem garantia).');}
   else if(eligibility.eligible&&score>=20){classification='REAPP';reasons.unshift('Legend 6★ revelada, innate selecionada e oportunidade relativa no inventário.');}
   else if(eligibility.eligible)reasons.unshift('Custo de oportunidade alto em relação ao ganho estimado.');
-  return {key:`${account.id}:${rune.id}`,rune,classification,score,quality,baseSpd:spd,grindSpd:Number((rune.subs||[]).find(e=>e[0]===8)?.[3]||0),equipped:[...(equipped||[])],builds:[...(builds||[])],protected:!!protectedRune,eligibility,factors,reasons,improvements,category:{count:group.count,fast:group.fast,maxSpd:group.maxSpd,meanSpd:group.meanSpd,deficit:group.deficit}};
- }).sort((a,b)=>b.score-a.score||a.rune.id-b.rune.id);
- return {version:INTELLIGENCE_VERSION,accountId:account.id,accountStamp:accountStamp(account),rows,gaps,summary:{total:runes.length,normal:runes.filter(r=>!r.ancient).length,ancient:runes.filter(r=>r.ancient).length,averageQuality:round(rows.reduce((n,r)=>n+r.quality,0)/runes.length),fast:rows.filter(r=>r.baseSpd>=s.targetSpd).length},warnings,plan:planReapps(rows,s)};
+  return {key:`${account.id}:${rune.id}`,reference,rune,classification,score,quality,baseSpd:spd,grindSpd:Number((rune.subs||[]).find(e=>e[0]===8)?.[3]||0),equipped:[...(equipped||[])],builds:[...(builds||[])],protected:!!protectedRune,eligibility,factors,reasons,improvements,category:{count:group.count,fast:group.fast,maxSpd:group.maxSpd,meanSpd:group.meanSpd,deficit:group.deficit}};
+ }).sort((a,b)=>a.reference.innateTier-b.reference.innateTier||b.score-a.score||a.rune.id-b.rune.id);
+ return {version:INTELLIGENCE_VERSION,accountId:account.id,accountStamp:accountStamp(account),rows,gaps,speedGaps:Object.fromEntries([['normal',false],['ancient',true]].map(([kind,ancient])=>[kind,gaps.filter(g=>g.ancient===ancient&&[3,10,13,15].includes(g.set)&&s.prioritySets.includes(g.set)&&s.prioritySlots.includes(g.slot)&&REAPP_MAIN_BY_SLOT[g.slot]?.includes(g.main)&&g.speedApplicable&&g.deficit>0).slice(0,3)])),summary:{total:runes.length,normal:runes.filter(r=>!r.ancient).length,ancient:runes.filter(r=>r.ancient).length,averageQuality:round(rows.reduce((n,r)=>n+r.quality,0)/runes.length),fast:rows.filter(r=>r.baseSpd>=s.targetSpd).length},warnings,plan:planReapps(rows,s)};
 }
