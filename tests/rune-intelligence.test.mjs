@@ -69,3 +69,12 @@ test('empty and stale inventories report uncertainty, and the module keeps exist
 test('SPD-main runes never create impossible speed-secondary gaps or fake scarcity points',()=>{
  const r=rune(1,{slot:2,main:[8,42],subs:[[2,8,0,0],[4,8,0,0],[6,8,0,0],[9,6,0,0]]}),report=analyze(account([r]));assert.equal(report.gaps[0].speedApplicable,false);assert.equal(report.gaps[0].deficit,0);assert.equal(report.gaps[0].scarcity,0);assert.equal(report.rows[0].factors.find(f=>f.label==='Lacuna da categoria').points,0);assert.ok(report.rows[0].reasons.some(r=>/SPD na principal/.test(r)));
 });
+
+test('selected sets and slots are hard Legend-6-star boundaries for lists/planning, with safe migration of old defaults',async()=>{
+ const {runeInReappScope,REAPP_DEFAULTS}=await import('../src/core/rune-intelligence.js');
+ assert.deepEqual(REAPP_DEFAULTS.prioritySets,[3,10,13,15]);assert.deepEqual(REAPP_DEFAULTS.prioritySlots,[2,3,4,5,6]);
+ assert.deepEqual(reappSettings({prioritySets:[3,13,15],prioritySlots:[2,4,6]}).prioritySets,[3,10,13,15]);assert.deepEqual(reappSettings({prioritySets:[3,13,15],selectionVersion:2}).prioritySets,[3,13,15]);assert.deepEqual(reappSettings({prioritySets:[13,10],prioritySlots:[4]}).prioritySets,[13,10]);
+ for(const patch of [{set:14},{set:8},{slot:1},{stars:5},{originalQuality:4},{originalQuality:undefined}])assert.equal(runeInReappScope(rune(1,patch)),false,JSON.stringify(patch));
+ assert.equal(runeInReappScope(rune(1,{set:10,slot:3})),true);assert.equal(runeInReappScope(rune(),{prioritySets:[]}),false);assert.equal(runeInReappScope(rune(),{prioritySlots:[]}),false);
+ const rows=[{classification:'REAPP',rune:rune(1)},{classification:'REAPP',rune:rune(2,{set:14})},{classification:'REAPP',rune:rune(3,{originalQuality:4})},{classification:'REAPP',rune:rune(4,{slot:1})}];assert.equal(planReapps(rows).normal.candidateCount,1);assert.deepEqual(planReapps(rows).normal.stages[0].runeIds,[1]);assert.equal(planReapps(rows,{prioritySets:[]}).normal.plannedAttempts,0);
+});

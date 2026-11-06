@@ -3,12 +3,14 @@ import {accountStamp} from './loadouts.js';
 import {compatibleCrafts,simulateRuneCraft} from './rune-crafts.js';
 
 export const INTELLIGENCE_VERSION=1;
-export const REAPP_DEFAULTS=Object.freeze({maxBaseSpd:20,targetSpd:20,targetCount:3,protectEquipped:true,advancedInnates:false,prioritySets:[3,13,15],prioritySlots:[2,4,6],normalBudget:800,ancientBudget:200,batchSize:10});
+export const REAPP_DEFAULTS=Object.freeze({maxBaseSpd:20,targetSpd:20,targetCount:3,protectEquipped:true,advancedInnates:false,selectionVersion:2,prioritySets:[3,10,13,15],prioritySlots:[2,3,4,5,6],normalBudget:800,ancientBudget:200,batchSize:10});
 const ROLL={1:375,2:8,3:20,4:8,5:20,6:8,8:6,9:6,10:7,11:8,12:8};
 const MAIN_BY_SLOT={1:[3],2:[1,2,3,4,5,6,8],3:[5],4:[1,2,3,4,5,6,9,10],5:[1],6:[1,2,3,4,5,6,11,12]};
 const round=n=>Math.round(n*10)/10;
 const number=(n,fallback,min,max)=>Number.isFinite(Number(n))?Math.max(min,Math.min(max,Number(n))):fallback;
-export function reappSettings(input={}){return {...REAPP_DEFAULTS,...input,maxBaseSpd:number(input.maxBaseSpd,20,0,50),targetSpd:number(input.targetSpd,20,1,50),targetCount:Math.floor(number(input.targetCount,3,1,100)),normalBudget:Math.floor(number(input.normalBudget,800,0,100000)),ancientBudget:Math.floor(number(input.ancientBudget,200,0,100000)),batchSize:Math.floor(number(input.batchSize,10,1,1000)),protectEquipped:input.protectEquipped!==false,advancedInnates:input.advancedInnates===true,prioritySets:(Array.isArray(input.prioritySets)?input.prioritySets:REAPP_DEFAULTS.prioritySets).filter(id=>SETS[id]),prioritySlots:(Array.isArray(input.prioritySlots)?input.prioritySlots:REAPP_DEFAULTS.prioritySlots).filter(id=>id>=1&&id<=6)};}
+export function reappSettings(input={}){if(input.selectionVersion!==2){const oldSets=JSON.stringify(input.prioritySets)===JSON.stringify([3,13,15]),oldSlots=JSON.stringify(input.prioritySlots)===JSON.stringify([2,4,6]);input={...input,...(oldSets?{prioritySets:REAPP_DEFAULTS.prioritySets}:{}),...(oldSlots?{prioritySlots:REAPP_DEFAULTS.prioritySlots}:{})};}return {...REAPP_DEFAULTS,...input,selectionVersion:2,maxBaseSpd:number(input.maxBaseSpd,20,0,50),targetSpd:number(input.targetSpd,20,1,50),targetCount:Math.floor(number(input.targetCount,3,1,100)),normalBudget:Math.floor(number(input.normalBudget,800,0,100000)),ancientBudget:Math.floor(number(input.ancientBudget,200,0,100000)),batchSize:Math.floor(number(input.batchSize,10,1,1000)),protectEquipped:input.protectEquipped!==false,advancedInnates:input.advancedInnates===true,prioritySets:(Array.isArray(input.prioritySets)?input.prioritySets:REAPP_DEFAULTS.prioritySets).filter(id=>SETS[id]),prioritySlots:(Array.isArray(input.prioritySlots)?input.prioritySlots:REAPP_DEFAULTS.prioritySlots).filter(id=>id>=1&&id<=6)};}
+// A selection is a hard boundary for display/planning, not only a score bonus.
+export function runeInReappScope(rune,settings=REAPP_DEFAULTS){const s=reappSettings(settings);return rune.stars===6&&rune.originalQuality===5&&s.prioritySets.includes(rune.set)&&s.prioritySlots.includes(rune.slot)&&rune.set!==25&&rune.pool!=='rta';}
 // SWEX sec_eff = [stat, value BEFORE grind, enchanted flag, grind]. Never subtract
 // the grind from value: that would remove it twice.
 export function runeBaseSpd(rune){return Number((rune.subs||[]).find(s=>s[0]===8)?.[1]||0);}
@@ -72,7 +74,7 @@ function craftSuggestions(rune,crafts){
 }
 export function planReapps(rows,settings=REAPP_DEFAULTS){
  const s=reappSettings(settings);
- return Object.fromEntries([['normal',s.normalBudget],['ancient',s.ancientBudget]].map(([kind,budget])=>{const candidates=rows.filter(r=>r.classification==='REAPP'&&r.rune.ancient===(kind==='ancient'));const count=Math.min(candidates.length,budget),ids=candidates.slice(0,count).map(r=>r.rune.id);return [kind,{budget,candidateCount:candidates.length,plannedAttempts:count,remaining:budget-count,stages:Array.from({length:Math.ceil(count/s.batchSize)},(_,i)=>({stage:i+1,runeIds:ids.slice(i*s.batchSize,(i+1)*s.batchSize),attempts:Math.min(s.batchSize,count-i*s.batchSize)}))}];}));
+ return Object.fromEntries([['normal',s.normalBudget],['ancient',s.ancientBudget]].map(([kind,budget])=>{const candidates=rows.filter(r=>runeInReappScope(r.rune,s)&&r.classification==='REAPP'&&r.rune.ancient===(kind==='ancient'));const count=Math.min(candidates.length,budget),ids=candidates.slice(0,count).map(r=>r.rune.id);return [kind,{budget,candidateCount:candidates.length,plannedAttempts:count,remaining:budget-count,stages:Array.from({length:Math.ceil(count/s.batchSize)},(_,i)=>({stage:i+1,runeIds:ids.slice(i*s.batchSize,(i+1)*s.batchSize),attempts:Math.min(s.batchSize,count-i*s.batchSize)}))}];}));
 }
 export function analyzeRunes(account,{teams=[],options={},reservedIds=[],settings={},now=Date.now()}={}){
  const s=reappSettings(settings),runes=[...new Map((account?.runes||[]).map(r=>[r.id,r])).values()].filter(r=>Number.isSafeInteger(r.id)&&r.id>0),gaps=runeGaps(runes,s),byCategory=new Map(gaps.map(g=>[g.key,g])),warnings=[];

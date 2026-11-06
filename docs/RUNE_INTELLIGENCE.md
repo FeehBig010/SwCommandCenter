@@ -152,3 +152,30 @@ Validação desta entrega: **550 testes aprovados, 0 falhas** em `npm test`;
 fluxo de navegador acima aprovado sem erros de execução; `npm run build` aprovado.
 O build mantém o aviso já existente de chunks grandes em outros módulos.
 O novo Worker tem aproximadamente 15 kB e a página lazy-loaded 16 kB antes de gzip.
+
+## Correção de seleção e atualização visual
+
+Conjuntos e slots incluídos são agora limites reais de exibição e planejamento,
+além dos fatores do ranking. Padrão: Swift, Despair, Violent e Will, slots 2–6,
+somente 6★ originalmente Legend. Hero, raridade desconhecida, demais conjuntos
+ou slots não aparecem nessa seleção. Desmarcar todos resulta em uma lista/plano
+vazios. A seleção de uma conta é preservada; apenas os padrões antigos exatos
+[Swift, Violent, Will] / [2,4,6] são atualizados uma vez para os novos padrões.
+A classificação continua disponível para revisar/proteger Legends selecionadas,
+inclusive abaixo de +12. Comparações de categoria continuam usando o inventário
+real completo da categoria; os totais da visão geral passam a refletir a seleção.
+
+O loading completo aparece na análise inicial. Atualizações conservam os resultados,
+os controles e o foco, com indicador discreto de atualização. A dependência do
+Worker usa o conteúdo dos critérios/reservas/builds, evitando reiniciar somente
+porque um render criou uma nova referência de array. Não há atraso decorativo.
+
+A equivalência com o algoritmo do SWLens continua **não verificada**. Sua página
+está bloqueada por política de rede neste ambiente. Os critérios públicos foram
+solicitados ao usuário; até recebê-los, o índice próprio documentado permanece,
+sem afirmar que reproduz o cálculo da referência.
+
+Validação da correção: `npm test` com **551 aprovados, 0 falhas**, build aprovado,
+e teste Chromium de seleção estrita, exclusão de Hero/raridade desconhecida,
+planejamento limitado à seleção, persistência de controles durante atualização
+e ausência de Worker redundante ao abrir/fechar o menu mobile.
