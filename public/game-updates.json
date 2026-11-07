@@ -1,9 +1,33 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-07T00:06:13.362Z",
+  "fetchedAt": "2026-11-07T05:54:27.775Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/event/313/96318",
+      "url": "https://www.withhive.com/event/313/96318",
+      "title": "Dimension Arena Update Special Event",
+      "category": "event",
+      "publishedAt": "2026-11-07T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261105/2ba2ea93f7cdf2af0905f0c745a1cdd7.jpg"
+    },
+    {
+      "id": "https://www.withhive.com/notice/313/96317",
+      "url": "https://www.withhive.com/notice/313/96317",
+      "title": "[Summoners War] v9.3.9 Update Notice",
+      "category": "update",
+      "publishedAt": "2026-11-07T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
+    {
+      "id": "https://www.withhive.com/notice/313/96316",
+      "url": "https://www.withhive.com/notice/313/96316",
+      "title": "[Summoners War] v9.3.9 Auto Update Notice",
+      "category": "update",
+      "publishedAt": "2026-11-07T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
     {
       "id": "https://www.withhive.com/event/313/96273",
       "url": "https://www.withhive.com/event/313/96273",
