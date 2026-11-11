@@ -1,9 +1,25 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-10T23:15:40.410Z",
+  "fetchedAt": "2026-11-11T02:47:56.883Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/notice/313/96404",
+      "url": "https://www.withhive.com/notice/313/96404",
+      "title": "[Summoners War] SWC2026 WORLD FINALS Schedule Notice",
+      "category": "notice",
+      "publishedAt": "2026-11-11T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
+    {
+      "id": "https://www.withhive.com/event/313/96401",
+      "url": "https://www.withhive.com/event/313/96401",
+      "title": "November Hall of Heroes - [4★ Light Rick]",
+      "category": "event",
+      "publishedAt": "2026-11-11T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261110/6ff852342856d9bc41ffafa115db5a51.jpg"
+    },
     {
       "id": "https://www.withhive.com/notice/313/96331",
       "url": "https://www.withhive.com/notice/313/96331",
