@@ -125,3 +125,12 @@
 .quick-tick-heading{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .quick-tick-heading .technical-help>button{width:22px;height:22px;min-width:22px;min-height:22px;padding:0}
 .quick-tick-result[data-status="unreachable"],.quick-tick-result[data-status="conflict"],.quick-tick-result[data-status="unsupported"]{border-color:#bc9352}
+
+/* Both speed entry modes remain visible; the selected tick stays independent. */
+.quick-tick-controls .quick-speed-mode{flex:2 1 220px}
+.quick-tick-controls>label.field{flex:1 1 90px}
+.quick-speed-mode-buttons{display:flex;gap:4px;padding:3px;border:1px solid #34424e;border-radius:6px;background:#0c171f}
+.quick-speed-mode-buttons .button{flex:1;min-width:0;min-height:34px;padding:5px 8px;border:1px solid transparent;border-radius:4px;background:transparent;color:#aebdca;font-size:11px;white-space:nowrap}
+.quick-speed-mode-buttons .button[aria-pressed=true]{border-color:#8e7944;background:#ad8f4124;color:#ecd185}
+.quick-speed-mode-buttons .button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:700px){.quick-speed-mode-buttons .button{min-height:44px}}
