@@ -9,6 +9,10 @@ on:
         description: Aplicar migrations no banco de produção após as verificações
         type: boolean
         default: false
+      upload_artifact:
+        description: Arquivar cópia do build no GitHub (opcional, consome cota)
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -37,6 +41,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
       - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.upload_artifact == true
         with:
           name: frontend-dist
           path: dist

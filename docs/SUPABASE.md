@@ -40,7 +40,7 @@ A migration cria `guilds`, `guild_members`, `guild_invites` e `guild_teams`, ín
 
 ## 5. CI e migrations explícitas
 
-O workflow `.github/workflows/verify.yml` executa `npm ci`, `npm test` e `npm run build` em PRs e pushes da `main`, e guarda `dist` como artefato. Publicar o site depende do provedor de hospedagem existente; este workflow não torna o site público nem substitui sua identidade de hospedagem.
+O workflow `.github/workflows/verify.yml` executa `npm ci`, `npm test` e `npm run build` em PRs e pushes da `main`, e gera `dist`. O arquivamento dessa cópia no GitHub é opcional: marque `upload_artifact` em uma execução manual para guardá-la (desligado por padrão; depende da cota de artefatos). Testes e build continuam obrigatórios; a Vercel faz sua própria publicação sem depender desse arquivo. Publicar o site depende do provedor de hospedagem existente; este workflow não torna o site público nem substitui sua identidade de hospedagem.
 
 Depois de criar/configurar o projeto, no GitHub:
 
