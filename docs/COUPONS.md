@@ -37,8 +37,9 @@ RLS permite leitura pública somente de registros ativos ainda válidos. Visitan
 e membros não podem inserir, editar ou excluir. Gravações exigem backend confiável
 com role administrativa/service role; essa credencial nunca entra no frontend.
 
-O deploy já existente executa `supabase db push` após os testes/build. O ambiente
-GitHub Actions `supabase-production` precisa dos secrets `SUPABASE_ACCESS_TOKEN`,
+Publicar a interface não executa migrations. `supabase db push` depende de uma
+execução manual do workflow de verificação na `main`, com `run_migrations` marcado
+explicitamente (padrão desligado), após os testes/build. O ambiente GitHub Actions `supabase-production` precisa dos secrets `SUPABASE_ACCESS_TOKEN`,
 `SUPABASE_DB_PASSWORD` e da variable `SUPABASE_PROJECT_REF` (ou URL pública válida
 para derivá-la). O último deploy inspecionado estava sem essa configuração; por
 isso, a aplicação da migration não foi confirmada no banco remoto. Até configurá-la,

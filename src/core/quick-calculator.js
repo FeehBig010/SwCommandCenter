@@ -35,8 +35,11 @@ export function quickLeader(master){return catalogLeader(master);}
 // preserves the equipped sheets until the player requests a simulation.
 export function quickOrderLocked(team){return !['snapshot','free'].includes(team?.speedMode);}
 export function autoTuneQuickTeam(input){
+ return input.configs.some(c=>c.masterId&&c.tickTarget!=null)?resolveQuickTickTargets(input):tuneQuickTeam(input);
+}
+function tuneQuickTeam(input){
  if(!quickOrderLocked(input))return {...quickCombatTeam(input),automaticSync:null,syncAudit:null,perfectTuneAudit:null,configs:input.configs.map(c=>({...c,autoSpeed:false,syncMinimum:null,syncCombatTarget:null}))};
- const strategy=automaticSyncStrategy(input),team={...input,orderMode:'auto',autoOpener:true,autoEnemyPassives:true,towerSpd:15,guildSpd:0,perfectTune:strategy.kind==='strict',automaticSync:strategy,syncAudit:null,perfectTuneAudit:null,configs:input.configs.map((c,i)=>({...c,autoSpeed:i>0,syncMinimum:null,syncCombatTarget:null}))};
+ const strategy=automaticSyncStrategy(input),team={...input,orderMode:'auto',autoOpener:true,autoEnemyPassives:true,towerSpd:15,guildSpd:0,perfectTune:strategy.kind==='strict',automaticSync:strategy,syncAudit:null,perfectTuneAudit:null,configs:input.configs.map((c,i)=>({...c,autoSpeed:i>0&&!c.tickTarget&&!c.manualSpeed,syncMinimum:null,syncCombatTarget:null}))};
  if(team.configs.some(c=>!c.masterId))return team;
  try{
   const output=strategy.kind==='boost'?autoTuneBoost(team):autoTuneStrict(team);
@@ -60,7 +63,7 @@ export function autoTuneBoost(input){
  for(let target=lower;target<=upper;target++){
   const configs=input.configs.slice();let feasible=true,nextTarget=target;
   for(let i=configs.length-1;i>0;i--){
-   const c=configs[i],unit={master:c.masterId,element:c.masterId%10,base:c.manual.base};
+   const c=configs[i];if(c.tickTarget!=null||c.manualSpeed){nextTarget=combatSpeed({...input,configs},i,Number(c.manual.sheet.spd));continue;}const unit={master:c.masterId,element:c.masterId%10,base:c.manual.base};
    const sheet=requiredSheetSpeed(nextTarget,unit,{...input,sheetSpeedFormula:true},c.combat,c.snapshotArtifactEffects);
    if(sheet==null||sheet>1000){feasible=false;break;}
    configs[i]={...c,manual:{...c.manual,sheet:{...c.manual.sheet,spd:sheet}}};
@@ -71,14 +74,14 @@ export function autoTuneBoost(input){
   const candidate={...input,configs},p=safe(candidate);if(p){working=candidate;final=p;break;}
  }
  if(working)for(let i=keys.length-1;i>0;i--){
-  const c=working.configs[i],upper=Number(c.manual.sheet.spd);
+  const c=working.configs[i];if(c.tickTarget!=null||c.manualSpeed)continue;const upper=Number(c.manual.sheet.spd);
   for(let value=Math.ceil(Number(c.manual.base.spd));value<=upper;value++){
    const candidate={...working,configs:working.configs.map((v,j)=>j===i?{...v,manual:{...v.manual,sheet:{...v.manual.sheet,spd:value}}}:v)},p=safe(candidate);
    if(p){working=candidate;final=p;break;}
   }
  }
  const output=working||input;
- return {...output,syncAudit:{kind:'boost',safe:!!working,referenceEnemy:final?.referenceEnemy||0,reason:working?'':'Sem mínimos anti-corte encontrados no cenário e intervalo de ficha calculados.'},configs:output.configs.map((c,i)=>i?{...c,syncMinimum:working?Number(c.manual.sheet.spd):null,syncCombatTarget:working?final.actors[i].spd:null}:c)};
+ return {...output,syncAudit:{kind:'boost',safe:!!working,referenceEnemy:final?.referenceEnemy||0,reason:working?'':'Sem mínimos anti-corte encontrados no cenário e intervalo de ficha calculados.'},configs:output.configs.map((c,i)=>i&&!c.tickTarget&&!c.manualSpeed?{...c,syncMinimum:working?Number(c.manual.sheet.spd):null,syncCombatTarget:working?final.actors[i].spd:null}:c)};
 }
 
 // Absolute ladder anchored to the opener, even when the opponent can still cut.
@@ -87,6 +90,7 @@ export function autoTuneStrict(input){
  const opener=combatSpeed(input,0,Number(input.configs[0].manual.sheet.spd)),targets=input.configs.slice(1).map((_,i)=>opener-i-1),configs=input.configs.slice();
  let representable=true;
  for(let i=1;i<configs.length;i++){
+  if(configs[i].tickTarget!=null||configs[i].manualSpeed)continue;
   const sheet=sheetForCombat(input,i,targets[i-1]);if(sheet==null){representable=false;break;}
   const c=configs[i];configs[i]={...c,syncMinimum:sheet,syncCombatTarget:targets[i-1],manual:{...c.manual,sheet:{...c.manual.sheet,spd:sheet}}};
  }
@@ -98,8 +102,9 @@ export function autoTuneStrict(input){
 // One atomic transition shared by the number input and range control.
 export function updateQuickSheetSpeed(team,key,value,tune=true){
  const master=team.configs[0]?.key===key;
- if(quickOrderLocked(team)&&!master)return tune?autoTuneQuickTeam(team):team;
- const next={...team,configs:team.configs.map(c=>c.key===key?{...c,autoSpeed:false,manual:{...c.manual,sheet:{...c.manual.sheet,spd:value}}}:master&&quickOrderLocked(team)?{...c,autoSpeed:true}:c)};
+ const edited=team.configs.find(c=>c.key===key),explicit=edited?.tickTarget!=null||edited?.manualSpeed;
+ if(quickOrderLocked(team)&&!master&&!explicit)return tune?autoTuneQuickTeam(team):team;
+ const next={...team,configs:team.configs.map(c=>c.key===key?{...c,autoSpeed:false,tickTarget:null,tickAudit:null,...(explicit?{manualSpeed:true}:{}),manual:{...c.manual,sheet:{...c.manual.sheet,spd:value}}}:master&&quickOrderLocked(team)?{...c,autoSpeed:true}:c)};
  return tune?autoTuneQuickTeam(next):next;
 }
 
@@ -107,7 +112,7 @@ export function updateQuickSheetSpeed(team,key,value,tune=true){
 // across tick/overflow boundaries. Final checks include the whole action prefix.
 export function autoTuneCascade(input){
  let working={...input,towerSpd:15,guildSpd:0,configs:input.configs.map(c=>({...c,manual:{...c.manual,sheet:{...c.manual.sheet}}}))};
- const plan=cascadingBoostPlan(working),keys=working.configs.map(c=>c.key),suffix=keys.slice(plan.lastIndex+1),auto=working.configs.map((c,i)=>i>0&&c.autoSpeed!==false),base=i=>Math.ceil(Number(working.configs[i].manual.base.spd));
+ const plan=cascadingBoostPlan(working),keys=working.configs.map(c=>c.key),suffix=keys.slice(plan.lastIndex+1),auto=working.configs.map((c,i)=>i>0&&c.autoSpeed!==false&&c.tickTarget==null&&!c.manualSpeed),base=i=>Math.ceil(Number(working.configs[i].manual.base.spd));
  const set=(i,value)=>{working={...working,configs:working.configs.map((c,j)=>j===i?{...c,manual:{...c.manual,sheet:{...c.manual.sheet,spd:value}}}:c)};};
  for(let i=1;i<keys.length;i++)if(auto[i])set(i,base(i));
  const actorCache=new WeakMap();
@@ -184,4 +189,71 @@ export function toggleQuickSwift(team,key,enabled,tune=true){
  const config=team.configs.find(c=>c.key===key);if(!config)return team;
  const sets=enabled?[3,...config.sets.filter(id=>id&&!FOUR.has(Number(id))).slice(0,1)]:config.sets.filter(id=>Number(id)!==3);
  return updateQuickRuneSets(team,key,sets,tune);
+}
+
+// Optional input mode. Search integer rune contributions, leaving Swift in the
+// sheet exactly once. No search candidate calls the automatic follower solver.
+export const QUICK_TICK_MIN=1,QUICK_TICK_MAX=30,QUICK_TICK_RUNE_MAX=600;
+export function updateQuickTickTarget(team,key,value,tune=true){
+ const c=team.configs.find(c=>c.key===key),n=Number(value);
+ if(!c?.masterId||value!==null&&(!Number.isInteger(n)||n<QUICK_TICK_MIN||n>QUICK_TICK_MAX))return team;
+ const next={...team,configs:team.configs.map(c=>c.key===key?{...c,tickTarget:value===null?null:n,tickAudit:null,manualSpeed:value===null,autoSpeed:false,syncMinimum:null,syncCombatTarget:null}:c)};
+ return tune?autoTuneQuickTeam(next):next;
+}
+function tickPreview(team,actorCache){
+ // Disable empty slots rather than removing them: scenario ally:N references
+ // must continue to refer to their original slots in a partially selected team.
+ return quickPreview({...team,configs:team.configs.map(c=>c.masterId?c:{...c,enabled:false})},{includeReference:false,captureReadiness:true,actorCache});
+}
+function tickMinimum(team,index,actorCache){
+ const c=team.configs[index],floor=Number(c.manual.base.spd)+quickSwiftBonus(c);
+ for(let rune=0;rune<=QUICK_TICK_RUNE_MAX;rune++){
+  const sheet=floor+rune,next={...c,syncMinimum:null,manual:{...c.manual,sheet:{...c.manual.sheet,spd:sheet}}};
+  const candidate={...team,configs:team.configs.map((v,j)=>j===index?next:v)};
+  const p=tickPreview(candidate,actorCache),row=p.scenario?.firstReady.find(r=>r.key===c.key);
+  if(row&&!row.forced&&row.tick<=c.tickTarget)return sheet;
+ }
+ return null;
+}
+function resolveQuickTickTargets(input){
+ const pinned=input.configs.map((c,i)=>c.masterId&&c.tickTarget!=null?i:-1).filter(i=>i>=0),actorCache=new WeakMap(),original=input.configs;
+ let working=input,stable=false,error=null;const failed=new Set();
+ // Coordinate resolution is bounded, not a joint optimization guarantee.
+ // Rechecking every pin after automatic followers change avoids stale success.
+ try{for(let pass=0;pass<4;pass++){
+  const before=working.configs.map(c=>c.manual.sheet.spd).join(',');failed.clear();
+  for(const index of pinned){
+   const sheet=tickMinimum(working,index,actorCache),c=working.configs[index];
+   if(sheet===null)failed.add(index);
+   working={...working,configs:working.configs.map((v,j)=>j===index?{...c,syncMinimum:null,manual:{...c.manual,sheet:{...c.manual.sheet,spd:sheet??original[index].manual.sheet.spd}}}:v)};
+  }
+  working=tuneQuickTeam(working);
+  if(working.configs.map(c=>c.manual.sheet.spd).join(',')===before){stable=true;break;}
+ }}catch(e){error=e.message;working={...input,configs:input.configs.map(c=>({...c,syncMinimum:null,syncCombatTarget:null}))};}
+ let preview;try{preview=tickPreview(working,actorCache);}catch(e){error=e.message;}
+ const partial=working.configs.some(c=>!c.masterId),keys=working.configs.filter(c=>c.masterId&&c.enabled!==false).map(c=>c.key);
+ const allMet=pinned.every(i=>{const row=preview?.scenario?.firstReady.find(r=>r.key===working.configs[i].key);return row&&!row.forced&&row.tick<=working.configs[i].tickTarget;});
+ const safe=!partial&&!error&&stable&&!failed.size&&allMet&&working.syncAudit?.safe!==false&&firstRotationSafe(preview?.scenario,keys);
+ const configs=working.configs.map((c,i)=>{
+  if(!pinned.includes(i))return c;
+  const row=preview?.scenario?.firstReady.find(r=>r.key===c.key),turn=preview?.scenario?.firstTurns.find(r=>r.key===c.key),readyTick=row&&!row.forced?row.tick:null;
+  const met=!error&&stable&&!failed.has(i)&&readyTick!=null&&readyTick<=c.tickTarget;
+  const reason=error?`Cenário não resolvido: ${error}`:!stable?'Conflito entre metas: a busca conjunta não estabilizou em 4 passagens.':failed.has(i)?`Meta não atendida: nenhuma contribuição entre +0 e +${QUICK_TICK_RUNE_MAX} SPD de runas atinge o tick pedido.`:!met?'Meta não atendida no cenário final.':!safe&&!partial?'Prontidão atendida; a ordem ou a sincronia do time está em conflito.':'';
+  return {...c,autoSpeed:false,syncMinimum:null,syncCombatTarget:null,tickAudit:{status:met?'met':error?'unsupported':!stable?'conflict':'unreachable',readyTick,actionTick:turn&&!turn.disabled?turn.tick:null,disabledTurnTick:turn?.disabled?turn.tick:null,partial,reason}};
+ });
+ return {...working,configs,syncAudit:{...working.syncAudit,safe,reason:partial?'Time incompleto: prontidão avaliada apenas com os monstros selecionados.':safe?'':error||'Metas por tick verificadas; há conflito de prontidão, ordem ou sincronia no cenário final.'}};
+}
+
+// Read-only build previews may replace equipped speeds. Measure their existing
+// scenario cheaply; never carry the manual inverse audit into another build.
+export function quickTickObservation(config,preview){
+ if(config.tickTarget==null)return null;
+ const row=preview?.scenario?.firstReady.find(r=>r.key===config.key),turn=preview?.scenario?.firstTurns.find(r=>r.key===config.key),readyTick=row&&!row.forced?row.tick:null;
+ return {readyTick,actionTick:turn&&!turn.disabled?turn.tick:null,disabledTurnTick:turn?.disabled?turn.tick:null,met:readyTick!=null&&readyTick<=config.tickTarget};
+}
+
+// Applying validated gear is an explicit change of input source: keep its real
+// sheets and rune IDs, leaving inverse mode. A later tick selection is deliberate.
+export function applyQuickInventoryPlan(plan){
+ return {...plan,configs:plan.configs.map(c=>({...c,tickTarget:null,tickAudit:null,manualSpeed:false}))};
 }

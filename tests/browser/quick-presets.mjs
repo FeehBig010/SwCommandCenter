@@ -5,7 +5,7 @@ import {mkdir} from 'node:fs/promises';
 import {quickPresetAccount} from '../fixtures/quick-presets.mjs';
 import {quickTeamFromPreset} from '../../src/core/quick-presets.js';
 import {quickSpeedTarget} from '../../src/core/quick-calculator.js';
-const origin=process.env.E2E_BASE_URL||'http://127.0.0.1:5294',out='/tmp/sw-quick-presets';await mkdir(out,{recursive:true});
+const origin=process.env.E2E_BASE_URL||'http://127.0.0.1:5294',out=process.env.E2E_ARTIFACT_DIR||'/tmp/sw-quick-presets';await mkdir(out,{recursive:true});
 const account=quickPresetAccount(),legacy={siege:quickTeamFromPreset(account.accountPresets[0],account)};
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||(existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),args:['--no-sandbox']});
 const context=await browser.newContext({viewport:{width:1440,height:900},reducedMotion:'reduce'});
@@ -26,7 +26,7 @@ try{
   assert.equal(await page.locator('.quick-monster-search input').nth(preset.leaderIndex).inputValue(),expected.configs[preset.leaderIndex].masterId?expected.configs[preset.leaderIndex].label:'');
   for(const input of await page.locator('.summary-monster-card .quick-speed-controls>.stat-goal-control input[type=number]').all())assert.equal(await input.isDisabled(),false);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-  if(['qa-r5','qa-rta','qa-dragao'].includes(preset.id)){await page.locator('.summary-portrait .portrait-photo.is-loaded').nth(expected.configs.filter(c=>c.masterId).length-1).waitFor();await page.screenshot({path:out+`/${preset.id}-desktop.png`,fullPage:true});}
+  if(['qa-r5','qa-rta','qa-dragao'].includes(preset.id)){for(const [index,c] of expected.configs.entries())if(c.masterId){const portrait=page.locator('.summary-portrait').nth(index);await portrait.scrollIntoViewIfNeeded();await portrait.locator('.portrait-photo.is-loaded').waitFor();}await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:out+`/${preset.id}-desktop.png`,fullPage:true});}
  }
  await load('qa-siege');for(const summary of await page.locator('.balance-manual-controls>summary').all())await summary.click();const baseline=await page.locator('.quick-speed-result output').allTextContents();await page.getByRole('button',{name:'Simular sincronia',exact:true}).click();assert.equal(await page.locator('.summary-monster-card .quick-speed-controls>.stat-goal-control input[type=number]').nth(1).isDisabled(),true);await page.getByRole('button',{name:'Voltar aos valores do JSON',exact:true}).click();assert.deepEqual(await page.locator('.quick-speed-result output').allTextContents(),baseline);
  await page.locator('.summary-monster-card').nth(1).locator('.balance-manual-controls>summary').click();const follower=page.locator('.summary-monster-card').nth(1).locator('.quick-speed-controls>.stat-goal-control input[type=number]');await follower.fill('200');assert.notDeepEqual(await page.locator('.quick-speed-result output').allTextContents(),baseline);assert.deepEqual(await stored('account'),account);
