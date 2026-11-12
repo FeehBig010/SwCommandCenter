@@ -33,3 +33,13 @@ test('production protection and serialized migrations remain configured',()=>{
  assert.match(migration,/cancel-in-progress: false/);
  assert.match(migration,/run: supabase db push/);
 });
+test('CI exposes its managed Chromium at the executable required by legacy browser checks',()=>{
+ const install=workflow.indexOf('npx playwright install --with-deps chromium');
+ const provision=workflow.indexOf('name: Expose installed Chromium for browser tests');
+ const browserChecks=workflow.indexOf('run: npm run test:browser');
+ assert.ok(install>=0&&provision>install&&browserChecks>provision,'Provision executable after installing Chromium and before browser checks');
+ const step=workflow.slice(provision,browserChecks);
+ assert.match(step,/chromium\.executablePath\(\)/);
+ assert.match(step,/test -x "\$chromium_path"/);
+ assert.match(step,/sudo ln -sf "\$chromium_path" \/usr\/bin\/chromium/);
+});
