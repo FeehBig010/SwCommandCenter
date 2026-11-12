@@ -13,7 +13,7 @@ function Disclosure({label,children,kind='',disabled=false}){
  useEffect(()=>{const escape=e=>{if(e.key==='Escape'&&!e.defaultPrevented&&root.current?.open&&!document.querySelector('dialog[open]')){e.preventDefault();root.current.open=false;root.current.querySelector('summary').focus();}};document.addEventListener('keydown',escape);return()=>document.removeEventListener('keydown',escape);},[]);
  useEffect(()=>{const close=e=>{if(root.current?.open&&!root.current.contains(e.target))root.current.open=false;};document.addEventListener('pointerdown',close);return()=>document.removeEventListener('pointerdown',close);},[]);
  return <details ref={root} className={`balance-disclosure ${kind}`} name="balance-controls" onToggle={e=>{if(root.current?.open)place();}} onKeyDown={e=>{if(e.key==='Escape'&&!e.defaultPrevented){e.preventDefault();root.current.open=false;root.current.querySelector('summary').focus();}}}>
-  <summary aria-disabled={disabled||undefined} onClick={e=>{if(disabled)e.preventDefault();}}><Settings2 size={13}/>{label}</summary>
+  <summary aria-disabled={disabled||undefined} onClick={e=>{e.preventDefault();if(disabled)return;root.current.open=!root.current.open;if(root.current.open)place();}}><Settings2 size={13}/>{label}</summary>
   <div className="balance-popover" style={position} role="region" aria-label={label}><header><strong>{label}</strong><button type="button" className="icon-button" aria-label={`Fechar ${label}`} onClick={()=>{root.current.open=false;root.current.querySelector('summary').focus();}}><X size={16}/></button></header>{children}</div>
  </details>;
 }
