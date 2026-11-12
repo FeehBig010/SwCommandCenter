@@ -208,3 +208,42 @@ A garantia é sempre relativa ao cenário resolvido e às regras discretas exist
 O campo fixo “Artefatos · +SPD” fica diretamente no card. Os bônus condicionais permanecem recolhidos. O valor é aplicado uma vez no motor de ticks e descontado na conversão Runagem. Com Tiana 400 e inimigo 399, a fila Arena é 400 → 340 → 339 → 338; +20 SPD de artefato no terceiro slot reduz a exigência de runas em 20 sem alterar a meta de combate. Cairos estende a mesma regra ao quinto slot. Falta de solução produz “Ordem travada inviável”, com a explicação no tooltip, e nunca o selo de fila validada. A indicação de segurança continua relativa ao cenário informado.
 
 Regressões cobrem migração de planos antigos, tamanhos 3/4/5, mínimo do slot 2, identidade dos slots, trava contra edição de seguidores, troca explícita para avançado, artefatos sem dupla contagem, inimigo rápido, abridor incapacitado, ausência de boost e escadas não representáveis com multiplicadores/arredondamentos. Os testes anteriores de mínimos flexíveis usam explicitamente o modo avançado.
+
+### Calculadora Livre: entrada opcional por tick
+
+Cada monstro selecionado pode alternar de SPD de runas para **Pronto por tick**
+(ticks 1–30). A meta significa barra pronta **até** o tick escolhido, não primeira
+ação garantida naquele tick. O card mostra +SPD de runas, SPD de combate, prontidão
+e primeira ação medidas; a fila pode adiar a ação e os avisos de sincronia continuam
+independentes. A referência inimiga automática da sincronia não aparece na medição
+visual, conforme `TICK_TIMELINE.md`; inimigos explícitos participam de ambas.
+
+A inversão percorre contribuições inteiras de +0 a +600 SPD de runas, em ordem,
+usando `quickPreview`/`simulateCombat` e `firstReady` (ações forçadas abaixo da barra
+não atendem a meta). Swift entra na ficha uma vez; líder, torre, artefatos, buffs,
+puxadas e eventos continuam sob as regras do motor existente. Não procura runas no
+inventário e não carrega equipamento implicitamente.
+
+Metas explícitas ficam fixadas contra o ajuste automático; os seguidores sem meta
+continuam automáticos. Alterar slider/número de um monstro com meta remove essa
+meta e mantém a edição manual desse monstro. A resolução conjunta faz no máximo
+quatro passagens, ajustando seguidores entre passagens, nunca um solver completo
+por candidato. Só uma solução estabilizada, verificada no time final, recebe meta
+atendida. Não há garantia de ótimo conjunto ou de encontrar toda solução viável;
+conflitos, limite de busca e cenários inválidos são reportados. Quando uma busca
+individual não encontra solução, mantém a última ficha utilizável.
+
+Um monstro selecionado já pode converter com outros slots vazios; a medição usa
+apenas selecionados, preserva os índices originais `ally:N` e sinaliza time
+incompleto. Eventos que referenciam slots ausentes ficam sem resolução. Metas
+vivem no estado da calculadora: reseleção do monstro, restauração/carregamento de
+preset, Limpar Time e nova visita não herdam metas antigas.
+
+Ao visualizar qualquer proposta de inventário, inclusive Atual/baseline,
+prontidão e ação são lidas da simulação daquela build, sem reaproveitar a auditoria
+manual nem executar outra inversão na troca de visualização. Apenas visualizar
+preserva a meta do cenário manual. Aplicar uma build validada sai explicitamente
+do modo de entrada por tick, preservando a ficha e as runas validadas; o usuário
+pode selecionar novamente a entrada por tick para uma nova simulação manual.
+Turnos consumidos por incapacidade aparecem como turno impedido, sem ação
+executada, tanto no cenário manual quanto nas propostas de inventário.

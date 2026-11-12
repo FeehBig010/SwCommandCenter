@@ -115,3 +115,13 @@
 }
 
 .quick-preset-equipment{font-size:10px;color:#c7b78e}
+
+/* Tick is an optional per-card input; retain the existing rune SPD controls. */
+.quick-tick-controls{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+.quick-tick-controls .field{flex:1;min-width:0}
+.quick-tick-controls select{width:100%;min-width:0}
+.quick-tick-result{display:grid;gap:4px;padding:10px;margin:4px 0 10px;border:1px solid var(--border-color,#566174);border-radius:8px;font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+.quick-tick-result strong{font-size:12px}
+.quick-tick-heading{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.quick-tick-heading .technical-help>button{width:22px;height:22px;min-width:22px;min-height:22px;padding:0}
+.quick-tick-result[data-status="unreachable"],.quick-tick-result[data-status="conflict"],.quick-tick-result[data-status="unsupported"]{border-color:#bc9352}
