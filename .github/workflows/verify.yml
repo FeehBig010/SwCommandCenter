@@ -4,6 +4,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      run_migrations:
+        description: Aplicar migrations no banco de produção após as verificações
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -30,7 +35,8 @@ jobs:
           path: dist
   migrate-supabase:
     needs: verify
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    # Publicação da interface não autoriza alterações no banco.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.run_migrations == true
     runs-on: ubuntu-latest
     environment: supabase-production
     concurrency:

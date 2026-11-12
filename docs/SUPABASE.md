@@ -38,7 +38,7 @@ A migration cria `guilds`, `guild_members`, `guild_invites` e `guild_teams`, ín
 - Somente composições/metas/cenários/confrontos são enviados. Não enviamos o SWEX, inventário, tokens do jogo, IDs de instância dos monstros ou resultados privados de outras contas. Copiar uma sugestão não publica o inventário do membro.
 - O inventário e os rascunhos do navegador continuam locais e não são apagados ao sair. Em dispositivo compartilhado, encerre a sessão e use “Apagar dados locais” antes de entregá-lo a outra pessoa. As listas privadas da nuvem são descartadas da interface ao sair ou trocar de sessão.
 
-## 5. CI e migrations automáticas
+## 5. CI e migrations explícitas
 
 O workflow `.github/workflows/verify.yml` executa `npm ci`, `npm test` e `npm run build` em PRs e pushes da `main`, e guarda `dist` como artefato. Publicar o site depende do provedor de hospedagem existente; este workflow não torna o site público nem substitui sua identidade de hospedagem.
 
@@ -48,7 +48,7 @@ Depois de criar/configurar o projeto, no GitHub:
 - Secrets no ambiente `supabase-production`: `SUPABASE_ACCESS_TOKEN` e `SUPABASE_DB_PASSWORD`.
 - Configure as proteções desse ambiente de acordo com seu processo.
 
-Após os testes e o build passarem em um push da `main`, o job `migrate-supabase` verifica as credenciais e executa `supabase link` e `supabase db push`. A antiga flag `ENABLE_SUPABASE_DEPLOY` deixou de ser necessária. Também é possível executar o workflow manualmente em Actions → Verify and prepare deployment → Run workflow. Falta de configuração produz erro com os nomes das variáveis/secrets ausentes, sem revelar seus valores. O ambiente `supabase-production` mantém suas proteções; deploys são serializados para evitar migrations concorrentes. Se forem exigidas aprovações no ambiente, o proprietário precisa liberá-las no GitHub. Credenciais administrativas nunca são colocadas no código nem em variáveis públicas do frontend.
+Pushes da `main`, PRs e execuções manuais comuns verificam a interface sem executar migrations. Para aplicar migrations deliberadamente, abra Actions → Verify and prepare deployment → Run workflow, selecione `main` e marque `run_migrations` (desligado por padrão). Somente essa execução manual explícita, depois dos testes/build, permite ao job `migrate-supabase` verificar as credenciais e executar `supabase link` e `supabase db push`. A antiga flag `ENABLE_SUPABASE_DEPLOY` não é usada. Falta de configuração produz erro com os nomes das variáveis/secrets ausentes, sem revelar seus valores. O ambiente `supabase-production` mantém suas proteções; deploys são serializados para evitar migrations concorrentes. Se forem exigidas aprovações no ambiente, o proprietário precisa liberá-las no GitHub. Credenciais administrativas nunca são colocadas no código nem em variáveis públicas do frontend.
 
 
 ## 6. Banco de Counters de Siege

@@ -8,7 +8,7 @@ Em `guild_teams`, membros leem composições portáveis publicadas na própria g
 
 ## Aplicação no projeto real
 
-O workflow `.github/workflows/verify.yml` executa testes, navegador, build e depois `supabase db push`, no ambiente **supabase-production**. Configure nesse ambiente do GitHub:
+O workflow `.github/workflows/verify.yml` executa testes, navegador e build sem alterar o banco em pushes/PRs. `supabase db push` só é permitido em uma execução manual na `main` com `run_migrations` marcado explicitamente (padrão desligado), após as verificações, no ambiente **supabase-production**. Configure nesse ambiente do GitHub:
 
 - Secrets `SUPABASE_ACCESS_TOKEN` e `SUPABASE_DB_PASSWORD`.
 - Variable `SUPABASE_PROJECT_REF` (ou `VITE_SUPABASE_URL`, da qual o workflow extrai a referência).
