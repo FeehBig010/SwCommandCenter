@@ -30,6 +30,7 @@ jobs:
           chromium_path="$(node --input-type=module -e 'import {chromium} from "playwright"; process.stdout.write(chromium.executablePath())')"
           test -x "$chromium_path"
           sudo ln -sf "$chromium_path" /usr/bin/chromium
+          sudo install -d -o "$(id -u)" -g "$(id -g)" /workspace/artifacts
       - run: npm run test:browser
       - run: npm run build
         env:
