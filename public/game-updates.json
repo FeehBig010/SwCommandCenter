@@ -1,9 +1,17 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-14T10:17:25.174Z",
+  "fetchedAt": "2026-11-14T16:37:51.766Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/notice/313/96511",
+      "url": "https://www.withhive.com/notice/313/96511",
+      "title": "[Summoners War] SWC2026 WORLD FINALS Results Notice",
+      "category": "notice",
+      "publishedAt": "2026-11-14T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
     {
       "id": "https://www.withhive.com/event/313/96507",
       "url": "https://www.withhive.com/event/313/96507",
