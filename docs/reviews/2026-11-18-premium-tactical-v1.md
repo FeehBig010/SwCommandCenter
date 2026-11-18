@@ -1,6 +1,6 @@
 # Premium Tactical V1 — revisão de implementação
 
-Branch: `feature/swcc-premium-tactical-v1`. Base main `4c8e14c`, integração da Calculadora V2 `a65b980`. Nenhum merge na main/deploy foi executado. Vercel tem deploy automático desativado para as branches de implementação. Sem dependências novas ou migração de dados.
+Branch de entrega: `feature/swcc-premium-tactical-v1-review`. A branch remota de nome original contém trabalho divergente (`937e1df`); foi preservada sem force-push ou merge de código alheio. Base main `4c8e14c`, integração da Calculadora V2 `a65b980`. Nenhum merge na main/deploy foi executado. Vercel tem deploy automático desativado para as branches de implementação. Sem dependências novas ou migração de dados.
 
 ## Implementado
 

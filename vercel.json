@@ -8,7 +8,8 @@
   "git": {
     "deploymentEnabled": {
       "feature/calculadora-v2": false,
-      "feature/swcc-premium-tactical-v1": false
+      "feature/swcc-premium-tactical-v1": false,
+      "feature/swcc-premium-tactical-v1-review": false
     }
   }
 }
