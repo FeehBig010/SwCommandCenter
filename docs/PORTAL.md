@@ -4,17 +4,28 @@
 SWEX e continuação da conta. O relógio e a hidratação da importação continuam no
 App: a animação dura 20 segundos, de 0 a 100%, sem alterar a autorização do backup privado.
 
-A composição usa uma grade com colunas externas iguais e centro mais largo.
-Desktop e tablets a partir de 768 px mantêm as três colunas. Em celulares, a guia,
-os comandos e os cupons ficam empilhados em uma região rolável dentro dos 100dvh.
-Formulários e listas longas continuam alcançáveis em telas baixas. O login não
-abre outra página. Fundo do castelo, overlay, partículas e movimento reduzido
-seguem a identidade existente.
+A Home usa cards independentes em uma página com rolagem normal, dentro do shell
+compartilhado com a navegação. O resumo mostra o ID, a guilda, as contagens do
+inventário e a data real de importação do snapshot carregado; datas ausentes não
+são estimadas. Dados demonstrativos recebem identificação explícita. O snapshot
+não representa alterações em tempo real no jogo.
 
-O conceito visual foi gerado nesta tarefa; a interface mantém o brasão e o cenário
-locais. `public/art/portal-ciri.png` é uma ilustração gerada da Ciri, com canal alpha
-real e sem texto/fundo, e não uma arte oficial da Com2uS. A origem gerada evita a
-antiga miniatura remota retangular, que estava inacessível.
+Os cinco atalhos principais abrem Início, Siege Center, Rune Optimizer, Rune
+Intelligence e Calculadora de Velocidade. A continuidade usa `lastWorkspace`
+quando o App fornece um módulo realmente visitado; sem esse registro, a conta
+carregada mantém a ação de continuação para o Dashboard. A Calculadora Livre
+continua disponível sem conta ou login.
+
+Ciri acompanha o card de importação SWEX, com seleção e drop de arquivo e login
+inline preservados. Os cupons mantêm seu componente, atualização e ações de
+cópia e resgate. Em telas pequenas os cards se empilham, sem listas presas à
+altura da janela. Superfícies em grafite/petróleo, bordas sutis e detalhes em ouro
+seguem os tokens compartilhados; cenário, partículas, névoa e tilt foram retirados.
+
+`public/art/portal-ciri.png` é uma ilustração gerada da Ciri, com canal alpha real
+e sem texto/fundo, e não uma arte oficial da Com2uS. A interface conserva a arte
+local e o fallback para o brasão. A validação específica está em
+`tests/browser/premium-home.mjs`, com fixtures fictícias e endpoints isolados.
 
 ## Cupons
 
