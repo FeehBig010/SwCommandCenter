@@ -5,9 +5,8 @@ import {blankConfig,makeTeam,STATS,FOUR,GAME_MODES} from './data.js';
 import {monsterBase} from './monster-search.js';
 import {requiredSheetSpeed,leaderImpact,combatAttributes,scenarioForTeam,simulateCombat,cascadingBoostPlan,cascadeReady,firstRotationSafe,automaticSyncStrategy,NATURAL_GAUGE_STEP,RTA_GAUGE_STEP,gaugeStepForMode} from './speedTuner.js';
 import {catalogLeader} from './leader-catalog.js';
-import {monsterOpener} from './monsterDatabase.js';
 import {canonicalMonsterId} from './CollabMapping.js';
-import monsterSkillsData from './monster-skills.json' with {type:'json'};
+import {resolvedQuickSkill,quickSkillOptions,automaticReferenceSpeed} from './quick-skill-effects.js';
 const fallback={hp:10000,atk:800,def:650,spd:100,cr:15,cd:50,res:15,acc:0};
 export function quickConfig(master=null,name='Escolher monstro'){
  const base={...(monsterBase(master)||fallback)};
@@ -18,22 +17,25 @@ export function selectQuickMonster(config,option){const next=quickConfig(option?
 const resolvedTowerSpd=team=>team?.speedMode==='snapshot'||team?.customTowerSpd?Math.max(0,Math.min(15,Number(team.towerSpd??15)||0)):15;
 export const quickCombatTeam=team=>({...team,towerSpd:resolvedTowerSpd(team),guildSpd:team.speedMode==='snapshot'?Number(team.guildSpd)||0:0,sheetSpeedFormula:true});
 
-export function quickPreview(input,{captureCheckpoints=false,actorCache=null,includeReference=true,captureReadiness=false,captureTickSnapshots=false}={}){
+export function quickPreview(input,{captureCheckpoints=false,actorCache=null,includeReference=true,captureReadiness=false,captureTickSnapshots=false,captureTickLimit=60,includePartial=input.includePartial===true}={}){
  const team={...quickCombatTeam(input),autoOpener:true};
- const active=team.configs.filter(c=>c.enabled!==false),actors=[];
+ const enabled=team.configs.filter(c=>c.enabled!==false),missing=enabled.filter(c=>!c.masterId).map(c=>c.label),partial=missing.length>0;
+ if(includePartial)team.includePartial=true;
+ const active=includePartial?enabled.filter(c=>c.masterId):enabled,actors=[];
  for(const c of active){if(!c.masterId)return {complete:false,missing:active.filter(c=>!c.masterId).map(c=>c.label),actors:[],turns:[],cut:null};
   if(actorCache?.has(c)){actors.push(actorCache.get(c));continue;}
   const {base,sheet}=c.manual;for(const kind of [base,sheet])for(const stat of STATS){const n=Number(kind[stat]);if(!Number.isFinite(n)||n<0||n>10000000||stat==='spd'&&n<=0)throw new Error(`${c.label}: atributo ${stat.toUpperCase()} inválido.`);}
   const unit={master:c.masterId,element:c.masterId%10,base:Object.fromEntries(STATS.map(k=>[k,Number(base[k])]))},counts={};for(const set of c.sets.filter(Boolean))counts[set]=(counts[set]||0)+(FOUR.has(set)?4:2);
   const total=Object.fromEntries(STATS.map(k=>[k,Number(sheet[k])])),stats={total,bonus:Object.fromEntries(STATS.map(k=>[k,total[k]-unit.base[k]]))},combat=combatAttributes(unit,stats,counts,team,c.combat,c.snapshotArtifactEffects);
-  actors.push({key:c.key,will:(counts[15]||0)>=2,master:c.masterId,name:c.label,spd:combat.spd,rawSpd:combat.rawSpd,combat:c.combat,...(c.snapshotArtifactEffects?{effects:c.snapshotArtifactEffects}:{}),attributes:combat,leaderBonus:leaderImpact(unit,stats,counts,team,c.combat,c.snapshotArtifactEffects).bonus,goals:goalReport({...stats,combat},c),nemesisSets:Math.floor((counts[14]||0)/2)});if(actorCache)actorCache.set(c,actors.at(-1));
+  const placement=team.gamePlacement?.indexOf(c.key);
+  actors.push({key:c.key,...(placement>=0?{placementIndex:placement}:{}),will:(counts[15]||0)>=2,master:c.masterId,name:c.label,spd:combat.spd,rawSpd:combat.rawSpd,combat:c.combat,...(c.snapshotArtifactEffects?{effects:c.snapshotArtifactEffects}:{}),attributes:combat,leaderBonus:leaderImpact(unit,stats,counts,team,c.combat,c.snapshotArtifactEffects).bonus,goals:goalReport({...stats,combat},c),nemesisSets:Math.floor((counts[14]||0)/2)});if(actorCache)actorCache.set(c,actors.at(-1));
  }
- if(!actors.length)return {complete:false,missing:[],actors:[],turns:[],cut:null};
- const configured=scenarioForTeam(team,actors),enemy=Number(team.enemyCombatSpd)||0,foes=configured.actors.some(a=>a.enemy);const cascade=cascadingBoostPlan(team,configured.events),referenceEnemy=includeReference&&!foes&&!enemy&&(cascade||automaticSyncStrategy(team).kind==='boost')?Math.max(1,actors[0].spd-1):0;const gaugeStep=gaugeStepForMode(team.gameMode,team.useRtaTickRate);
+ if(!actors.length)return {complete:false,partial,missing,actors:[],turns:[],cut:null};
+ const configured=scenarioForTeam(team,actors),enemy=Number(team.enemyCombatSpd)||0,foes=configured.actors.some(a=>a.enemy);const cascade=cascadingBoostPlan(team,configured.events),referenceEnemy=includeReference&&!foes&&!enemy&&(cascade||automaticSyncStrategy(team).kind==='boost')?automaticReferenceSpeed(actors[0].spd,team):0;const gaugeStep=gaugeStepForMode(team.gameMode,team.useRtaTickRate);
  const enemyActorLabel=team.enemyReference?.label&&enemy>0?team.enemyReference.label:referenceEnemy?'Inimigo de referência':'Inimigo';
  const enemyActorMaster=team.enemyReference?.masterId&&enemy>0?team.enemyReference.masterId:0;
- const scenario=simulateCombat([...configured.actors,...(!foes&&(enemy||referenceEnemy)>0?[{key:'quick-enemy',name:enemyActorLabel,master:enemyActorMaster,spd:enemy||referenceEnemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true,captureCheckpoints,captureReadiness,captureTickSnapshots,gaugeStep});
- return {complete:true,missing:[],actors,turns:scenario.firstTurns,scenario,cut:scenario.cut,referenceEnemy,source:'manual'};
+ const scenario=simulateCombat([...configured.actors,...(!foes&&(enemy||referenceEnemy)>0?[{key:'quick-enemy',name:enemyActorLabel,master:enemyActorMaster,spd:enemy||referenceEnemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true,captureCheckpoints,captureReadiness,captureTickSnapshots,captureTickLimit,gaugeStep});
+ return {complete:true,partial,missing,actors,turns:scenario.firstTurns,scenario,cut:scenario.cut,referenceEnemy,source:'manual'};
 }
 export function quickLeader(master){return catalogLeader(master);}
 
@@ -42,6 +44,16 @@ export function quickLeader(master){return catalogLeader(master);}
 // preserves the equipped sheets until the player requests a simulation.
 export function quickOrderLocked(team){return !['snapshot','free'].includes(team?.speedMode);}
 export function autoTuneQuickTeam(input){
+ if(input.includePartial&&input.configs.some(c=>!c.masterId||c.enabled===false)){
+  const active=input.configs.filter(c=>c.masterId&&c.enabled!==false);
+  if(active.length<2)return {...quickCombatTeam(input),syncAudit:null,automaticSync:active.length?automaticSyncStrategy({...input,configs:active}):null};
+  // Compact only the private solver input. References in the public plan retain
+  // their physical ally:N slots, including holes, when the results are merged.
+  const remap=ref=>{if(!ref?.startsWith('ally:'))return ref;const key=input.configs[Number(ref.slice(5))]?.key,index=active.findIndex(c=>c.key===key);return index<0?null:`ally:${index}`;};
+  const events=(input.combatScenario?.events||[]).filter(e=>remap(e.afterKey)).map(e=>({...e,afterKey:remap(e.afterKey),targets:(e.targets||[]).map(remap).filter(Boolean)}));
+  const solved=autoTuneQuickTeam({...input,configs:active,combatScenario:{...input.combatScenario,events}}),byKey=new Map(solved.configs.map(c=>[c.key,c]));
+  return {...solved,combatScenario:input.combatScenario,configs:input.configs.map(c=>byKey.get(c.key)||c),syncAudit:solved.syncAudit?{...solved.syncAudit,partial:true}:null};
+ }
  return input.configs.some(c=>c.masterId&&c.tickTarget!=null)?resolveQuickTickTargets(input):tuneQuickTeam(input);
 }
 function tuneQuickTeam(input){
@@ -268,30 +280,22 @@ export function applyQuickInventoryPlan(plan){
 
 // --- 00peanuts Speed Tuning Calculator integration helpers ---
 export function monsterSkillsForCard(masterId){
- if(!masterId)return [];
- const id=canonicalMonsterId(masterId),skillIds=monsterSkillsData.monsters[String(id)]||monsterSkillsData.monsters[String(masterId)]||[];
- const opener=monsterOpener(masterId);
- return skillIds.map((sid,idx)=>{
-  const meta=monsterSkillsData.skills[String(sid)]||{name:`Skill ${idx+1}`,slot:idx+1,icon:''};
-  const slot=Number(meta.slot||idx+1);
-  const isOpener=!!opener&&Number(opener.slot||3)===slot;
-  return {
-   id:sid,
-   slot,
-   label:`S${slot}`,
-   name:meta.name||`Skill ${slot}`,
-   icon:meta.icon?`/game-icons/skills/${meta.icon}`:null,
-   isOpener,
-   openerBoost:isOpener?Number(opener.boost||0):0,
-   openerSpeedBuff:isOpener?!!opener.speedBuff:false,
-   openerType:isOpener?opener.type:null
-  };
- });
+ return quickSkillOptions(masterId);
 }
 
 export function updateQuickTowerSpd(team,towerSpd,tune=true){
  const n=Math.max(0,Math.min(15,Math.floor(Number(towerSpd)||0)));
  const next={...team,towerSpd:n,customTowerSpd:true};
+ if(next.ignoreEnemyReference===false&&next.enemyReference?.masterId)next.enemyCombatSpd=computeEnemyReferenceSpd(next.enemyReference,next);
+ return tune?autoTuneQuickTeam(next):next;
+}
+
+export function updateQuickSkillLevel(team,key,level,{profile=null,tune=false}={}){
+ const config=team.configs.find(c=>c.key===key);if(!config)return team;
+ const proposed={...config,firstTurnSkillLevel:Number(level),skillupProfile:profile,skillBoostBonus:0};
+ const skill=resolvedQuickSkill(proposed);
+ if(!Number.isInteger(Number(level))||Number(level)<1||Number(level)>skill.maxLevel)throw new Error('Nível de habilidade inválido.');
+ const next={...team,configs:team.configs.map(c=>c.key===key?proposed:c)};
  return tune?autoTuneQuickTeam(next):next;
 }
 
@@ -312,7 +316,7 @@ export function applyQuickAutoPresets(config,index,autoPresets={}){
  if(!config?.masterId)return config;
  let sets=[...(config.sets||[]).filter(Boolean)];
  const wantSwift=(index===0&&autoPresets.autoSwiftStarter)||(index>0&&autoPresets.autoSwiftOthers);
- const isChilling=[19901,19911].includes(Number(canonicalMonsterId(config.masterId)))||/chilling/i.test(String(config.label||''));
+ const isChilling=[20701,20711].includes(Number(canonicalMonsterId(config.masterId)));
  const wantWill=isChilling&&autoPresets.autoWillChilling;
  if(wantSwift&&!sets.some(id=>Number(id)===3)){
   sets=[3,...sets.filter(id=>!FOUR.has(Number(id))).slice(0,1)];
@@ -361,4 +365,14 @@ export function updateQuickEnemyReference(team,patch={},tune=true){
  const enemyCombatSpd=!ignoreEnemyReference&&nextRef.masterId?computeEnemyReferenceSpd(nextRef,team):0;
  const next={...team,ignoreEnemyReference,enemyReference:nextRef,enemyCombatSpd};
  return tune?autoTuneQuickTeam(next):next;
+}
+
+// Copy the observed combat speed into visible enemy parameters. Never leave a
+// hidden speed override that disagrees with the next edit of the rune field.
+export function copyQuickStarterReference(team){
+ const observed=quickPreview(team,{includeReference:false,includePartial:true}).actors[0]?.spd;
+ if(!observed||!team.enemyReference?.masterId)return team;
+ const reference={...team.enemyReference,runeSpd:0},minimum=computeEnemyReferenceSpd(reference,team);
+ reference.runeSpd=Math.max(0,observed-minimum);
+ return {...team,ignoreEnemyReference:false,enemyReference:reference,enemyCombatSpd:computeEnemyReferenceSpd(reference,team),copyReferenceIssue:minimum>observed?'A SPD do abridor fica abaixo da base e dos bônus deste inimigo. Ajuste Swift, líder ou torre.':null};
 }
