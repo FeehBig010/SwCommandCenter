@@ -1,6 +1,6 @@
 # Speed Tuning Calculator 2.0
 
-Implementação na calculadora existente: `#/quick` → menu **Calculadora de Velocidade**. A versão clássica permanece disponível e compartilha o mesmo estado. Branch: `feature/speed-tuning-calculator-2`, sem merge na main/deploy. Base Premium Tactical com importação SWEX, presets, handoff e engines existentes; nenhuma nova dependência ou migração.
+Implementação na calculadora existente: `#/quick` → menu **Calculadora de Velocidade**. A versão clássica permanece disponível e compartilha o mesmo estado. Revisão original: `feature/speed-tuning-calculator-2`. Em18/11/2026 o usuário autorizou integrar na main e publicar; veja [registro de integração](releases/2026-11-18-speed-tuning-2.md). Base Premium Tactical com importação SWEX, presets, handoff e engines existentes; nenhuma nova dependência ou migração.
 
 ## Operação
 
@@ -67,7 +67,7 @@ Foram corrigidos com RED→GREEN: perda de torre/guilda ao compartilhar snapshot
 - Benchmark real do Worker:1578runas sintéticas,61combinações,1465ms de motor, maior intervalo de UI91ms. Sem relaxar os limites de desempenho.
 - Registros de RED→GREEN: revisão de contexto, compartilhamento, meta de tick com um único slot e hits de controles clássicos. Uma expectativa antiga de teste RTA que usava artefatos main foi corrigida para refletir equipamento contextual desconhecido; todas as demais verificações permaneceram.
 - Capturas foram abertas para revisão visual: cards, contraste, hierarquia, layout móvel, controles alcançáveis e estado parcial sem garantia de segurança.
-- Sem merge/deploy. `vercel.json` bloqueia deploy automático da branch de implementação. O trabalho remoto divergente da branch Premium de nome original foi preservado; essa entrega anterior está em `feature/swcc-premium-tactical-v1-review`.
+- A revisão original foi entregue sem merge/deploy; a autorização posterior está registrada em AGENTS.md. `vercel.json` mantém as branches de implementação sem deploy e habilita explicitamente a `main`. O trabalho remoto divergente da branch Premium de nome original foi preservado; essa entrega anterior está em `feature/swcc-premium-tactical-v1-review`.
 
 Os documentos `SW_OS_ORCHESTRATOR_MASTER.md`, `SW_RUNES_SYSTEM_REVISADO.md` e `SW_COMMAND_CENTER_2_0_DOCUMENTACAO_CONSOLIDADA.md` não foram encontrados na busca do workspace. Foram usados AGENTS.md, a especificação entregue e a documentação existente de parser, calculadora, ticks e optimizer.
 
