@@ -1,0 +1,44 @@
+/* Premium tactical surfaces are scoped to Siege; existing guild/editor styles stay intact. */
+.siege-central .siege-attack-desk{gap:24px}
+.siege-central .siege-personal-comparisons .siege-comparison-row{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;border:0;background:none;box-shadow:none;overflow:visible}
+.siege-central .siege-personal-comparisons .siege-row-defense{border:1px solid var(--pt-border,var(--border-subtle));border-radius:14px;padding:22px;background:var(--pt-surface,var(--surface-card))}
+.siege-central .siege-personal-comparisons .siege-row-defense .siege-row-lineup{max-width:560px;margin:20px 0}
+.siege-central .siege-personal-comparisons .siege-counter-list{padding:0}
+.siege-central .siege-personal-comparisons .siege-counter-page{gap:16px}
+.siege-central .siege-personal-comparisons .siege-row-attack{border:1px solid var(--pt-border,var(--border-subtle));border-radius:14px;padding:20px;background:var(--pt-surface,var(--surface-card));box-shadow:none}
+.siege-central .siege-tactical-counter-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin:0 0 12px}
+.siege-central .siege-tactical-counter-heading h3{font-size:18px;margin-top:8px}
+.siege-central .siege-tactical-counter-heading .siege-counter-trio{display:flex;gap:8px}
+.siege-central .siege-tactical-counter-heading .monster-portrait{width:56px;height:56px;border-radius:10px}
+.siege-central .siege-tactical-counter-names{color:var(--pt-muted,var(--text-secondary));font-size:12px;margin-bottom:16px;overflow-wrap:anywhere}
+.siege-central .siege-tactical-direct{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.siege-central .siege-tactical-section-label{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 14px}
+.siege-central .siege-tactical-section-label h3{font-size:15px;margin:0}
+.siege-central .siege-tactical-section-label>span{font-size:12px;color:var(--pt-muted,var(--text-secondary))}
+.siege-central .siege-counter-portraits{display:flex;justify-content:space-between;gap:12px;padding:14px 0 0;color:var(--pt-muted,var(--text-secondary));font-size:12px;cursor:pointer}
+.siege-central .siege-counter-expanded{padding-top:16px}
+.siege-central .siege-local-journal{margin:8px 0 14px}
+.siege-central .siege-journal-content{margin-top:16px;padding:18px;border:1px solid var(--pt-border,var(--border-subtle));border-radius:10px;background:var(--pt-bg,var(--surface-inset));min-width:0}
+.siege-central .siege-journal-content h4{font-size:14px;margin:0 0 10px}
+.siege-central .siege-journal-content header p,.siege-central .siege-journal-history>p{font-size:12px;line-height:1.6;color:var(--pt-muted,var(--text-secondary))}
+.siege-central .siege-journal-content fieldset{border:0;padding:0;margin:18px 0;display:grid;gap:14px;min-width:0}
+.siege-central .siege-journal-content textarea{width:100%;resize:vertical;min-height:66px}
+.siege-central .siege-journal-content fieldset>.button{justify-self:start}
+.siege-central .siege-journal-content .button[aria-pressed=true]{border-color:var(--pt-accent,var(--gold-main));background:rgba(198,167,104,.17)}
+.siege-central .siege-journal-history{border-top:1px solid var(--pt-border,var(--border-subtle));padding-top:18px}
+.siege-central .siege-journal-history ol{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:10px}
+.siege-central .siege-journal-history li{padding:12px;border:1px solid var(--pt-border,var(--border-subtle));border-radius:9px;overflow-wrap:anywhere}
+.siege-central .siege-journal-history li>div{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px}
+.siege-central .siege-journal-history time,.siege-central .siege-journal-history small{font-size:11px;color:var(--pt-muted,var(--text-secondary))}
+.siege-central .siege-journal-history li p{font-size:13px;white-space:pre-wrap}
+.siege-central .siege-journal-score span{margin-left:10px}
+.siege-central .siege-match-win{color:#91d8b4}.siege-central .siege-match-loss{color:#eca99d}
+.siege-central .siege-legacy-reports{margin-top:18px;border-top:1px solid var(--pt-border,var(--border-subtle));padding-top:14px}
+@media(max-width:600px){.siege-central .siege-personal-comparisons .siege-row-defense,.siege-central .siege-personal-comparisons .siege-row-attack{padding:16px}.siege-central .siege-tactical-counter-heading .monster-portrait{width:48px;height:48px}.siege-central .siege-journal-content{padding:12px}.siege-central .siege-tactical-counter-heading{gap:12px}.siege-central .siege-tactical-counter-heading h3{font-size:16px}}
+.siege-central .siege-personal-comparisons .siege-row-attacks{border:0;background:none}
+.siege-central .siege-personal-comparisons .siege-counter-page-item+.siege-counter-page-item{border:0;margin-top:16px}
+.siege-central .siege-personal-comparisons .siege-counter-list .siege-counter-portraits{min-height:44px;padding:12px 0 0}
+.siege-central .siege-personal-comparisons .siege-row-attack .siege-tactical-counter-heading h3{font:600 18px/1.4 Inter,system-ui,sans-serif}
+.siege-central .siege-journal-collapsed-score{display:inline-block;margin:8px 0 8px 12px;font-size:12px;color:var(--pt-muted,var(--text-secondary))}
+.siege-central .siege-personal-comparisons .siege-tactical-counter-heading .monster-portrait{flex-basis:56px}
+@media(max-width:600px){.siege-central .siege-personal-comparisons .siege-tactical-counter-heading .monster-portrait{flex-basis:48px}}
