@@ -106,3 +106,9 @@ npm run dev
 Abra `http://localhost:5173/#/quick`. Para testar o fluxo de retorno, importe seu SWEX localmente e abra um time válido no Otimizador Avançado. Nenhum JSON operacional deve ser commitado.
 
 Não houve merge na `main` nem solicitação de deploy. A configuração por branch usa a interface oficial `GitConfig.deploymentEnabled` da Vercel (`vercel/vercel`, `packages/config/src/types.ts`). O bloqueio deve ser revisto apenas quando houver autorização de publicação.
+
+## Salvamento remoto
+
+A branch [feature/calculadora-v2](https://github.com/FeehBig010/SwCommandCenter/tree/feature/calculadora-v2) foi enviada ao GitHub. A árvore remota do checkpoint `a8d0b12` foi conferida pela API GitHub: os 21 arquivos alterados, incluindo código, testes, documentação e quatro screenshots, estão presentes. Esta confirmação foi registrada em um commit documental posterior.
+
+Não houve merge na main nem comando de deploy. O auto-deploy desta branch está desabilitado em `vercel.json`; o status combinado do checkpoint não continha deployments/checks da Vercel. A API de consulta da lista de deployments não está disponível no conector deste ambiente, portanto não alegamos uma inspeção do painel da Vercel.

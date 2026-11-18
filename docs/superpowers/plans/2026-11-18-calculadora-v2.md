@@ -43,4 +43,4 @@
 - [x] Executar suíte completa, navegador, build e review independente. Resultados: 590 unitários, build aprovado; 21 scripts browser na rodada ampla e 2 scripts finais validados separadamente após correção de expectativa legada (ver relatório).
 - [x] Inspecionar screenshots 1440/1920 e mobile com fixtures fictícias.
 - [x] Registrar limitações, comandos e evidências; commits coerentes.
-- [ ] Enviar somente feature/calculadora-v2 e verificar arquivos remotos.
+- [x] Enviar somente feature/calculadora-v2 e verificar arquivos remotos: árvore GitHub a8d0b12 conferida, 21 arquivos alterados presentes, incluindo as quatro capturas.
