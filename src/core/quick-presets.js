@@ -6,6 +6,7 @@ import {PVE_STAGES,pveSlots,canonicalPveStage} from './pve-stages.js';
 import {arenaContextOf,ARENA_CONTEXTS} from './arena-context.js';
 import {artifactEffects} from './artifacts.js';
 import {accountStamp} from './loadouts.js';
+import {skillLevels} from './skill-levels.js';
 
 export const QUICK_AREA_LABELS={siege:'Siege / GvG',arena:'Arena',rta:'RTA',cairos:'Cairos',dimensional:'Dimensional',rift:'Rift / R5',toa:'ToA',solo:'Solo'};
 export function quickPresetArea(preset){
@@ -26,14 +27,16 @@ export function quickTeamFromPreset(preset,account){
  if(!account||!Array.isArray(account.units))throw new Error('Importe seu JSON SWEX para carregar presets.');
  if(!preset||!Array.isArray(preset.unitIds)||!GAME_MODES[preset.gameMode]||preset.unitIds.length>8)throw new Error('Este preset não possui uma formação válida.');
  const safe={...account,units:account.units.map(u=>({...u,runeIds:u.runeIds||[],artifactIds:u.artifactIds||[]})),runes:account.runes||[],artifacts:account.artifacts||[]};
- const hydrated=hydrateAccountPresets({...safe,accountPresets:[preset]})[0];
+ const contextual=preset.gameMode==='rta'?{...safe,units:safe.units.map(unit=>preset.equipment?.some(e=>Number(e.unitId)===Number(unit.id))?unit:{...unit,artifactIds:[]})}:safe;
+ const hydrated=hydrateAccountPresets({...contextual,accountPresets:[preset]})[0];
  const slots=Math.max(pveSlots(preset.gameMode,preset.dungeon)||GAME_MODES[preset.gameMode].slots,preset.unitIds.length);
  const configs=Array.from({length:slots},(_,index)=>{
   const member=hydrated.members[index];
   if(!member)return {...quickConfig(),enabled:false,missingUnitId:preset.unitIds[index]||null};
   const counts={};for(const r of member.runes)counts[r.set]=(counts[r.set]||0)+1;
   const sets=Object.entries(counts).flatMap(([id,n])=>Array(Math.floor(n/(FOUR.has(Number(id))?4:2))).fill(Number(id))).filter(id=>id!==25&&id!==99);
-  return {...quickConfig(member.master,member.name),unitId:member.id,enabled:true,autoSpeed:false,sourceRuneCount:member.runes.length,sets,strictSets:false,
+  const levels=skillLevels(member.skillLevels);
+  return {...quickConfig(member.master,member.name),unitId:member.id,enabled:true,autoSpeed:false,sourceRuneCount:member.runes.length,sourceMissing:preset.gameMode==='rta'&&!preset.equipment?.some(e=>Number(e.unitId)===Number(member.id))&&(safe.units.find(u=>Number(u.id)===Number(member.id))?.artifactIds||[]).length?['rta-artifact-assignment']:[],sets,strictSets:false,skillLevels:levels,skillLevelSource:levels.length?'swex':'unknown',
    manual:{base:{...member.base},sheet:{...member.sheetStats}},basis:'total',goals:{...member.sheetStats},
    snapshotArtifactEffects:structuredClone(artifactEffects(safe,member)),
    mains:Object.fromEntries([2,4,6].map(slot=>[slot,member.runes.find(r=>r.slot===slot)?.main?.[0]||0]))};

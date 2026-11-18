@@ -2,7 +2,8 @@ import {STATS,FOUR,DEFAULT_OPTIONS} from './data.js';
 import {generateCandidates,calculateStats,setCounts,artifactBonus} from './optimizer.js';
 import {artifactEffects} from './artifacts.js';
 import {quickCombatTeam} from './quick-calculator.js';
-import {combatAttributes,scenarioForTeam,simulateCombat} from './speedTuner.js';
+import {combatAttributes,scenarioForTeam,simulateCombat,gaugeStepForMode} from './speedTuner.js';
+import {automaticReferenceSpeed} from './quick-skill-effects.js';
 import {balanceProfile,balanceScales,weightedStatUtility,balanceLinkMode,balanceUnit,balanceInventory,balanceChecks,grantsTeamSpeedBuff} from './balance-profile.js';
 import {accountStamp} from './loadouts.js';
 const MAX_POOL=36,WIDTH=120,MAX_EVALUATIONS=600;
@@ -69,13 +70,13 @@ function candidatePools(ctx,progress){
 }
 export function balanceTiming(team,builds){
  const byKey=new Map(builds.map(b=>[b.key,b]));const configs=team.configs.filter(c=>c.enabled!==false&&byKey.has(c.key));
- const actors=configs.map(c=>{const b=byKey.get(c.key);return {key:c.key,master:c.masterId,name:c.label,spd:b.stats.combat.spd,rawSpd:b.stats.combat.rawSpd,combat:c.combat,effects:c.snapshotArtifactEffects||b.effects,attributes:b.stats.combat,will:(b.counts[15]||0)>=2,nemesisSets:Math.floor((b.counts[14]||0)/2)};});
+ const actors=configs.map(c=>{const b=byKey.get(c.key),placement=team.gamePlacement?.indexOf(c.key);return {key:c.key,...(placement>=0?{placementIndex:placement}:{}),master:c.masterId,name:c.label,spd:b.stats.combat.spd,rawSpd:b.stats.combat.rawSpd,combat:c.combat,effects:c.snapshotArtifactEffects||b.effects,attributes:b.stats.combat,will:(b.counts[15]||0)>=2,nemesisSets:Math.floor((b.counts[14]||0)/2)};});
  const configured=scenarioForTeam({...team,autoOpener:true,autoEnemyPassives:true},actors);
  // Buff-only openers are deliberately kept separate from guaranteed ATB boosts.
  for(const [index,c]of team.configs.entries())if(grantsTeamSpeedBuff(c.masterId)&&actors.some(a=>a.key===c.key)&&!configured.events.some(e=>e.enabled!==false&&e.afterKey===c.key&&e.type==='speed_buff'))configured.events.push({afterKey:c.key,type:'speed_buff',occurrence:1,targets:actors.map(a=>a.key),amount:0});
- const explicit=configured.actors.some(a=>a.enemy),reference=explicit?0:Number(team.enemyCombatSpd)||Math.max(1,(actors[0]?.spd||1)-1),automatic=!explicit&&!Number(team.enemyCombatSpd);
+ const explicit=configured.actors.some(a=>a.enemy),reference=explicit?0:Number(team.enemyCombatSpd)||automaticReferenceSpeed(actors[0]?.spd||1,team),automatic=!explicit&&!Number(team.enemyCombatSpd);
  const enemy=reference?[{key:'balance-reference',name:automatic?'Referência automática':'Defesa informada',spd:reference,enemy:true}]:[];
- const scenario=simulateCombat([...configured.actors,...enemy],{events:configured.events,stopAfterFirst:true,captureReadiness:true});
+ const scenario=simulateCombat([...configured.actors,...enemy],{events:configured.events,stopAfterFirst:true,captureReadiness:true,gaugeStep:gaugeStepForMode(team.gameMode,team.useRtaTickRate)});
  const turns=scenario.firstTurns.filter(t=>actors.some(a=>a.key===t.key)),order=configs.map(c=>c.key),orderMet=order.length===turns.length&&order.every((key,i)=>turns[i].key===key&&!turns[i].disabled);
  const links=configs.slice(1).map((c,i)=>{
   const a=configs[i],left=scenario.turns.findIndex(t=>t.key===a.key),right=scenario.turns.findIndex(t=>t.key===c.key),mode=balanceLinkMode(team,a.key,c.key);

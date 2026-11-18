@@ -8,4 +8,5 @@ import './components/OptimizerWorkspace.css';
 import './components/MotionTokens.css';
 import './components/AppMotion.css';
 import './components/AppearanceMenu.css';
+import './components/PremiumTactical.css';
 createRoot(document.getElementById('root')).render(<React.StrictMode><AppearanceRoot/><App/><AppMotion/></React.StrictMode>);

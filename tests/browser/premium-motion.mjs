@@ -20,14 +20,17 @@ async function mode(page,name){await page.locator('.appearance-menu>summary').cl
 try{
  let {context,page,errors}=await setup();await home(page);
  assert.equal(await page.locator('html').getAttribute('data-appearance'),'war');
- const entranceCount=await page.evaluate(()=>window.motionCalls.filter(id=>id.startsWith('swcc-home-')).length);assert.ok(entranceCount>=5);
- const card=page.locator('.portal-manual'),rect=await card.boundingBox();await page.mouse.move(rect.x+rect.width*.8,rect.y+rect.height*.4);
- await page.waitForFunction(()=>document.querySelector('.portal-manual[data-home-tilt]')?.style.getPropertyValue('--home-lift')==='1');
- assert.notEqual(await card.evaluate(el=>getComputedStyle(el).transform),'none');
+ const entranceCount=await page.evaluate(()=>window.motionCalls.filter(id=>id.startsWith('swcc-home-')).length);assert.equal(entranceCount,0,'Home cards do not require a cinematic entrance');
+ assert.equal(await page.locator('.home-modules>button').count(),5);assert.equal(await page.locator('.nav-primary>button').count(),5);
+ const sidebar=await page.locator('.sidebar').boundingBox(),workspace=await page.locator('.workspace').boundingBox();assert.ok(workspace.x>=sidebar.x+sidebar.width-1,'sidebar reserves its own width');
+ const card=page.locator('.portal-manual');await card.scrollIntoViewIfNeeded();const rect=await card.boundingBox();await page.mouse.move(rect.x+rect.width*.8,rect.y+rect.height*.4);await page.waitForTimeout(350);
+ assert.equal(await card.evaluate(el=>getComputedStyle(el).transform),'none');assert.equal(await page.locator('[data-home-tilt]').count(),0);
+ const afterHover=await card.boundingBox();assert.ok(Math.abs(afterHover.x-rect.x)<1&&Math.abs(afterHover.y-rect.y)<1,'independent Home cards remain stable on hover');
+ assert.equal(await page.locator('.app-motion-layer').evaluate(el=>getComputedStyle(el).pointerEvents),'none');
  const frames=await page.evaluate(()=>window.frameCount);await page.waitForTimeout(180);assert.equal(await page.evaluate(()=>window.frameCount),frames,'A settled hover must not keep a frame loop running');
- await page.screenshot({path:out+'/home-war.png'});await page.mouse.move(2,2);await page.waitForFunction(()=>!document.querySelector('[data-home-tilt]'));
+ await page.screenshot({path:out+'/home-war.png',fullPage:true});await page.mouse.move(2,2);
  await page.getByRole('button',{name:'Salvar dados na nuvem (Login/Criar Conta)',exact:true}).click();const email=page.getByRole('region',{name:'Entrar ou criar conta na nuvem',exact:true}).getByLabel('E-mail',{exact:true});await email.fill('motion@example.test');await email.hover();assert.equal(await page.locator('.portal-account[data-home-tilt]').count(),0);await page.getByRole('button',{name:'Fechar login',exact:true}).click();
- await mode(page,'Office');assert.equal(await page.locator('.portal-ambient>i').first().evaluate(el=>getComputedStyle(el).animationName),'none');
+ await mode(page,'Office');assert.equal(await page.locator('.portal-account').evaluate(el=>getComputedStyle(el).transform),'none');assert.equal(await page.locator('.portal-coupons').evaluate(el=>getComputedStyle(el).boxShadow),'none');
  assert.equal(await page.evaluate(()=>window.motionCalls.filter(id=>id.startsWith('swcc-home-')).length),entranceCount,'Minor state updates must not restart Home entrances');
  assert.equal(await page.evaluate(()=>localStorage.getItem('qa-preserve')),'original');await page.screenshot({path:out+'/home-office.png'});
  await page.reload();await page.getByRole('heading',{name:'Sua Central de Comando',exact:true}).waitFor();assert.equal(await page.locator('html').getAttribute('data-appearance'),'office');
@@ -35,12 +38,12 @@ try{
  await page.getByRole('button',{name:'Abrir Calculadora Livre',exact:true}).click();await page.getByRole('heading',{name:'Calculadora Livre',exact:true}).waitFor();assert.equal(await page.locator('html').getAttribute('data-appearance'),'office');
  await mode(page,'War');await page.getByRole('navigation',{name:'Navegação principal'}).getByRole('button',{name:'Início',exact:true}).click();await page.getByRole('heading',{name:'Sua Central de Comando',exact:true}).waitFor();
  await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>!document.querySelector('[data-home-tilt]')&&!document.querySelector('.app-motion-layer'));
- assert.equal(await page.locator('.portal-ambient>i').first().evaluate(el=>getComputedStyle(el).animationName),'none');assert.equal(await page.evaluate(()=>document.getAnimations().filter(a=>a.id.startsWith('swcc-')&&a.playState==='running').length),0);
- await page.emulateMedia({reducedMotion:'no-preference'});const box=await page.locator('.portal-manual').boundingBox();await page.mouse.move(box.x+30,box.y+30);await page.locator('.portal-manual[data-home-tilt]').waitFor();await page.emulateMedia({forcedColors:'active'});await page.waitForFunction(()=>!document.querySelector('[data-home-tilt]')&&!document.querySelector('.app-motion-layer'));
+ assert.equal(await page.locator('.portal-manual').evaluate(el=>getComputedStyle(el).animationName),'none');assert.equal(await page.evaluate(()=>document.getAnimations().filter(a=>a.id.startsWith('swcc-')&&a.playState==='running').length),0);
+ await page.emulateMedia({reducedMotion:'no-preference'});await card.scrollIntoViewIfNeeded();const box=await card.boundingBox();await page.mouse.move(box.x+30,box.y+30);await page.locator('.app-motion-layer').waitFor();assert.equal(await card.evaluate(el=>getComputedStyle(el).transform),'none');await page.emulateMedia({forcedColors:'active'});await page.waitForFunction(()=>!document.querySelector('[data-home-tilt]')&&!document.querySelector('.app-motion-layer'));
  assert.equal(await page.locator('vite-error-overlay').count(),0);assert.deepEqual(errors,[]);await context.close();
  for(const width of [390,320]){
   ({context,page,errors}=await setup({mobile:true,width}));await home(page);await page.getByRole('button',{name:'Copiar Código',exact:true}).tap();await page.getByRole('button',{name:'Copiado! ✓',exact:true}).waitFor();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),'PREMIUMQA');assert.equal(await page.locator('[data-home-tilt]').count(),0);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:out+`/mobile-${width}.png`});await mode(page,'Office');await page.getByRole('button',{name:'Abrir Calculadora Livre',exact:true}).tap();await page.getByRole('heading',{name:'Calculadora Livre',exact:true}).waitFor();const importButton=page.getByRole('button',{name:'Importar JSON',exact:true});assert.ok(await importButton.isVisible());const bounds=await importButton.boundingBox();assert.ok(bounds.x>=0&&bounds.x+bounds.width<=width);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:out+`/calculator-${width}.png`});assert.deepEqual(errors,[]);await context.close();
  }
- console.log('PASS: finite Home entrance, spring tilt with no idle RAF, neutral input editing, Office/War persistence isolated from account data, keyboard/Escape, live reduced-motion and forced-colors, touch feedback and 320/390px layout; original calculator/clipboard destinations, no runtime errors.');
-}finally{await browser.close();}
+ console.log('PASS: stable independent Home cards and non-overlay sidebar, decorative feedback with no idle RAF, neutral input editing, Office/War persistence isolated from account data, keyboard/Escape, live reduced-motion and forced-colors, touch feedback and 320/390px layout; original calculator/clipboard destinations, no runtime errors.');
+}catch(error){let index=0;for(const context of browser.contexts())for(const failedPage of context.pages())await failedPage.screenshot({path:`${out}/failure-${Date.now()}-${index++}.png`,fullPage:true}).catch(()=>{});throw error;}finally{await browser.close();}

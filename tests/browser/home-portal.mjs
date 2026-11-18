@@ -1,4 +1,4 @@
-// Original welcome screen, fake public endpoints; no real account or redemption.
+// Premium Home integration; synthetic public endpoints, no real account or redemption.
 import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
 import {existsSync} from 'node:fs';
@@ -13,11 +13,13 @@ try{
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
   await page.goto(origin+'/#/portal');await page.getByRole('heading',{name:'Sua Central de Comando',exact:true}).waitFor();await page.getByRole('button',{name:'Copiar Código',exact:true}).waitFor();
   await page.locator('.portal-guide>img').evaluate(img=>img.decode());assert.equal(await page.locator('.portal-guide>img').getAttribute('src'),'/art/portal-ciri.png');
-  assert.equal(await page.locator('.portal-shell').count(),1);assert.equal(await page.locator('.home-module-card,.home-services,.home-opening,.sidebar,.topbar').count(),0);assert.equal(await page.locator('vite-error-overlay').count(),0);
-  const bounds=await page.locator('.portal-grid').evaluate(root=>Object.fromEntries(['portal-guide','portal-glass','portal-coupons'].map(name=>[name,root.querySelector('.'+name).getBoundingClientRect().toJSON()])));
-  if(viewport.width>=768){assert.ok(bounds['portal-guide'].x<bounds['portal-glass'].x&&bounds['portal-glass'].x<bounds['portal-coupons'].x);for(const r of Object.values(bounds))assert.ok(r.top>=0&&r.bottom<=viewport.height&&r.right<=viewport.width);}
-  else {assert.ok(bounds['portal-guide'].y<bounds['portal-glass'].y&&bounds['portal-glass'].y<bounds['portal-coupons'].y);assert.ok(await page.locator('.portal-grid').evaluate(e=>e.scrollHeight>e.clientHeight));}
-  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${out}/welcome-${viewport.width}.png`});
+  assert.equal(await page.locator('.portal-shell.premium-tactical').count(),1);assert.equal(await page.locator('.sidebar,.topbar').count(),2);assert.equal(await page.locator('vite-error-overlay').count(),0);
+  assert.equal(await page.locator('.nav-primary>button').count(),5);assert.equal(await page.getByRole('navigation',{name:'Módulos principais'}).getByRole('button').count(),5);
+  const bounds=await page.locator('.premium-home').evaluate(root=>Object.fromEntries(['portal-guide','portal-account','portal-coupons'].map(name=>[name,root.querySelector('.'+name).getBoundingClientRect().toJSON()])));
+  if(viewport.width>700){assert.ok(bounds['portal-guide'].x<bounds['portal-account'].x);const sidebar=await page.locator('.sidebar').boundingBox(),workspace=await page.locator('.workspace').boundingBox();assert.ok(workspace.x>=sidebar.x+sidebar.width-1,'sidebar leaves room for Home');}
+  else {assert.ok(bounds['portal-guide'].y<bounds['portal-account'].y);assert.equal(await page.locator('.sidebar').isVisible(),false);}
+  assert.ok(bounds['portal-coupons'].y>=bounds['portal-account'].bottom);for(const r of Object.values(bounds))assert.ok(r.width>0&&r.height>0&&r.left>=0&&r.right<=viewport.width);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight>innerHeight));assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${out}/welcome-${viewport.width}.png`,fullPage:true});
   await page.getByRole('button',{name:'Salvar dados na nuvem (Login/Criar Conta)',exact:true}).click();const login=page.getByRole('region',{name:'Entrar ou criar conta na nuvem',exact:true});await login.waitFor();await login.getByLabel('E-mail',{exact:true}).fill('qa@example.test');assert.equal(await login.getByLabel('E-mail',{exact:true}).inputValue(),'qa@example.test');await page.getByRole('button',{name:'Fechar login',exact:true}).click();
   await page.getByRole('button',{name:'Copiar Código',exact:true}).click();await page.getByRole('button',{name:'Copiado! ✓',exact:true}).waitFor();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),code);
   const web=page.getByRole('link',{name:'Resgatar no Jogo',exact:true});assert.equal(await web.getAttribute('href'),'https://event.withhive.com/ci/smon/evt_coupon');assert.equal(await web.getAttribute('target'),'_blank');assert.match(await web.getAttribute('rel'),/noopener noreferrer/);let popupPromise=page.waitForEvent('popup');await web.click();let popup=await popupPromise;await popup.waitForLoadState();assert.equal(popup.url(),'https://event.withhive.com/ci/smon/evt_coupon');await popup.close();
@@ -29,5 +31,5 @@ try{
   }
   await context.close();
  }
- assert.deepEqual(errors,[]);console.log('PASS: original welcome screen with Ciri, calculator/SWEX/cloud login and coupons together; full desktop columns, accessible mobile stack, clipboard and external destinations, original file picker/Worker, calculator route and refresh; no runtime errors.');
-}finally{await browser.close();}
+ assert.deepEqual(errors,[]);console.log('PASS: premium Home with Ciri, calculator/SWEX/cloud login and coupons together; independent scrolling cards, five primary destinations, non-overlay desktop sidebar and accessible mobile stack, clipboard and external destinations, original file picker/Worker, calculator route and refresh; no runtime errors.');
+}catch(error){let index=0;for(const context of browser.contexts())for(const failedPage of context.pages())await failedPage.screenshot({path:`${out}/failure-${Date.now()}-${index++}.png`,fullPage:true}).catch(()=>{});throw error;}finally{await browser.close();}

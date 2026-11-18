@@ -284,3 +284,11 @@ gemas/grinds compatíveis, lacunas e shortlist. Saldos de 800/200 são planejame
 manual, sem consumo ou probabilidade prometida. Reimporte o SWEX para recuperar
 a raridade original que versões anteriores não preservavam.
 [Critérios, fórmula própria, dados e limitações](docs/RUNE_INTELLIGENCE.md).
+
+### Calculadora de Velocidade V2 (branch de revisão)
+
+A Calculadora Livre conta com visual Premium V2, alternância para a versão clássica sem perder valores, seleção direta entre SPD de runas e prontidão por tick e verificação de sincronia a partir de um time do otimizador. O retorno das metas de SPD é explícito e preserva equipamentos e demais configurações. Veja uso, limites matemáticos, arquivos e evidências em [docs/CALCULADORA_V2.md](docs/CALCULADORA_V2.md). Esta branch está configurada para não gerar deploy automático.
+
+### Speed Tuning 2.0 (revisão)
+
+A calculadora agora separa catálogo e cópias SWEX, verifica a primeira rotação em Sincronia/Inimigo/Ticks e compartilha parâmetros sanitizados. Níveis conhecidos, referência quase empatada e posições físicas são explícitos; mecânicas não modeladas e RTA permanecem identificados como limitados. [Uso, comparações com a referência, arquivos, testes e screenshots](docs/SPEED_TUNING_2.md). Sem merge na main ou deploy nesta entrega.

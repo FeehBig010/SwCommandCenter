@@ -63,3 +63,7 @@
 @media(min-width:701px){.optimizer-team-row{min-height:54px}}
 .optimizer-list-empty{padding:16px 0;color:#8395a7;font-size:12px}
 .optimizer-dialog-header>div{min-width:0}.optimizer-dialog-header h2{overflow-wrap:anywhere}
+/* The explicit calculator handoff stays beside the existing rune action. */
+@media(min-width:1151px){.optimizer-list-columns,.optimizer-team-row{grid-template-columns:minmax(125px,1fr) 112px minmax(220px,2.2fr) 130px 285px}}
+@media(min-width:901px) and (max-width:1150px){.optimizer-list-columns,.optimizer-team-row{grid-template-columns:minmax(100px,1fr) 96px minmax(150px,1.5fr) 105px 170px}.optimizer-row-actions{flex-wrap:wrap;justify-content:flex-end}.optimizer-row-actions .button{font-size:10px;padding-inline:5px}}
+@media(min-width:701px) and (max-width:900px){.optimizer-list-columns,.optimizer-team-row{grid-template-columns:minmax(90px,1fr) 94px minmax(140px,1.6fr) 100px 76px}.optimizer-row-actions{gap:5px}}

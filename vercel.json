@@ -4,5 +4,12 @@
       "includeFiles": "node_modules/@sparticuz/chromium/bin/**",
       "maxDuration": 60
     }
+  },
+  "git": {
+    "deploymentEnabled": {
+      "feature/calculadora-v2": false,
+      "feature/swcc-premium-tactical-v1": false,
+      "feature/speed-tuning-calculator-2": false
+    }
   }
 }
