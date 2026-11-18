@@ -4,5 +4,10 @@
       "includeFiles": "node_modules/@sparticuz/chromium/bin/**",
       "maxDuration": 60
     }
+  },
+  "git": {
+    "deploymentEnabled": {
+      "feature/calculadora-v2": false
+    }
   }
 }
