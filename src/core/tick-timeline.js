@@ -23,7 +23,7 @@ export function tickTimeline(preview){
 
 import {minimumSpeedForTick,NATURAL_GAUGE_STEP,RTA_GAUGE_STEP} from './speedTuner.js';
 
-export function tickCardsFromPreview(preview,{maxTicks=24}={}){
+export function tickCardsFromPreview(preview,{maxTicks=120}={}){
  if(!preview?.complete||!preview?.scenario)return {synced:false,cut:null,statusMessage:'Selecione os monstros para simular os ticks.',cards:[]};
  const snapshots=preview.scenario.tickSnapshots||[];
  const turns=preview.turns||[];
@@ -32,12 +32,12 @@ export function tickCardsFromPreview(preview,{maxTicks=24}={}){
  const firstAllyTurns=turns.filter(t=>!t.enemy).map(t=>t.key);
  const inOrder=allyKeys.every((k,idx)=>firstAllyTurns[idx]===k);
  const cut=preview.cut===true;
- const synced=!cut&&inOrder;
- const statusMessage=synced
-  ?'✅ Sincronizado Perfeitamente! O time fluirá na ordem exata e o inimigo não conseguirá cortar.'
-  :cut
-  ?'⚠️ Atenção: O inimigo corta a sequência do seu time antes de todos jogarem!'
-  :'⚠️ Atenção: Os aliados estão fora da ordem de turno esperada.';
+ const synced=!preview.partial&&preview.cut===false&&inOrder&&!turns.some(t=>t.disabled||t.skipped);
+ const statusMessage=preview.partial?'Cenário parcial: somente os monstros selecionados foram simulados.'
+  :synced?'Ordem preservada contra a referência simulada; não garante segurança contra outras defesas.'
+  :cut?'Interrupção observada no cenário. Consulte os turnos e eventos.'
+  :inOrder?'Ordem observada, sem referência suficiente para avaliar cortes.'
+  :'Aliados fora da ordem de turno esperada.';
  const lastFirstTurnTick=Math.max(1,...turns.map(t=>Number(t.tick)||1));
  const limit=Math.min(maxTicks,Math.max(lastFirstTurnTick,snapshots.length));
  const cards=snapshots.slice(0,limit).map(snap=>({
@@ -50,6 +50,7 @@ export function tickCardsFromPreview(preview,{maxTicks=24}={}){
    name:b.name,
    master:b.master,
    spd:b.spd,
+   spdPost:b.spdPost??b.spd,
    enemy:!!b.enemy,
    atb:Number(b.atb||0),
    atbPost:Number(b.atbPost||0),
@@ -57,7 +58,8 @@ export function tickCardsFromPreview(preview,{maxTicks=24}={}){
    dead:!!b.dead
   }))
  }));
- return {synced,cut,inOrder,statusMessage,cards};
+ const events=preview.scenario.log||[];for(const card of cards)card.events=events.filter(e=>e.tick===card.tick);
+ return {synced,cut,inOrder,statusMessage,cards,truncated:preview.scenario.captureTruncated===true||snapshots.length>limit};
 }
 
 export function tickBreakpointsTable({gaugeStep=NATURAL_GAUGE_STEP,maxTick=20,initialAtb=0}={}){

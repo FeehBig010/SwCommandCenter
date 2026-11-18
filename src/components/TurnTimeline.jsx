@@ -2,6 +2,7 @@ import MotionValue from './MotionValue';
 import {useId} from 'react';
 import MonsterPortrait from './MonsterPortrait';
 import {tickTimeline,tickCardsFromPreview} from '../core/tick-timeline';
+import {COMBAT_EVENTS} from '../core/speedTuner';
 import './TickTimeline.css';
 
 export default function TurnTimeline({preview,showTickCards=true}){
@@ -30,13 +31,15 @@ export default function TurnTimeline({preview,showTickCards=true}){
      </header>
      <ul className="peanuts-tick-bars-list">
       {card.bars.map(b=><li key={b.key} className={`peanuts-tick-bar-row ${b.enemy?'is-enemy':'is-ally'} ${b.acted?'is-acting':''}`}>
-       <span className="peanuts-bar-name">{b.name} <small>({b.spd} SPD)</small></span>
+       <span className="peanuts-bar-name">{b.name} <small>({Number(b.spd.toFixed(2))} SPD{b.spdPost!==b.spd?` → ${Number(b.spdPost.toFixed(2))}`:''})</small></span>
        <span className="peanuts-bar-value">{b.atb.toFixed(1)}%</span>
        <div className="peanuts-bar-track"><div className="peanuts-bar-fill" style={{width:`${Math.min(100,Math.max(0,b.atb))}%`}}/></div>
       </li>)}
      </ul>
+     {!!card.events?.length&&<div className="peanuts-tick-events"><strong>Eventos resolvidos</strong>{card.events.map((event,i)=><p key={i}>{preview.actors?.find(a=>a.key===event.source)?.name||'Cenário'} · {COMBAT_EVENTS[event.type]||event.type}{event.type==='buffs'?` · ${event.amount} buffs`:['boost','reduce','tiana','damage','heal','leo_attack'].includes(event.type)&&event.amount!=null?` · ${event.amount}%`:event.type==='speed_buff'?' · +30% antes dos ajustes de artefatos':event.type==='slow'?' · −30%':''}</p>)}</div>}
     </div>)}
    </div>
+   {peanuts.truncated&&<p role="status">A captura alcançou o limite de ticks. Consulte a régua de primeiras ações; a lista não representa todo o combate.</p>}
   </div>}
  </div>;
 }

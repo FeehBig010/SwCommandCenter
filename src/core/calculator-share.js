@@ -61,3 +61,9 @@ export function decodeCalculatorShare(payload){
  const leader=safe.leaderMasterId?catalogLeader(safe.leaderMasterId):null;
  return {...team,...safe,speedMode:'snapshot',customTowerSpd:true,name:'Configuração compartilhada',configs,gamePlacement:safe.gamePlacement.map(i=>configs[i].key),leader,leaderIndex:safe.leaderIndex??0,leaderKey:leader?configs[safe.leaderIndex].key:null,...(safe.enemyReference?{enemyReference:{...safe.enemyReference,label:monsterRecord(safe.enemyReference.masterId).name}}:{}),combatScenario:{...safe.combatScenario,enemies:safe.combatScenario.enemies.map(e=>({...e,label:monsterRecord(e.master)?.name||'Inimigo'}))}};
 }
+
+export function calculatorShareUrl(team,baseUrl){
+ const url=new URL(baseUrl);if(!['https:','http:'].includes(url.protocol))fail();
+ url.username='';url.password='';url.search='';url.hash='/quick';
+ url.searchParams.set('calc',encodeCalculatorShare(team));return url.href;
+}

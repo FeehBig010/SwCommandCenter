@@ -12,7 +12,7 @@ for(const [area,count] of [['siege',3],['arena',4],['cairos',5],['rta',4],['rift
 test('every SWEX area preserves native size, leader, equipped sheet and original speed order',()=>{
  const account=quickPresetAccount(),before=structuredClone(account),hydrated=hydrateAccountPresets(account);
  for(const [index,preset]of account.accountPresets.entries()){
-  const team=quickTeamFromPreset(preset,account),next=autoTuneQuickTeam(team),expected=hydrated[index];
+  const team=quickTeamFromPreset(preset,account),next=autoTuneQuickTeam(team),expected=preset.gameMode==='rta'&&!preset.equipment?hydrateAccountPresets({...account,units:account.units.map(u=>({...u,artifactIds:[]}))})[index]:hydrated[index];
   assert.equal(team.configs.length,expected.unitIds.length);assert.equal(team.speedMode,'snapshot');assert.equal(quickOrderLocked(team),false);assert.equal(team.leaderIndex,preset.leaderIndex);
   assert.equal(team.sourceDeckId,preset.id);assert.equal(team.sourceAccountId,account.id);
   for(let slot=0;slot<team.configs.length;slot++){

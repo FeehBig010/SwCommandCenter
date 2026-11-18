@@ -46,6 +46,7 @@ export function quickOrderLocked(team){return !['snapshot','free'].includes(team
 export function autoTuneQuickTeam(input){
  if(input.includePartial&&input.configs.some(c=>!c.masterId||c.enabled===false)){
   const active=input.configs.filter(c=>c.masterId&&c.enabled!==false);
+  if(active.length===1&&active[0].tickTarget!=null)return resolveQuickTickTargets(input);
   if(active.length<2)return {...quickCombatTeam(input),syncAudit:null,automaticSync:active.length?automaticSyncStrategy({...input,configs:active}):null};
   // Compact only the private solver input. References in the public plan retain
   // their physical ally:N slots, including holes, when the results are merged.
