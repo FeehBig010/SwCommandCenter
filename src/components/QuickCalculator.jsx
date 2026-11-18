@@ -34,7 +34,7 @@ import TeamCardExport from './TeamCardExport';
 import InfoTooltip from './InfoTooltip';
 import './QuickCalculator.css';
 import './QuickBalance.css';
-const AREAS=[['arena','Arena',4],['siege','Siege',3],['rta','RTA',4],['cairos','Cairos',5]];
+const AREAS=[['arena','Arena',4],['siege','Siege',3],['cairos','Cairos',5],['rta','RTA',4]];
 const ELEMENT_FILES={1:'water',2:'fire',3:'wind',4:'light',5:'dark'};
 const choices=MONSTER_CATALOG.map(u=>({...u,value:String(u.master)}));
 const AUTO={siege:['Mihyang','Anavel','Solveig'],arena:['Moore','Chiwu','Galleon','Lushen'],rta:['Moore','Chiwu','Galleon','Lushen'],cairos:['Julie','Shaina','Kyle','Liam','Konamiya']};
