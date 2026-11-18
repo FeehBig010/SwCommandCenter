@@ -7,9 +7,12 @@
   },
   "git": {
     "deploymentEnabled": {
+      "main": true,
       "feature/calculadora-v2": false,
       "feature/swcc-premium-tactical-v1": false,
-      "feature/speed-tuning-calculator-2": false
+      "feature/swcc-premium-tactical-v1-review": false,
+      "feature/speed-tuning-calculator-2": false,
+      "release/calculator-2-integration": false
     }
   }
 }
