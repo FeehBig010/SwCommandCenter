@@ -46,7 +46,8 @@ export default function AppMotion(){
   let app,main,frame=0,discoverFrame=0,lastPointer,surface;
   const hideLight=()=>{lastPointer=undefined;if(light.current)light.current.dataset.visible='false';surface=null;};
   function discover(){
-   discoverFrame=0;const next=host.querySelector('.app-shell');
+   discoverFrame=0;if(surface&&!surface.isConnected)hideLight();
+   const next=host.querySelector('.app-shell');
    if(app!==next){appChanges.disconnect();app=next;if(app)appChanges.observe(app,{childList:true});}
    const nextMain=app?.querySelector('main');
    if(main!==nextMain){mainChanges.disconnect();main=nextMain;if(main)mainChanges.observe(main,{childList:true});}
@@ -63,7 +64,7 @@ export default function AppMotion(){
    const card=target.closest(SURFACES),element=light.current;
    if(!card||!element||!card.closest('.app-shell')){hideLight();return;}
    const bounds=card.getBoundingClientRect();
-   if(surface!==card){element.style.borderRadius=getComputedStyle(card).borderRadius;surface=card;}
+   if(surface!==card){const r=getComputedStyle(card).borderRadius;element.style.borderRadius=!r||r==='0px'?'10px':r;surface=card;}
    element.style.setProperty('--surface-x',`${bounds.left}px`);element.style.setProperty('--surface-y',`${bounds.top}px`);
    element.style.setProperty('--surface-width',`${bounds.width}px`);element.style.setProperty('--surface-height',`${bounds.height}px`);
    element.style.setProperty('--cursor-x',`${event.clientX-bounds.left}px`);element.style.setProperty('--cursor-y',`${event.clientY-bounds.top}px`);
@@ -81,11 +82,11 @@ export default function AppMotion(){
   const leave=event=>{if(!event.relatedTarget)hideLight();};
   const visibility=()=>{if(document.hidden){hideLight();setRipples([]);}};
   document.addEventListener('focusin',scheduleDiscovery);document.addEventListener('pointermove',move,{passive:true});document.addEventListener('pointerout',leave,{passive:true});document.addEventListener('click',click,true);
-  document.addEventListener('scroll',hideLight,{capture:true,passive:true});document.addEventListener('visibilitychange',visibility);window.addEventListener('resize',hideLight,{passive:true});pointer.addEventListener('change',hideLight);
+  document.addEventListener('scroll',hideLight,{capture:true,passive:true});document.addEventListener('visibilitychange',visibility);window.addEventListener('resize',hideLight,{passive:true});window.addEventListener('hashchange',hideLight);window.addEventListener('popstate',hideLight);pointer.addEventListener('change',hideLight);
   return()=>{
    cancelAnimationFrame(frame);cancelAnimationFrame(discoverFrame);rootChanges.disconnect();appChanges.disconnect();mainChanges.disconnect();hideLight();
    document.removeEventListener('focusin',scheduleDiscovery);document.removeEventListener('pointermove',move);document.removeEventListener('pointerout',leave);document.removeEventListener('click',click,true);
-   document.removeEventListener('scroll',hideLight,true);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('resize',hideLight);pointer.removeEventListener('change',hideLight);
+   document.removeEventListener('scroll',hideLight,true);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('resize',hideLight);window.removeEventListener('hashchange',hideLight);window.removeEventListener('popstate',hideLight);pointer.removeEventListener('change',hideLight);
   };
  },[reduced]);
  if(reduced)return null;

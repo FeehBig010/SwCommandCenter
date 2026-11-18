@@ -9,19 +9,19 @@
  --motion-stagger-duration:60ms;
  --motion-ease:cubic-bezier(.22,1,.36,1);
  --motion-ease-spring:cubic-bezier(.16,1.04,.28,1);
- --motion-gold:#d4af37;
- --motion-light-rgb:223 191 121;
- --motion-spot-alpha:.10;
- --motion-nav-fill:#d4af3720;
- --motion-nav-edge:#d4af3738;
- --home-tilt-angle:1.6deg;
- --home-edge-alpha:.22;
+ --motion-gold:#dfc07c;
+ --motion-light-rgb:235 208 148;
+ --motion-spot-alpha:.065;
+ --motion-nav-fill:rgba(223,192,124,.13);
+ --motion-nav-edge:rgba(223,192,124,.30);
+ --home-tilt-angle:1.4deg;
+ --home-edge-alpha:.20;
 }
 :root[data-appearance=office]{
- --motion-light-rgb:183 198 214;
- --motion-spot-alpha:.045;
- --motion-nav-fill:#a3b4c514;
- --motion-nav-edge:#a3b4c52b;
+ --motion-light-rgb:190 206 224;
+ --motion-spot-alpha:.04;
+ --motion-nav-fill:rgba(176,196,216,.10);
+ --motion-nav-edge:rgba(176,196,216,.22);
  --home-tilt-angle:.45deg;
  --home-edge-alpha:.09;
 }
