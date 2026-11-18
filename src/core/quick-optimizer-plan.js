@@ -7,10 +7,11 @@ import {artifactEffects} from './artifacts.js';
 import {arenaContextOf} from './arena-context.js';
 import {siegeAccountTimeline} from './siege-timeline.js';
 import {quickConfig} from './quick-calculator.js';
+import {skillLevels} from './skill-levels.js';
 
 const members=team=>team.configs.map(c=>({key:c.key,unitId:c.unitId,masterId:c.masterId,enabled:c.enabled!==false}));
 const context=team=>({gameMode:team.gameMode,mode:team.mode,arenaContext:team.arenaContext,dungeon:team.dungeon,leader:team.leader,leaderKey:team.leaderKey,towerSpd:team.towerSpd,guildSpd:team.guildSpd,leaderSpd:team.leaderSpd,enemyCombatSpd:team.enemyCombatSpd,combatScenario:team.combatScenario,enemyDefense:team.enemyDefense,arenaScenario:team.arenaScenario,useRtaTickRate:team.useRtaTickRate,
- configs:team.configs.map(c=>({key:c.key,sets:c.sets,combat:c.combat,artifacts:c.artifacts,firstTurnSkillSlot:c.firstTurnSkillSlot,fullSkill:c.fullSkill,skillBoostBonus:c.skillBoostBonus})).sort((a,b)=>String(a.key).localeCompare(String(b.key)))});
+ configs:team.configs.map(c=>({key:c.key,sets:c.sets,combat:c.combat,artifacts:c.artifacts,skillLevels:c.skillLevels,firstTurnSkillSlot:c.firstTurnSkillSlot,fullSkill:c.fullSkill,skillBoostBonus:c.skillBoostBonus})).sort((a,b)=>String(a.key).localeCompare(String(b.key)))});
 const sourceContext=team=>JSON.stringify({members:members(team),leaderIndex:team.leaderIndex,sourceDeckId:team.sourceDeckId,sourceAccountId:team.sourceAccountId,plannedRunes:team.plannedRunes,context:context(team)});
 
 export function activeSyncHandoff(handoff,account){return account&&handoff?.accountStamp===accountStamp(account)?handoff:null;}
@@ -33,7 +34,8 @@ export function optimizerSyncHandoff(input,account,options={},builds=null){
   build.runeIds.forEach(id=>usedRunes.add(id));
   byConfig[c.key]=[...build.runeIds];
   const sets=Object.entries(build.counts||{}).flatMap(([id,n])=>Array(Math.floor(n/(FOUR.has(Number(id))?4:2))).fill(Number(id))).filter(id=>id!==25&&id!==99);
-  return {...c,autoSpeed:false,tickTarget:null,sets,manual:{base:{...unit.base},sheet:{...build.stats.total}},snapshotArtifactEffects:artifactEffects(snapshot,unit,options.artifacts!==false&&c.artifacts!==false)};
+  const levels=skillLevels(unit.skillLevels);
+  return {...c,autoSpeed:false,tickTarget:null,sets,skillLevels:levels,skillLevelSource:levels.length?'swex':'unknown',manual:{base:{...unit.base},sheet:{...build.stats.total}},snapshotArtifactEffects:artifactEffects(snapshot,unit,options.artifacts!==false&&c.artifacts!==false)};
  });
  // Reuse the same Siege reference resolution as the originating row. Only
  // actors with measured/derived speed become simulated enemies; deadlines and

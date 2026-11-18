@@ -6,6 +6,7 @@ import {PVE_STAGES,pveSlots,canonicalPveStage} from './pve-stages.js';
 import {arenaContextOf,ARENA_CONTEXTS} from './arena-context.js';
 import {artifactEffects} from './artifacts.js';
 import {accountStamp} from './loadouts.js';
+import {skillLevels} from './skill-levels.js';
 
 export const QUICK_AREA_LABELS={siege:'Siege / GvG',arena:'Arena',rta:'RTA',cairos:'Cairos',dimensional:'Dimensional',rift:'Rift / R5',toa:'ToA',solo:'Solo'};
 export function quickPresetArea(preset){
@@ -33,7 +34,8 @@ export function quickTeamFromPreset(preset,account){
   if(!member)return {...quickConfig(),enabled:false,missingUnitId:preset.unitIds[index]||null};
   const counts={};for(const r of member.runes)counts[r.set]=(counts[r.set]||0)+1;
   const sets=Object.entries(counts).flatMap(([id,n])=>Array(Math.floor(n/(FOUR.has(Number(id))?4:2))).fill(Number(id))).filter(id=>id!==25&&id!==99);
-  return {...quickConfig(member.master,member.name),unitId:member.id,enabled:true,autoSpeed:false,sourceRuneCount:member.runes.length,sets,strictSets:false,
+  const levels=skillLevels(member.skillLevels);
+  return {...quickConfig(member.master,member.name),unitId:member.id,enabled:true,autoSpeed:false,sourceRuneCount:member.runes.length,sets,strictSets:false,skillLevels:levels,skillLevelSource:levels.length?'swex':'unknown',
    manual:{base:{...member.base},sheet:{...member.sheetStats}},basis:'total',goals:{...member.sheetStats},
    snapshotArtifactEffects:structuredClone(artifactEffects(safe,member)),
    mains:Object.fromEntries([2,4,6].map(slot=>[slot,member.runes.find(r=>r.slot===slot)?.main?.[0]||0]))};
