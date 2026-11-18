@@ -10,8 +10,8 @@ import {quickConfig} from './quick-calculator.js';
 import {skillLevels} from './skill-levels.js';
 
 const members=team=>team.configs.map(c=>({key:c.key,unitId:c.unitId,masterId:c.masterId,enabled:c.enabled!==false}));
-const context=team=>({gameMode:team.gameMode,mode:team.mode,arenaContext:team.arenaContext,dungeon:team.dungeon,leader:team.leader,leaderKey:team.leaderKey,towerSpd:team.towerSpd,guildSpd:team.guildSpd,leaderSpd:team.leaderSpd,enemyCombatSpd:team.enemyCombatSpd,combatScenario:team.combatScenario,enemyDefense:team.enemyDefense,arenaScenario:team.arenaScenario,useRtaTickRate:team.useRtaTickRate,
- configs:team.configs.map(c=>({key:c.key,sets:c.sets,combat:c.combat,artifacts:c.artifacts,skillLevels:c.skillLevels,firstTurnSkillSlot:c.firstTurnSkillSlot,fullSkill:c.fullSkill,skillBoostBonus:c.skillBoostBonus})).sort((a,b)=>String(a.key).localeCompare(String(b.key)))});
+const context=team=>({gameMode:team.gameMode,mode:team.mode,arenaContext:team.arenaContext,dungeon:team.dungeon,leader:team.leader,leaderKey:team.leaderKey,towerSpd:team.towerSpd,guildSpd:team.guildSpd,leaderSpd:team.leaderSpd,enemyCombatSpd:team.enemyCombatSpd,combatScenario:team.combatScenario,enemyDefense:team.enemyDefense,arenaScenario:team.arenaScenario,useRtaTickRate:team.useRtaTickRate,referencePolicy:team.referencePolicy,gamePlacement:team.gamePlacement,
+ configs:team.configs.map(c=>({key:c.key,sets:c.sets,combat:c.combat,artifacts:c.artifacts,skillLevels:c.skillLevels,firstTurnSkillSlot:c.firstTurnSkillSlot,firstTurnSkillLevel:c.firstTurnSkillLevel,skillupProfile:c.skillupProfile,fullSkill:c.fullSkill,skillBoostBonus:c.skillBoostBonus})).sort((a,b)=>String(a.key).localeCompare(String(b.key)))});
 const sourceContext=team=>JSON.stringify({members:members(team),leaderIndex:team.leaderIndex,sourceDeckId:team.sourceDeckId,sourceAccountId:team.sourceAccountId,plannedRunes:team.plannedRunes,context:context(team)});
 
 export function activeSyncHandoff(handoff,account){return account&&handoff?.accountStamp===accountStamp(account)?handoff:null;}
