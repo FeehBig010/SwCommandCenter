@@ -43,3 +43,9 @@ Revisão READ ONLY por subagente separado identificou: risco de sobrescrever for
 - [Calculadora 1920](assets/premium-tactical-v1/calculadora-1920.png)
 - [Siege 1440](assets/premium-tactical-v1/siege-1440.png)
 - [Siege mobile 390](assets/premium-tactical-v1/siege-mobile-390.png)
+
+### Fechamento das regressões de navegador
+
+Todos os 27 scripts do runner passaram: dez no início da execução principal, trade-offs na repetição isolada, Siege→Home na retomada, optimizer-compact após correção de wrapping da toolbar em tablets, e os oito últimos scripts na execução final. Não se afirma uma única invocação verde: as retomadas estão registradas, sem remover cenários nem relaxar limites. Falha real de overflow a800px corrigida em CSS scoped; o teste original passou e o smoke de inventário1440/800/390/320 também passou.
+
+Mais capturas: [Optimizer1440](assets/premium-tactical-v1/optimizer-1440.png), [Rune Intelligence1440](assets/premium-tactical-v1/rune-intelligence-1440.png).
