@@ -1,9 +1,33 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-18T03:41:59.411Z",
+  "fetchedAt": "2026-11-18T12:59:45.307Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/notice/313/96621",
+      "url": "https://www.withhive.com/notice/313/96621",
+      "title": "[Summoners War] Game Known Issues and Measures Notice (Content Added)",
+      "category": "notice",
+      "publishedAt": "2026-11-18T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
+    {
+      "id": "https://www.withhive.com/notice/313/96618",
+      "url": "https://www.withhive.com/notice/313/96618",
+      "title": "[Summoners War] v9.4.0 Update Notice",
+      "category": "update",
+      "publishedAt": "2026-11-18T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
+    {
+      "id": "https://www.withhive.com/notice/313/96617",
+      "url": "https://www.withhive.com/notice/313/96617",
+      "title": "[Summoners War] v9.4.0 Auto Update Notice",
+      "category": "update",
+      "publishedAt": "2026-11-18T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
     {
       "id": "https://www.withhive.com/notice/313/96511",
       "url": "https://www.withhive.com/notice/313/96511",
