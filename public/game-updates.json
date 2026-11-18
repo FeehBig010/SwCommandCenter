@@ -1,8 +1,8 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-17T21:47:19.003Z",
-  "partial": true,
+  "fetchedAt": "2026-11-18T03:41:59.411Z",
+  "partial": false,
   "items": [
     {
       "id": "https://www.withhive.com/notice/313/96511",
@@ -33,7 +33,7 @@
       "url": "https://www.withhive.com/event/313/96401",
       "title": "November Hall of Heroes - [4★ Light Rick]",
       "category": "event",
-      "publishedAt": null,
+      "publishedAt": "2026-11-11T00:00:00.000Z",
       "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261110/6ff852342856d9bc41ffafa115db5a51.jpg"
     },
     {
@@ -73,7 +73,7 @@
       "url": "https://www.withhive.com/event/313/96273",
       "title": "Secret Dungeon for 3★ [Imp Champion] (Fire) Open!",
       "category": "event",
-      "publishedAt": null,
+      "publishedAt": "2026-11-05T00:00:00.000Z",
       "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261103/cb838a08e26add69b693a5e699ac7ec3.jpg"
     },
     {
