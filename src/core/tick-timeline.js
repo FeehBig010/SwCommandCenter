@@ -19,3 +19,63 @@ export function tickTimeline(preview){
  }
  return {start,end,count:end-start+1,cells,unallocated:[...actors.values()].filter(a=>!allocated.has(a.key))};
 }
+
+
+import {minimumSpeedForTick,NATURAL_GAUGE_STEP,RTA_GAUGE_STEP} from './speedTuner.js';
+
+export function tickCardsFromPreview(preview,{maxTicks=24}={}){
+ if(!preview?.complete||!preview?.scenario)return {synced:false,cut:null,statusMessage:'Selecione os monstros para simular os ticks.',cards:[]};
+ const snapshots=preview.scenario.tickSnapshots||[];
+ const turns=preview.turns||[];
+ const allyActors=(preview.actors||[]).filter(a=>!a.enemy);
+ const allyKeys=allyActors.map(a=>a.key);
+ const firstAllyTurns=turns.filter(t=>!t.enemy).map(t=>t.key);
+ const inOrder=allyKeys.every((k,idx)=>firstAllyTurns[idx]===k);
+ const cut=preview.cut===true;
+ const synced=!cut&&inOrder;
+ const statusMessage=synced
+  ?'✅ Sincronizado Perfeitamente! O time fluirá na ordem exata e o inimigo não conseguirá cortar.'
+  :cut
+  ?'⚠️ Atenção: O inimigo corta a sequência do seu time antes de todos jogarem!'
+  :'⚠️ Atenção: Os aliados estão fora da ordem de turno esperada.';
+ const lastFirstTurnTick=Math.max(1,...turns.map(t=>Number(t.tick)||1));
+ const limit=Math.min(maxTicks,Math.max(lastFirstTurnTick,snapshots.length));
+ const cards=snapshots.slice(0,limit).map(snap=>({
+  tick:snap.tick,
+  actingKey:snap.actingKey,
+  actingName:snap.actingName,
+  actingEnemy:snap.actingEnemy,
+  bars:(snap.bars||[]).map(b=>({
+   key:b.key,
+   name:b.name,
+   master:b.master,
+   spd:b.spd,
+   enemy:!!b.enemy,
+   atb:Number(b.atb||0),
+   atbPost:Number(b.atbPost||0),
+   acted:!!b.acted,
+   dead:!!b.dead
+  }))
+ }));
+ return {synced,cut,inOrder,statusMessage,cards};
+}
+
+export function tickBreakpointsTable({gaugeStep=NATURAL_GAUGE_STEP,maxTick=20,initialAtb=0}={}){
+ const step=Number(gaugeStep)===RTA_GAUGE_STEP?RTA_GAUGE_STEP:NATURAL_GAUGE_STEP;
+ const maxT=Math.max(1,Math.min(60,Math.floor(Number(maxTick)||20)));
+ const atb=Math.max(0,Math.min(99,Number(initialAtb)||0));
+ const rows=[];
+ for(let tick=1;tick<=maxT;tick++){
+  const minCombatSpd=minimumSpeedForTick(tick,atb,step);
+  const nextTickSpd=tick<maxT?minimumSpeedForTick(tick+1,atb,step):1;
+  rows.push({
+   tick,
+   gaugeStep:step,
+   initialAtb:atb,
+   minCombatSpd,
+   maxCombatSpd:tick===1?999:Math.max(minCombatSpd,minimumSpeedForTick(tick-1,atb,step)-1),
+   nextTickFloor:nextTickSpd
+  });
+ }
+ return rows;
+}

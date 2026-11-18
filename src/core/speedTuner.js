@@ -18,7 +18,9 @@ export function boostedFollowerMinimum(combatSpd,boost=30){
 export function automaticSyncStrategy(team){
  const first=team.configs?.[0];if(!first?.masterId)return {kind:'pending',boost:0};
  const skill=monsterOpener(first.masterId);
- return skill?{kind:'boost',...skill}:{kind:'strict',boost:0};
+ if(skill&&first.firstTurnSkillSlot!=null&&Number(first.firstTurnSkillSlot)!==Number(skill.slot||3))return {kind:'strict',boost:0};
+ const bonus=skill&&Number.isFinite(Number(first.skillBoostBonus))?Number(first.skillBoostBonus):0;
+ return skill?{kind:'boost',...skill,boost:Math.min(100,Number(skill.boost||0)+bonus)}:{kind:'strict',boost:0};
 }
 export function normalizeCombat(raw={}){const result={speedBuff:raw.speedBuff===true,slow:raw.slow===true,disabled:raw.disabled===true,oblivion:raw.oblivion===true,hpPercent:number(raw.hpPercent,100,0,100,'HP'),buffCount:number(raw.buffCount,0,0,100,'Buffs'),mashaStacks:number(raw.mashaStacks,0,0,5,'Stacks Masha'),targetTick:number(raw.targetTick,0,0,10000,'Tick alvo'),artifactSpd:number(raw.artifactSpd,0,0,500,'SPD adicional de artefatos'),artifactSpdBuff:number(raw.artifactSpdBuff,0,0,100,'Buff SPD de artefatos'),artifactSpdLostHp:number(raw.artifactSpdLostHp,0,0,100,'SPD por HP perdido'),artifactSpdDisabled:number(raw.artifactSpdDisabled,0,0,100,'SPD sob incapacidade')};if(![result.targetTick,result.buffCount,result.mashaStacks].every(Number.isInteger))throw new Error('Buffs, stacks e ticks devem ser inteiros.');return result;}
 function runtimeSpeedValue(raw,master,combat={},effects={}){
@@ -50,25 +52,31 @@ export function combatAttributes(unit,stats,counts={},team={},combat={},effects=
  for(const key of ['cr','res','acc'])total[key]=Math.min(100,total[key]);
  return {...total,rawSpd:raw,master:unit.master,...(team.maxedTowers?{maxedTowers:true}:{})};
 }
-// Fixed SW natural gauge increment; callers select integer tick deadlines, never a rate.
-const NATURAL_GAUGE_STEP=7;
-export function minimumSpeedForTick(tick,initialAtb=0){
+// SW natural gauge increment: 7% standard (Siege/WGB/Arena/PvE) and 1.5% in World Arena (RTA).
+export const NATURAL_GAUGE_STEP=7;
+export const RTA_GAUGE_STEP=1.5;
+export function gaugeStepForMode(gameMode,useRtaTickRate=false){
+ return useRtaTickRate||gameMode==='rta'?RTA_GAUGE_STEP:NATURAL_GAUGE_STEP;
+}
+export function minimumSpeedForTick(tick,initialAtb=0,gaugeStep=NATURAL_GAUGE_STEP){
  const t=number(tick,1,1,10000,'Tick'),atb=number(initialAtb,0,0,100,'Barra inicial');
+ const step=Number(gaugeStep)===RTA_GAUGE_STEP?RTA_GAUGE_STEP:NATURAL_GAUGE_STEP;
  if(!Number.isInteger(t))throw new Error('Tick alvo deve ser inteiro.');
- return Math.max(1,Math.ceil((100-atb)*100/(NATURAL_GAUGE_STEP*t)-1e-10));
+ return Math.max(1,Math.ceil((100-atb)*100/(step*t)-1e-10));
 }
 export function simulateFirstTurns(actors){
  if(actors.some(a=>!Number.isFinite(a.spd)||a.spd<=0))throw new Error('SPD de combate deve ser positiva e finita.');
  if(!actors.length)return [];
  return simulateCombat(actors,{stopAfterFirst:true}).firstTurns.map(({key,tick,spd,atb})=>({key,tick,spd,atb}));
 }
-export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=30,captureCheckpoints=false,captureReadiness=false}={}){
+export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=30,captureCheckpoints=false,captureReadiness=false,captureTickSnapshots=false,gaugeStep=NATURAL_GAUGE_STEP}={}){
+ const activeGaugeStep=Number(gaugeStep)===RTA_GAUGE_STEP?RTA_GAUGE_STEP:NATURAL_GAUGE_STEP;
  if(!Array.isArray(actors)||actors.length>20||!actors.length)throw new Error('Use de 1 a 20 unidades.');
  if(events.length>100||!Number.isInteger(maxTurns)||maxTurns<1||maxTurns>100)throw new Error('Cenário excede o limite.');
  const keys=new Set(),state=actors.map((a,index)=>{if(keys.has(a.key))throw new Error('Unidade repetida no cenário.');keys.add(a.key);const c=normalizeCombat(a.combat);return {...a,index,baseSpd:number(a.rawSpd??a.spd,0,.01,100000,'SPD'),spd:number(a.spd,0,.01,100000,'SPD'),atb:number(a.initialAtb,0,0,100,'Barra inicial'),hp:c.hpPercent,combat:c,passive:c.oblivion?null:PASSIVES[a.master],turns:0,dead:c.hpPercent<=0,nemesisRemainder:0};});
  const order=(a,b)=>(Math.abs(b.atb-a.atb)>1e-9?b.atb-a.atb:0)||b.spd-a.spd||Number(b.enemy||false)-Number(a.enemy||false)||a.index-b.index;
  const alive=()=>state.filter(a=>!a.dead),same=(a,b)=>!!a.enemy===!!b.enemy;
- const turns=[],firstTurns=[],seen=new Set(),log=[],risks=[],forced=[],checkpoints=[];
+ const turns=[],firstTurns=[],seen=new Set(),log=[],risks=[],forced=[],checkpoints=[],tickSnapshots=[];
  // Readiness is independent of the one-action-per-tick queue. Record every
  // first threshold crossing before bars are consumed, including event gains.
  const firstReady=[],readySeen=captureReadiness?new Set():null;
@@ -127,10 +135,14 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
  for(let tick=1;tick<=10000&&turns.length<(stopAfterFirst?10000:maxTurns);tick++){
   for(const a of alive()){if(a.rawSpd!==undefined)a.spd=runtimeSpeed(a.baseSpd,a.master,a.combat,a.effects||{});}
   const leos=alive().filter(a=>a.passive==='leo');const cap=leos.length?Math.min(...leos.map(a=>a.spd)):Infinity;
-  for(const a of alive())a.atb+=(a.passive==='leo'||a.boss?a.spd:Math.min(cap,a.spd))*NATURAL_GAUGE_STEP/100;
+  for(const a of alive())a.atb+=(a.passive==='leo'||a.boss?a.spd:Math.min(cap,a.spd))*activeGaugeStep/100;
   recordReady(tick,'natural');
+  const preTurnBars=captureTickSnapshots?new Map(state.map(a=>[a.key,Math.round(a.atb*10)/10])):null;
   const forcedKey=forced.shift(),actor=forcedKey?alive().find(a=>a.key===forcedKey):alive().filter(a=>a.atb>=100-1e-9).sort(order)[0];
-  if(!actor){if(!alive().length)break;continue;}
+  if(!actor){
+   if(captureTickSnapshots&&tick<=60)tickSnapshots.push({tick,actingKey:null,actingName:null,actingEnemy:false,bars:state.map(a=>({key:a.key,name:a.name||a.key,master:a.master,spd:a.spd,enemy:!!a.enemy,atb:preTurnBars.get(a.key)??0,atbPost:Math.round(a.atb*10)/10,dead:a.dead,acted:false}))});
+   if(!alive().length)break;continue;
+  }
   if(forcedKey)recordReady(tick,'forced',actor);
   const row={key:actor.key,tick,spd:actor.spd,atb:actor.atb,enemy:!!actor.enemy,forced:!!forcedKey,disabled:actor.combat.disabled};if(row.disabled)risks.push(`${actor.name||actor.key}: turno consumido por incapacidade, sem executar ação.`);turns.push(row);if(!seen.has(actor.key)){seen.add(actor.key);firstTurns.push(row);}actor.turns++;actor.atb=0;
   // Disabled turns consume ATB but cannot execute the configured actions; duration changes require explicit scenario state.
@@ -140,12 +152,13 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
   for(const am of alive().filter(a=>a.passive==='amduat'&&!same(a,actor)))skillBoost([am],25,am);
   recordReady(tick,'passive');
   if(captureCheckpoints)checkpoints.push({key:actor.key,occurrence:actor.turns,tick,disabled:skipped,bars:state.map(a=>({key:a.key,atb:a.atb,dead:a.dead}))});
+  if(captureTickSnapshots&&tick<=60)tickSnapshots.push({tick,actingKey:actor.key,actingName:actor.name||actor.key,actingEnemy:!!actor.enemy,bars:state.map(a=>({key:a.key,name:a.name||a.key,master:a.master,spd:a.spd,enemy:!!a.enemy,atb:preTurnBars.get(a.key)??0,atbPost:Math.round(a.atb*10)/10,dead:a.dead,acted:a.key===actor.key}))});
   if(stopAfterFirst&&alive().every(a=>seen.has(a.key)))break;
  }
  if(stopAfterFirst&&alive().some(a=>!seen.has(a.key)))throw new Error('Simulação de turnos excedeu o limite.');
  const ei=firstTurns.findIndex(t=>t.enemy),deadAllies=state.some(a=>a.dead&&!a.enemy&&!seen.has(a.key)),cut=deadAllies?true:state.some(a=>a.enemy)?ei>=0&&firstTurns.slice(ei+1).some(t=>!t.enemy):null;
  if(deadAllies)risks.push('Um aliado foi eliminado antes da primeira ação no cenário de dano informado.');
- return {turns,firstTurns,...(captureReadiness?{firstReady}:{}),log,checkpoints,risks:[...new Set(risks)],cut,state:state.map(a=>({key:a.key,hp:a.hp,atb:a.atb,dead:a.dead,spd:a.spd})),assumptions:'Eventos informados como resolvidos; sem sorteio de procs, resistência, dano ou seleção automática de habilidade.'};
+ return {turns,firstTurns,...(captureReadiness?{firstReady}:{}),...(captureTickSnapshots?{tickSnapshots}:{}),log,checkpoints,risks:[...new Set(risks)],cut,state:state.map(a=>({key:a.key,hp:a.hp,atb:a.atb,dead:a.dead,spd:a.spd})),assumptions:'Eventos informados como resolvidos; sem sorteio de procs, resistência, dano ou seleção automática de habilidade.'};
 }
 export const COMBAT_EVENTS={tiana:'Tiana S3 · remoção de efeitos + 30% ATB',boost:'Boost de barra',reduce:'Redução de barra',damage:'Dano (% HP máximo por alvo/hit)',heal:'Cura resolvida (% HP máximo)',tablo:'Tablo · reset + buff SPD',buffs:'Quantidade global de buffs',speed_buff:'Aplicar buff SPD',slow:'Aplicar slow',antares:'Forçar proc Antares (RNG)',leo_attack:'Leo · ataque com redução 15%',cleanse:'Remover incapacidade/slow'};
 export function normalizeScenario(raw={}){
@@ -155,9 +168,11 @@ export function normalizeScenario(raw={}){
 }
 export function scenarioForTeam(team,actors){
  const raw=normalizeScenario(team.combatScenario);if(team.autoEnemyPassives)raw.enemies.forEach((e,i)=>{if(e.master===16613&&!raw.events.some(v=>v.afterKey===`enemy:${i}`&&v.type==='leo_attack'))raw.events.push({afterKey:`enemy:${i}`,type:'leo_attack',occurrence:1,targets:[`ally:${team.leoTarget||0}`],amount:15,critical:false,glancing:false});});if(team.autoOpener){
-  team.configs.forEach((config,index)=>{const skill=monsterOpener(config.masterId),source=`ally:${index}`;if(!skill||!actors.some(a=>a.key===config.key)||raw.events.some(e=>e.enabled!==false&&e.afterKey===source&&Number(e.occurrence??1)===1&&['boost','tiana'].includes(e.type)))return;
+  team.configs.forEach((config,index)=>{const skill=monsterOpener(config.masterId),source=`ally:${index}`;
+   if(!skill||config.firstTurnSkillSlot!=null&&Number(config.firstTurnSkillSlot)!==Number(skill.slot||3)||!actors.some(a=>a.key===config.key)||raw.events.some(e=>e.enabled!==false&&e.afterKey===source&&Number(e.occurrence??1)===1&&['boost','tiana'].includes(e.type)))return;
+   const bonus=Number.isFinite(Number(config.skillBoostBonus))?Number(config.skillBoostBonus):0;
    const targets=actors.filter(a=>!a.enemy).map(a=>`ally:${team.configs.findIndex(c=>c.key===a.key)}`).filter(ref=>!ref.endsWith(':-1'));
-   raw.events.push({afterKey:source,type:skill.type,occurrence:1,targets,amount:skill.boost});
+   raw.events.push({afterKey:source,type:skill.type,occurrence:1,targets,amount:Math.min(100,Number(skill.boost||0)+bonus)});
    if(skill.speedBuff&&!raw.events.some(e=>e.enabled!==false&&e.afterKey===source&&Number(e.occurrence??1)===1&&e.type==='speed_buff'))raw.events.push({afterKey:source,type:'speed_buff',occurrence:1,targets,amount:0});
   });
  }const ref=k=>k.startsWith('ally:')?team.configs[Number(k.split(':')[1])]?.key:k;

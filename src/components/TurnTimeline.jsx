@@ -1,12 +1,17 @@
 import MotionValue from './MotionValue';
 import {useId} from 'react';
 import MonsterPortrait from './MonsterPortrait';
-import {tickTimeline} from '../core/tick-timeline';
+import {tickTimeline,tickCardsFromPreview} from '../core/tick-timeline';
 import './TickTimeline.css';
-export default function TurnTimeline({preview}){
+
+export default function TurnTimeline({preview,showTickCards=true}){
  const id=useId();if(!preview?.complete)return null;
  const timeline=tickTimeline(preview);
+ const peanuts=tickCardsFromPreview(preview);
  return <div className="tick-timeline" aria-label="Timeline de Ticks Real">
+  {showTickCards&&peanuts.cards.length>0&&<div className={`peanuts-sync-banner ${peanuts.synced?'is-synced':'is-cut'}`} role="status">
+   <strong>{peanuts.statusMessage}</strong>
+  </div>}
   <div className="tick-timeline-legend"><span>Alocação temporal · Tick {timeline.start}{timeline.end!==timeline.start?` — Tick ${timeline.end}`:''}</span><span>Combat SPD</span></div>
   {timeline.cells.length>0?<div className="tick-ruler-scroll" tabIndex={0} role="region" aria-label="Régua horizontal de ticks"><ol className="tick-ruler" style={{'--tick-count':timeline.count}}>{timeline.cells.map(cell=><li key={cell.tick} className={`tick-block${cell.members.length?'':' tick-empty'}`} data-tick={cell.tick} style={{gridColumn:`${cell.tick-timeline.start+1} / span ${cell.span}`}} aria-labelledby={`${id}-tick-${cell.tick}`}>
    <h4 id={`${id}-tick-${cell.tick}`}>{cell.span===1?`Tick ${cell.tick}`:`Ticks ${cell.tick}–${cell.end}`}</h4>
@@ -15,5 +20,23 @@ export default function TurnTimeline({preview}){
    </div>)}</div>:<span className="tick-empty-mark" aria-label="Sem novos monstros com a barra completa">—</span>}
   </li>)}</ol></div>:<p className="tick-unavailable">Sem dados de prontidão neste cenário.</p>}
   {timeline.unallocated.length>0&&<div className="tick-unallocated">{timeline.unallocated.map(actor=><span key={actor.key}>{actor.name}: sem barra completa registrada</span>)}</div>}
+  {showTickCards&&peanuts.cards.length>0&&<div className="peanuts-tick-cards-section" aria-label="Simulação detalhada de barra de ataque por tick">
+   <div className="tick-timeline-legend"><span>Progressão da Barra de Ataque (ATB %) · Estilo 00peanuts</span><span>Verde = Aliados · Vermelho = Inimigo</span></div>
+   <div className="peanuts-tick-cards-grid">
+    {peanuts.cards.map(card=><div key={card.tick} className={`peanuts-tick-card ${card.actingEnemy?'enemy-turn':card.actingKey?'ally-turn':''}`}>
+     <header className="peanuts-tick-card-header">
+      <strong>ETAPA #{card.tick}</strong>
+      {card.actingName&&<span className={`peanuts-turn-badge ${card.actingEnemy?'is-enemy':'is-ally'}`}>Turno: {card.actingName}</span>}
+     </header>
+     <ul className="peanuts-tick-bars-list">
+      {card.bars.map(b=><li key={b.key} className={`peanuts-tick-bar-row ${b.enemy?'is-enemy':'is-ally'} ${b.acted?'is-acting':''}`}>
+       <span className="peanuts-bar-name">{b.name} <small>({b.spd} SPD)</small></span>
+       <span className="peanuts-bar-value">{b.atb.toFixed(1)}%</span>
+       <div className="peanuts-bar-track"><div className="peanuts-bar-fill" style={{width:`${Math.min(100,Math.max(0,b.atb))}%`}}/></div>
+      </li>)}
+     </ul>
+    </div>)}
+   </div>
+  </div>}
  </div>;
 }

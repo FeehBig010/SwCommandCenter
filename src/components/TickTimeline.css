@@ -29,3 +29,26 @@
 .raw-speed-tune .speed-source-badge{color:#c4b592;background:#a18a5814;border-color:#a18a5844}
 .raw-speed-tune .technical-help>[role=tooltip]{left:auto;right:0}
 @media(max-width:600px){.speed-tune-widget.raw-speed-tune{padding:12px}.raw-speed-tune>header h3{font-size:14px}.tick-ruler{grid-template-columns:repeat(var(--tick-count),minmax(164px,1fr));min-width:calc(var(--tick-count)*164px)}.tick-members{grid-template-columns:repeat(auto-fit,minmax(88px,1fr))}.tick-combat-spd{font-size:28px}.tick-ruler>.tick-block{padding:12px 8px!important}}
+
+
+/* 00peanuts Tick-by-Tick ATB cards & sync status banner */
+.peanuts-sync-banner{padding:10px 14px;border-radius:7px;margin-bottom:10px;font:600 12px/1.4 Inter,system-ui,sans-serif;border:1px solid #2e6b4e;background:#102a20;color:#86efac}
+.peanuts-sync-banner.is-cut{border-color:#8c3232;background:#2a1215;color:#fca5a5}
+.peanuts-tick-cards-section{margin-top:14px;padding-top:10px;border-top:1px solid #293540}
+.peanuts-tick-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:8px}
+.peanuts-tick-card{background:#111b24;border:1px solid #2b3743;border-radius:7px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.peanuts-tick-card.ally-turn{border-color:#2e6b4e}
+.peanuts-tick-card.enemy-turn{border-color:#8c3232}
+.peanuts-tick-card-header{display:flex;align-items:center;justify-content:space-between;gap:6px;padding-bottom:6px;border-bottom:1px solid #222f3c;font:600 11px Inter,sans-serif;color:#d8c18a}
+.peanuts-turn-badge{font-size:10px;padding:2px 6px;border-radius:4px;background:#163828;color:#86efac;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.peanuts-turn-badge.is-enemy{background:#3b171b;color:#fca5a5}
+.peanuts-tick-bars-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.peanuts-tick-bar-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 8px;align-items:center;font-size:11px}
+.peanuts-bar-name{color:#d3dce5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.peanuts-bar-name small{color:#8fa3b5;font-size:10px}
+.peanuts-bar-value{font:600 11px Inter,monospace;font-variant-numeric:tabular-nums;color:#4ade80}
+.peanuts-tick-bar-row.is-enemy .peanuts-bar-value{color:#f87171}
+.peanuts-tick-bar-row.is-acting .peanuts-bar-name{font-weight:700;color:#fff}
+.peanuts-bar-track{grid-column:1/-1;height:5px;background:#1c2834;border-radius:3px;overflow:hidden}
+.peanuts-bar-fill{height:100%;background:#22c55e;border-radius:3px}
+.peanuts-tick-bar-row.is-enemy .peanuts-bar-fill{background:#ef4444}

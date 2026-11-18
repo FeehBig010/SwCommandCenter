@@ -125,3 +125,58 @@
 .quick-tick-heading{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .quick-tick-heading .technical-help>button{width:22px;height:22px;min-width:22px;min-height:22px;padding:0}
 .quick-tick-result[data-status="unreachable"],.quick-tick-result[data-status="conflict"],.quick-tick-result[data-status="unsupported"]{border-color:#bc9352}
+
+
+/* 00peanuts Speed Tuning Calculator integration styles */
+.quick-density .peanuts-global-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:8px 10px;margin-bottom:8px;background:#0e1720;border:1px solid #283542;border-radius:6px}
+.quick-density .peanuts-tool-switcher,.quick-density .peanuts-subtabs{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.quick-density .peanuts-pill,.quick-density .peanuts-subtab{border:1px solid #334352;background:#15202b;color:#a8b8c7;font:500 11px Inter,sans-serif;padding:4px 9px;min-height:28px;border-radius:5px;cursor:pointer}
+.quick-density .peanuts-pill.active{background:#3b2667;border-color:#7c4dff;color:#f3e8ff;font-weight:600}
+.quick-density .peanuts-subtab.active{background:#1e3246;border-color:#5b82a6;color:#fff;font-weight:600}
+.quick-density .peanuts-global-params{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.quick-density .peanuts-param-field{display:inline-flex;align-items:center;gap:5px;font:500 11px Inter,sans-serif;color:#b2c0cc;margin:0}
+.quick-density .peanuts-param-field select,.quick-density .peanuts-param-field input{height:28px;min-height:28px;padding:2px 6px;font:11px Inter,sans-serif;background:#131e28;border:1px solid #384654;border-radius:4px;color:#e6edf3}
+.quick-density .peanuts-tick-badge{font:500 11px Inter,sans-serif;color:#d4c498;background:#231f17;border:1px solid #594b2a;padding:4px 8px;border-radius:5px;white-space:nowrap}
+.quick-density .peanuts-breakpoints-panel,.quick-density .peanuts-enemy-panel{padding:10px;margin-bottom:8px;background:#111c26;border:1px solid #2d3c4b;border-radius:6px}
+.quick-density .peanuts-bp-header,.quick-density .peanuts-enemy-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;font:600 12px Inter,sans-serif;color:#d8c18a}
+.quick-density .peanuts-bp-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.quick-density .peanuts-bp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:6px}
+.quick-density .peanuts-bp-cell{padding:6px 8px;background:#0d161e;border:1px solid #263442;border-radius:5px;display:flex;flex-direction:column;gap:2px}
+.quick-density .peanuts-bp-tick{font:600 10px Inter,sans-serif;color:#93a6b7;text-transform:uppercase}
+.quick-density .peanuts-bp-spd{font:700 14px Inter,monospace;color:#e6edf3}
+.quick-density .peanuts-bp-cell small{font-size:9px;color:#7f93a6}
+.quick-density .peanuts-enemy-card{display:grid;grid-template-columns:minmax(180px,260px) minmax(0,1fr);gap:10px;align-items:center}
+.quick-density .peanuts-enemy-fields{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.quick-density .peanuts-enemy-total{font:500 11px Inter,sans-serif;color:#fca5a5;background:#2a1215;border:1px solid #7f2d2d;padding:4px 8px;border-radius:5px}
+.quick-density .peanuts-card-submetrics{display:block;font:500 10px Inter,sans-serif;color:#96a9ba;margin-top:2px}
+.quick-density .peanuts-card-extras{display:grid;gap:5px;padding:6px 0;border-bottom:1px solid #9ba9bc1f}
+.quick-density .peanuts-leader-chip{font:500 10px Inter,sans-serif;padding:3px 6px;border-radius:4px;background:#16222e;border:1px solid #2d3e4f;color:#b8c7d4}
+.quick-density .peanuts-leader-chip.is-active{background:#292315;border-color:#8a7238;color:#f3de99}
+.quick-density .peanuts-leader-chip.is-invalid{background:#261519;border-color:#6e2c35;color:#f898a4}
+.quick-density .peanuts-skill-picker{display:grid;gap:4px}
+.quick-density .peanuts-skill-row{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+.quick-density .peanuts-skill-label{font:500 10px Inter,sans-serif;color:#92a4b5}
+.quick-density .peanuts-skill-buttons{display:inline-flex;gap:3px}
+.quick-density .peanuts-skill-btn{min-width:28px;height:24px;padding:0 6px;font:600 10px Inter,sans-serif;border-radius:4px;border:1px solid #344454;background:#0e1821;color:#a8b8c7;cursor:pointer}
+.quick-density .peanuts-skill-btn.active{background:#23384d;border-color:#6794bf;color:#fff}
+.quick-density .peanuts-skill-btn.is-opener.active{background:#342359;border-color:#8b5cf6;color:#f3e8ff}
+.quick-density .peanuts-skill-bonus{height:24px;min-height:24px;padding:1px 4px;font:10px Inter,sans-serif;background:#0e1821;border:1px solid #344454;border-radius:4px;color:#d3dce5;max-width:100%}
+.quick-density .peanuts-skill-effect{font:10px/1.3 Inter,sans-serif;color:#8fa3b5}
+.quick-density .peanuts-positioning-bar{margin-top:8px;padding:8px 10px;background:#0e1720;border:1px solid #283542;border-radius:6px}
+.quick-density .peanuts-pos-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:8px;font:500 11px Inter,sans-serif;color:#b2c0cc}
+.quick-density .peanuts-pos-slots{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.quick-density .peanuts-pos-slot{display:flex;align-items:center;gap:6px;padding:4px 8px;background:#14202b;border:1px solid #2c3b4a;border-radius:6px;min-width:0}
+.quick-density .peanuts-pos-slot.is-leader{border-color:#9e8442}
+.quick-density .peanuts-pos-slot.is-enemy{border-color:#8c3232;background:#241317}
+.quick-density .peanuts-pos-slot .monster-portrait{width:28px!important;height:28px!important;border-radius:4px;overflow:hidden;flex:none}
+.quick-density .peanuts-pos-badge{font:600 9px Inter,sans-serif;color:#93a6b7;text-transform:uppercase}
+.quick-density .peanuts-pos-name{font:600 11px Inter,sans-serif;color:#e6edf3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95px}
+.quick-density .peanuts-pos-turn{font:600 10px Inter,sans-serif;color:#86efac}
+.quick-density .peanuts-pos-slot.is-enemy .peanuts-pos-turn{color:#fca5a5}
+.quick-density .peanuts-auto-settings{display:grid;gap:6px;padding-top:8px;border-top:1px solid #2b3846;font-size:11px}
+@media(max-width:700px){
+ .quick-density .quick-area-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .quick-density .peanuts-global-bar{padding:6px;gap:6px}
+ .quick-density .peanuts-enemy-card{grid-template-columns:1fr}
+ .quick-density .peanuts-pos-name{max-width:70px}
+}
