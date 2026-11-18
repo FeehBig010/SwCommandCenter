@@ -31,3 +31,4 @@
 .quick-calculator.quick-density .summary-monster-card>.quick-remove-monster{grid-column:1/-1;grid-row:auto;position:static;justify-self:end;min-width:0;max-width:100%;z-index:auto}
 /* A decorative absolute pseudo-element must never cover the classic card. */
 .quick-calculator .quick-remove-monster:after{display:none}
+.quick-calculator .peanuts-sync-banner.is-partial{border-color:var(--pt-border,#2d4050);background:var(--pt-surface,#13212d);color:var(--pt-muted,#a7b7c5)}
