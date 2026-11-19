@@ -21,3 +21,5 @@
 .calculator-v2 .quick-team-heading{font-size:16px;margin:12px 0 6px}.calculator-v2 .quick-export-footer>button:first-child{display:none}
 /* Header actions must wrap in both versions; otherwise they cover mode tabs. */
 .quick-calculator.quick-density .quick-header{flex-wrap:wrap}.quick-calculator.quick-density .quick-header-actions{flex:1 1 100%;justify-content:flex-start}
+
+.tuning-visual-actions{display:flex;gap:4px;grid-column:1/-1;justify-content:flex-end;order:99}.quick-calculator .tuning-visual-actions button{min-width:36px;min-height:36px;border:1px solid var(--pt-border,#354a59);border-radius:6px;background:transparent;color:inherit}.tuning-visual-actions button:disabled{opacity:.35}.calculator-v2:not([data-active-tab=sync]) .quick-team-heading{display:none}@media(max-width:700px){.quick-calculator .tuning-visual-actions button{min-width:44px;min-height:44px}}

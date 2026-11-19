@@ -9,7 +9,7 @@ const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/chro
 const context=await browser.newContext({viewport:{width:1440,height:900},reducedMotion:'reduce'}),page=await context.newPage(),errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 await context.route('**/*',r=>{const u=new URL(r.request().url());if(u.origin===origin){if(u.pathname==='/__qa__/seed')return r.fulfill({body:'QA'});return r.continue();}if(u.hostname.endsWith('.supabase.co'))return r.fulfill({json:u.pathname.endsWith('get_engine_settings')?{default_speed_tick:7,max_teams:10,maintenance_mode:false}:[]});if(u.href.includes('icon_map.json'))return r.fulfill({json:{}});return r.abort();});
-async function choose(i,name){await page.getByRole('combobox',{name:`Monstro livre ${i+1}`,exact:true}).fill(name);await page.getByRole('option').filter({has:page.getByText(name,{exact:true})}).first().click();}
+async function choose(i,name){await page.getByRole('combobox',{name:`Monstro livre ${i+1}`,exact:true}).fill(name);await page.locator('.combobox-popover [role=option]').filter({has:page.getByText(name,{exact:true})}).first().click();}
 try{
  await page.goto(origin+'/__qa__/seed');await page.evaluate(async account=>{localStorage.setItem('has_completed_onboarding','true');const db=await new Promise(resolve=>{const r=indexedDB.open('d8stino-siege-v1',1);r.onupgradeneeded=()=>r.result.createObjectStore('data');r.onsuccess=()=>resolve(r.result);});await new Promise(resolve=>{const tx=db.transaction('data','readwrite');tx.objectStore('data').put(account,'account');tx.oncomplete=resolve;});db.close();},quickPresetAccount());
  await page.goto(origin+'/#/quick');await page.getByRole('heading',{name:'Calculadora Livre',exact:true}).waitFor();

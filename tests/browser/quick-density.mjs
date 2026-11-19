@@ -18,7 +18,7 @@ try{
   await page.locator(`#quick-tab-${area}`).click();
   for(const [index,config]of plan.configs.entries()){
    const search=page.getByRole('combobox',{name:`Monstro livre ${index+1}`,exact:true});await search.fill(config.label);
-   await page.getByRole('option').filter({has:page.getByText(config.label,{exact:true})}).first().click();
+   await page.locator('.combobox-popover [role=option]').filter({has:page.getByText(config.label,{exact:true})}).first().click();
   }
   await page.locator('.summary-monster-card').first().locator('.balance-manual-controls>summary').click();
   await page.locator('.summary-monster-card').first().getByRole('spinbutton',{name:`${plan.configs[0].label} runas livres spd`,exact:true}).fill('100');await page.locator('.summary-monster-card').first().locator('.balance-manual-controls>summary').click();

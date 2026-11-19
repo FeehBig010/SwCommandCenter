@@ -13,7 +13,8 @@
       "feature/swcc-premium-tactical-v1-review": false,
       "feature/speed-tuning-calculator-2": false,
       "release/calculator-2-integration": false,
-      "feature/calculator-clarity": false
+      "feature/calculator-clarity": false,
+      "feature/speed-tuning-certified": false
     }
   }
 }
