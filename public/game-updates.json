@@ -1,9 +1,25 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-18T21:23:59.227Z",
+  "fetchedAt": "2026-11-19T03:21:22.114Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/event/313/96671",
+      "url": "https://www.withhive.com/event/313/96671",
+      "title": "Angelmon/Rainbowmon/Devilmon/Mana Stone Dungeon Open!",
+      "category": "event",
+      "publishedAt": "2026-11-19T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/12719/20251028/44421e11da56eb38faaa72d3ccd75827.jpg"
+    },
+    {
+      "id": "https://www.withhive.com/event/313/96670",
+      "url": "https://www.withhive.com/event/313/96670",
+      "title": "Secret Dungeon for 3★ [Martial Artist] (Wind) Open!",
+      "category": "event",
+      "publishedAt": "2026-11-19T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261118/d28e3311156d5de3748657d3759c2fad.jpg"
+    },
     {
       "id": "https://www.withhive.com/notice/313/96621",
       "url": "https://www.withhive.com/notice/313/96621",
