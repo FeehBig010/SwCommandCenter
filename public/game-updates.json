@@ -1,9 +1,17 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-20T11:28:32.729Z",
+  "fetchedAt": "2026-11-20T20:07:37.781Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/notice/313/96705",
+      "url": "https://www.withhive.com/notice/313/96705",
+      "title": "[Summoners War] Additional Resource Download",
+      "category": "notice",
+      "publishedAt": "2026-11-20T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
     {
       "id": "https://www.withhive.com/event/313/96690",
       "url": "https://www.withhive.com/event/313/96690",
