@@ -1,9 +1,25 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-20T03:13:09.514Z",
+  "fetchedAt": "2026-11-20T11:28:32.729Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/event/313/96690",
+      "url": "https://www.withhive.com/event/313/96690",
+      "title": "With Guild Members! Ameria's Luck & Guild Content Mission Event",
+      "category": "event",
+      "publishedAt": "2026-11-20T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/12719/20251119/e0e9b1e71978dc444df0e39eaa568d17.jpg"
+    },
+    {
+      "id": "https://www.withhive.com/notice/313/96688",
+      "url": "https://www.withhive.com/notice/313/96688",
+      "title": "[Summoners War] [World Arena] SWC Special Battle Notice",
+      "category": "notice",
+      "publishedAt": "2026-11-20T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
     {
       "id": "https://www.withhive.com/event/313/96671",
       "url": "https://www.withhive.com/event/313/96671",
@@ -55,7 +71,7 @@
     {
       "id": "https://www.withhive.com/event/313/96507",
       "url": "https://www.withhive.com/event/313/96507",
-      "title": "Challenge Weekly Missions! 12-Year Scrolls & Transcendence Scroll Giveaway Event",
+      "title": "Challenge Weekly Missions! 12-Year Scrolls & Transcendence Scroll Giveaway Event (Modified)",
       "category": "event",
       "publishedAt": "2026-11-13T00:00:00.000Z",
       "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261112/02e4e6929a47fea491595e654199b14a.jpg"
