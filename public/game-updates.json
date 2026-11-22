@@ -1,9 +1,25 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-22T03:06:20.467Z",
+  "fetchedAt": "2026-11-22T11:13:22.837Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/event/313/96710",
+      "url": "https://www.withhive.com/event/313/96710",
+      "title": "Black Friday Special! Themed Special Offer Shop Event",
+      "category": "event",
+      "publishedAt": "2026-11-22T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261120/d2308f212a87efdd7529465586757d8d.jpg"
+    },
+    {
+      "id": "https://www.withhive.com/notice/313/96709",
+      "url": "https://www.withhive.com/notice/313/96709",
+      "title": "[Summoners War] 2026 Black Friday Special! Surprise Shop Open!",
+      "category": "notice",
+      "publishedAt": "2026-11-22T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
     {
       "id": "https://www.withhive.com/notice/313/96705",
       "url": "https://www.withhive.com/notice/313/96705",
