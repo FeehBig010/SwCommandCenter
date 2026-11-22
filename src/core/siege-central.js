@@ -39,14 +39,17 @@ export function siegeComparisonRows(records=[]){
  const groups=new Map(),unassigned=[];
  for(const record of records){
   const counter=record.counter,isDefense=!counter&&record.team.mode==='defense';
+  // The gallery labels origin; local templates must retain their provenance.
+  const source=record.kind==='template'&&!record.cloud&&record.local?'Modelo local':null;
   const members=counter?.enemyDefense||(isDefense?record.team.configs:null);
-  if(!members){unassigned.push({key:record.key,name:record.name,members:[],leader:null,attacks:[record],record});continue;}
+  if(!members){unassigned.push({key:record.key,name:record.name,members:[],leader:null,attacks:[record],record,sources:source?[source]:[]});continue;}
   const index=counter?.siege.defenseLeaderIndex??record.team.leaderIndex??0;
   const leader=counter?counter.siege.defenseLeader:record.team.leader;
   const leaderKey=leader?[leader.stat,leader.value,leader.scope,leader.element||null,Number(members[index]?.masterId)]:null;
   const key=JSON.stringify([members.map(m=>Number(m.masterId)).sort((a,b)=>a-b),leaderKey]);
   let group=groups.get(key);
-  if(!group){group={key,name:isDefense?record.name:'Defesa inimiga',members,leader,attacks:[],record};groups.set(key,group);}
+  if(!group){group={key,name:isDefense?record.name:'Defesa inimiga',members,leader,attacks:[],record,sources:[]};groups.set(key,group);}
+  if(source&&!group.sources.includes(source))group.sources.push(source);
   if(isDefense){group.name=record.name;group.members=members;group.record=record;}
   else group.attacks.push(record);
  }
