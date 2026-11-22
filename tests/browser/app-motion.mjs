@@ -19,12 +19,15 @@ try{
  // The portal layer is rendered before its pointer listeners are installed.
  // A navigation light confirms that the shared motion effect has completed setup.
  await page.locator('.sidebar nav .motion-navigation-light').waitFor();
- const surface=page.locator('.portal-account');await surface.scrollIntoViewIfNeeded();const glass=await surface.boundingBox();const hoverX=glass.x+glass.width*.75,hoverY=glass.y+80;
- await page.evaluate(()=>{window.__hoverEvents=[];const spot=document.querySelector('.app-motion-spotlight'),note=(type,data={})=>{if(window.__hoverEvents.length<30)window.__hoverEvents.push({type,ms:Math.round(performance.now()),...data});};document.addEventListener('pointermove',e=>note('move',{x:e.clientX,y:e.clientY,target:e.target?.tagName}),true);document.addEventListener('pointerout',e=>note('out',{target:e.target?.tagName,related:e.relatedTarget?.tagName}),true);document.addEventListener('scroll',e=>note('scroll',{target:e.target?.nodeName,scrollY}),true);document.addEventListener('visibilitychange',()=>note('visibility',{hidden:document.hidden}),true);new MutationObserver(()=>note('spotlight',{visible:spot.dataset.visible})).observe(spot,{attributes:true,attributeFilter:['data-visible']});});
- await page.mouse.move(hoverX,hoverY);await page.waitForTimeout(180);
- const first=await page.locator('.app-motion-spotlight').getAttribute('data-visible');
- await page.mouse.move(hoverX+1,hoverY+1);await page.waitForTimeout(180);
- console.log('MOTION_HOVER_PROBE',JSON.stringify(await page.evaluate(({x,y,first})=>{const hit=document.elementFromPoint(x,y),card=document.querySelector('.portal-account'),spot=document.querySelector('.app-motion-spotlight');return {pointerFine:matchMedia('(hover:hover) and (pointer:fine)').matches,hidden:document.hidden,inApp:!!card.closest('.app-shell'),viewport:{width:innerWidth,height:innerHeight},card:card?.getBoundingClientRect().toJSON(),cursor:{x,y},hit:hit?{tag:hit.tagName,className:String(hit.className||'').slice(0,120),insideCard:card?.contains(hit),inert:!!hit.closest('[inert]')}:null,first,afterSecond:spot?.dataset.visible,events:window.__hoverEvents,scrollY};},{x:hoverX,y:hoverY,first})));
+ const surface=page.locator('.portal-account');await surface.scrollIntoViewIfNeeded();const glass=await surface.boundingBox();
+ const hoverX=glass.x+glass.width*.75,hoverY=glass.y+80;
+ // The browser can dispatch the pending scroll event with the first pointer
+ // movement, and scrolling intentionally dismisses the decorative spotlight.
+ // After scrolling settles, a subsequent natural move should reveal it.
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ await page.mouse.move(hoverX,hoverY);
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ await page.mouse.move(hoverX+1,hoverY+1);
  await page.locator('.app-motion-spotlight[data-visible=true]').waitFor();assert.equal(await page.locator('.app-motion-layer').evaluate(el=>getComputedStyle(el).pointerEvents),'none');await page.screenshot({path:`${out}/portal-hover.png`,fullPage:false});
  await page.getByRole('button',{name:'Copiar Código',exact:true}).click();await page.getByRole('button',{name:'Copiado! ✓',exact:true}).waitFor();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),'MOTIONQACOUPON');await page.locator('.motion-ripple-clip').first().waitFor();assert.ok(await page.evaluate(()=>document.elementFromPoint(innerWidth/2,innerHeight/2)?.closest('.app-motion-layer')===null));await page.screenshot({path:`${out}/copy-feedback.png`,fullPage:false});await page.waitForFunction(()=>!document.querySelector('.motion-ripple-clip'));
  await page.getByRole('button',{name:'Abrir Calculadora Livre',exact:true}).click();await page.getByRole('heading',{name:'Calculadora Livre',exact:true}).waitFor();await aligned(page,'.quick-area-tabs');await aligned(page,'.sidebar nav');assert.equal(await page.locator('.quick-area-tabs .motion-navigation-light').count(),1);
