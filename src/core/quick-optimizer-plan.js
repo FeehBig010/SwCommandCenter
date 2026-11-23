@@ -6,7 +6,8 @@ import {equippedBuild} from './optimizer.js';
 import {artifactEffects} from './artifacts.js';
 import {arenaContextOf} from './arena-context.js';
 import {siegeAccountTimeline} from './siege-timeline.js';
-import {quickConfig} from './quick-calculator.js';
+import {quickCombatTeam,quickConfig} from './quick-calculator.js';
+import {usesAutomaticOpening} from './speedTuner.js';
 import {skillLevels} from './skill-levels.js';
 
 const members=team=>team.configs.map(c=>({key:c.key,unitId:c.unitId,masterId:c.masterId,enabled:c.enabled!==false}));
@@ -48,7 +49,7 @@ export function optimizerSyncHandoff(input,account,options={},builds=null){
   combatScenario.enemies=[...(combatScenario.enemies||[]),...resolved.map(a=>({master:a.master,label:a.name,spd:a.rawSpd??a.spd,...(a.combat?{combat:a.combat}:{})}))];
   syncReferenceNotes=[...(timeline.unknownDefense||[]).map(name=>`${name}: SPD desconhecida`),...(timeline.references||[]).map(r=>`${r.name}: somente meta tick ${r.tick}, sem SPD conhecida`)];
  }
- const quick=structuredClone({...team,combatScenario,syncReferenceNotes,configs,plannedRunes:{accountStamp:accountStamp(account),byConfig},speedMode:'snapshot',sheetSpeedFormula:true,balanceEnabled:true,automaticSync:null,syncAudit:null});
+ const quick=structuredClone({...team,combatScenario,syncReferenceNotes,configs,plannedRunes:{accountStamp:accountStamp(account),byConfig},speedMode:'snapshot',sheetSpeedFormula:true,balanceEnabled:team.balanceEnabled??false,automaticSync:null,syncAudit:null});
  return {token:crypto.randomUUID(),accountStamp:accountStamp(account),sourceTeamId:input.id,sourceMembers:members(input),sourceContext:sourceContext(input),quickContext:JSON.stringify(context(quick)),returnArea:team.gameMode,returnArenaContext:team.gameMode==='arena'?arenaContextOf(team):null,team:quick};
 }
 
@@ -77,5 +78,13 @@ export function quickOptimizerPlan(quick,account){
   const {manual,...config}=c;
   return {...config,unitId:unit.id,masterId:unit.master,label:unit.name,enabled:true,goals:Object.fromEntries(STATS.map(k=>[k,c.goals[k]!==''&&c.goals[k]!=null?c.goals[k]:Math.max(0,Number(manual.sheet[k])-(c.basis==='bonus'&&!['cr','cd','res','acc'].includes(k)?unit.base[k]:0))]))};
  });
- return {...makeTeam(quick.gameMode),name:quick.name,autoName:quick.autoName,origin:'calculator',sourceDeckId:null,sourceAccountId:account.id,leaderIndex:quick.leaderIndex||0,optimizerSpeedSync:true,combatScenario:structuredClone(quick.combatScenario||{enemies:[],events:[]}),configs};
+ const combat=quickCombatTeam(quick);
+ const selectedLeader=configs.findIndex(c=>c.key===quick.leaderKey);
+ return {...makeTeam(quick.gameMode),name:quick.name,autoName:quick.autoName,origin:'calculator',sourceDeckId:null,sourceAccountId:account.id,
+  leaderIndex:selectedLeader>=0?selectedLeader:quick.leaderIndex||0,leaderKey:quick.leaderKey??null,leader:structuredClone(quick.leader??null),leaderSpd:combat.leaderSpd||0,
+  towerSpd:combat.towerSpd,guildSpd:combat.guildSpd,enemyCombatSpd:quick.enemyCombatSpd||0,enemyReference:structuredClone(quick.enemyReference),
+  enemyDefense:structuredClone(quick.enemyDefense),siege:structuredClone(quick.siege),gamePlacement:structuredClone(quick.gamePlacement),
+  autoOpener:usesAutomaticOpening(quick),autoEnemyPassives:quick.autoEnemyPassives??true,leoTarget:quick.leoTarget,useRtaTickRate:quick.useRtaTickRate,
+  balanceEnabled:quick.balanceEnabled,referencePolicy:quick.referencePolicy,optimizerSpeedSync:true,
+  combatScenario:structuredClone(quick.combatScenario||{enemies:[],events:[]}),configs};
 }

@@ -1,12 +1,13 @@
 import {weightedStatUtility} from './balance-profile.js';
 import {targetDistance} from './target-goals.js';
-import {monsterOpener} from './monsterDatabase.js';
+import {canonicalMonsterId} from './CollabMapping.js';
+import {resolvedQuickSkill} from './quick-skill-effects.js';
 import {assertMainPool} from './equipment-pools.js';
 import {lockContext} from './locks.js';
 import {GOAL_PRESETS,normalizeFocuses} from './team-ux.js';
 import {currentRuneIds} from './loadouts.js';
 import {allocationScore,compareAllocation,isPriority} from './allocation.js';
-import {combatAttributes,simulateFirstTurns,simulateCombat,scenarioForTeam,missingDefenseConditions} from './speedTuner.js';
+import {combatAttributes,simulateFirstTurns,simulateTeamCombat,usesAutomaticOpening} from './speedTuner.js';
 import {artifactEffects,normalizeArtifactSubstats} from './artifacts.js';
 import {estimateRealDamage,normalizeDamageSettings} from './damage.js';
 export {artifactEffects,normalizeArtifactSubstats,estimateRealDamage};
@@ -127,18 +128,16 @@ export function speedSyncValid(assignments,teams){
  for(const team of teams){
   if(team.optimizerSpeedSync===false)continue;
   const active=team.configs.filter(c=>c.enabled),chain=active.filter(c=>c.lockSpeedSync===true);
-  const eventDriven=!!team.combatScenario?.events?.length||active.some(c=>Number(c.masterId)===16613)||team.cloneTiming&&team.autoOpener&&active.some(c=>monsterOpener(c.masterId));
+  const eventDriven=!!team.combatScenario?.events?.length||active.some(c=>canonicalMonsterId(c.masterId)===16613)||usesAutomaticOpening(team)&&active.some(c=>{const skill=resolvedQuickSkill(c);return skill.speedBuff||skill.isOpener;});
   if(!eventDriven)for(let i=0;i<chain.length;i++)for(let j=i+1;j<chain.length;j++){
    const a=assignments[chain[i].key],b=assignments[chain[j].key];if(!a||!b)continue;
    const sa=a.stats.combat?.spd??a.stats.total.spd,sb=b.stats.combat?.spd??b.stats.total.spd;
-   if(team.cloneTiming){const rawA=a.stats.combat?.rawSpd??sa,rawB=b.stats.combat?.rawSpd??sb;if(rawA-rawB<1-1e-9)return false;}
+   if(team.target_goals&&team.cloneTiming){const rawA=a.stats.combat?.rawSpd??sa,rawB=b.stats.combat?.rawSpd??sb;if(rawA-rawB<1-1e-9)return false;}
    else if(sa<sb||sa===sb&&(!a.stats.combat||!b.stats.combat))return false;
   }
   if(active.length&&active.every(c=>assignments[c.key])&&(chain.length||active.some(c=>Number(c.maxTick)>0))){
    const actors=active.map(c=>{const a=assignments[c.key];return {key:c.key,master:a.stats.combat?.master??c.masterId,spd:a.stats.combat?.spd??a.stats.total.spd,rawSpd:a.stats.combat?.rawSpd,combat:c.combat,effects:a.stats.combat?.effects,will:(a.counts?.[15]||0)>=2,nemesisSets:Math.floor((a.counts?.[14]||0)/2)};});
-   const configured=scenarioForTeam(team,actors),foes=configured.actors.some(a=>a.enemy),enemy=Number(team.enemyCombatSpd)||0;
-   const reference=team.optimizerSpeedSync===true&&!foes&&!enemy&&monsterOpener(active[0]?.masterId)?Math.max(1,actors[0].spd-1):enemy;
-   const report=simulateCombat([...configured.actors,...(!foes&&reference>0?[{key:'__enemy__',spd:reference,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true});
+   const {scenario:report}=simulateTeamCombat(team,actors);
    const positions=chain.map(c=>report.firstTurns.findIndex(t=>t.key===c.key));
    if(positions.some((p,i)=>p<0||report.firstTurns[p]?.disabled||i>0&&p<positions[i-1]))return false;
    const enemyIndex=report.firstTurns.findIndex(t=>t.enemy);if(enemyIndex>=0&&positions.some(p=>p>enemyIndex))return false;
@@ -240,16 +239,15 @@ export function teamTurnPreview(account,team,options={},builds=null){
   const build=builds?.find(b=>b.key===config.key&&b.unitId===config.unitId);
   if(!unit){missing.push(config.label);continue;}
   let stats=build?.stats,counts=build?.counts;
-  if(stats?.combat&&!stats.total){actors.push({key:config.key,unitId:unit.id,master:unit.master,name:unit.name,spd:stats.combat.spd,attributes:stats.combat,combat:config.combat});continue;}
+  if(stats?.combat&&!stats.total){actors.push({key:config.key,unitId:unit.id,master:unit.master,name:unit.name,spd:stats.combat.spd,rawSpd:stats.combat.rawSpd,attributes:stats.combat,combat:config.combat,effects:build?.effects??stats.combat.effects,will:(counts?.[15]||0)>=2,nemesisSets:Math.floor((counts?.[14]||0)/2)});continue;}
   if(!stats){const runes=currentRuneIds(account,team,config,unit).map(id=>account.runes.find(r=>r.id===id)).filter(Boolean);if(runes.length!==6||new Set(runes.map(r=>r.slot)).size!==6){missing.push(unit.name);continue;}stats=calculateStats(unit,runes,options.artifacts!==false&&config.artifacts!==false?artifactBonus(account,unit):{});counts=setCounts(runes);}
   const effects=artifactEffects(account,unit,options.artifacts!==false&&config.artifacts!==false),combat=combatAttributes(unit,stats,counts,team,config.combat,effects);
   actors.push({key:config.key,unitId:unit.id,master:unit.master,name:unit.name,spd:combat.spd,rawSpd:combat.rawSpd,attributes:combat,combat:config.combat,effects,will:(counts?.[15]||0)>=2,nemesisSets:Math.floor((counts?.[14]||0)/2)});
  }
  if(missing.length||!actors.length)return {complete:false,actors,missing,turns:[],cut:null,source:builds?'builds':'equipped'};
- const enemy=Number(team.enemyCombatSpd)||0;
- const configured=scenarioForTeam(team,actors),hasEnemies=configured.actors.some(a=>a.enemy);
- const scenario=simulateCombat([...configured.actors,...(!hasEnemies&&enemy>0?[{key:'__enemy__',name:'Inimigo',spd:enemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true,captureReadiness:true});scenario.risks.push(...missingDefenseConditions(team));const turns=scenario.firstTurns;
- return {complete:true,actors,missing:[],turns,scenario,cut:scenario.cut,source:builds?'builds':'equipped'};
+ const {scenario,referenceEnemy}=simulateTeamCombat(team,actors,{captureReadiness:true});
+ const turns=scenario.firstTurns;
+ return {complete:true,actors,missing:[],turns,scenario,cut:scenario.cut,referenceEnemy,source:builds?'builds':'equipped'};
 }
 export function validateWaveClear(unit,stats,skill,enemies,settings={}){
  const value=(key,fallback,min=0,max=1000000)=>{const n=Number(settings[key]??fallback);if(!Number.isFinite(n)||n<min||n>max)throw new Error(`Parâmetro de dano inválido: ${key}`);return n;};

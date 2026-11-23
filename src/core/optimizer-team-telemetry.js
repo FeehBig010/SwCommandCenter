@@ -21,8 +21,8 @@ export function optimizerTeamTelemetry(account,input,options={},builds=null){
   const valid=speedSyncValid(assignments,[team]),cut=preview.scenario?.cut===true;
   if(cut||team.optimizerSpeedSync!==false&&!valid)return {status:'risk',label:'Risco de Corte',reason:cut?'O inimigo age antes de a equipe completar a primeira rotação.':'A ordem ou os limites de ticks configurados não foram atendidos.',preview,members};
   if(team.optimizerSpeedSync===false)return {status:'free',label:'Sincronia livre',reason:'A trava anti-corte está desativada para este time.',preview,members};
-  if((preview.unknownDefense?.length||0)>0||(preview.scenario?.risks?.length||0)>0)return {status:'partial',label:'Cenário parcial',reason:'Há condições ou dados de defesa ausentes. Consulte os detalhes do cenário.',preview,members};
-  if(!(preview.turns||[]).some(t=>t.enemy)&&!Number(team.enemyCombatSpd)&&!team.combatScenario?.enemies?.length)return {status:'unknown',label:'Sem referência',reason:'Ordem interna preservada. Informe a defesa ou SPD inimiga para avaliar o corte; não há garantia contra um inimigo desconhecido.',preview,members};
+  if((preview.unknownDefense?.length||0)>0||(preview.scenario?.risks?.length||0)>0)return {status:'partial',label:'Cenário parcial',reason:preview.scenario?.risks?.join(' · ')||'Há condições ou dados de defesa ausentes. Consulte os detalhes do cenário.',preview,members};
+  if(preview.referenceEnemy||!(preview.turns||[]).some(t=>t.enemy))return {status:'unknown',label:'Sem referência',reason:'Ordem interna preservada. Informe a defesa ou SPD inimiga para avaliar o corte; não há garantia contra um inimigo desconhecido.',preview,members};
   return {status:'synced',label:'Sincronizado',reason:'Ordem e primeira rotação atendidas no cenário informado. Procs e eventos não informados não são previstos.',preview,members};
  }catch{return {...pending,reason:'Não foi possível calcular esta composição. Revise as unidades e o equipamento.'};}
 }

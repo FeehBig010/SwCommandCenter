@@ -1,5 +1,5 @@
 import {STATS,FOUR,SETS,STAT_NAMES} from './data.js';
-import {equivalentMonsters,canonicalMonsterId} from './CollabMapping.js';
+import {equivalentMonsters} from './CollabMapping.js';
 import {currentRuneIds} from './loadouts.js';
 import {lockContext} from './locks.js';
 import {isPriority} from './allocation.js';
@@ -19,9 +19,7 @@ export function weightedStatUtility(stats,weights,scales){
 }
 export const balanceLinkKey=(a,b)=>`${a}>${b}`;
 export const balanceLinkMode=(team,a,b)=>team.balanceLinks?.[balanceLinkKey(a,b)]==='strict'?'strict':'near';
-// Curated guaranteed team SPD buff. ATB boosters remain in the existing database.
-// Water Pudding Princess and its Cookie equivalent share Determination of Dessert Kingdom.
-export const grantsTeamSpeedBuff=master=>[26811,26311].includes(canonicalMonsterId(master))||[26811,26311].includes(Number(master));
+export {grantsTeamSpeedBuff} from './quick-skill-effects.js';
 export function balanceUnit(account,team,config,used=new Set()){
  const matches=(account?.units||[]).filter(u=>!used.has(u.id)&&equivalentMonsters(u.master,config.masterId));
  const unit=matches.find(u=>u.id===config.unitId)||(!config.unitId?matches.sort((a,b)=>b.level-a.level)[0]:null);

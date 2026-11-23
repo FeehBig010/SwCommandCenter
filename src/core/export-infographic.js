@@ -3,7 +3,7 @@ import {equivalentSkillIds} from './CollabMapping.js';
 import {orderRuneSets} from './rune-sets.js';
 import {SETS,FOUR} from './data.js';
 import {quickPreview,quickOrderLocked,quickCombatTeam} from './quick-calculator.js';
-import {firstRotationSafe,combatAttributes,scenarioForTeam,simulateCombat} from './speedTuner.js';
+import {firstRotationSafe,combatAttributes,simulateTeamCombat} from './speedTuner.js';
 import {calculateStats,artifactBonus,artifactEffects,setCounts} from './optimizer.js';
 import {currentRuneIds} from './loadouts.js';
 import {monsterLeader} from './monsterDatabase.js';
@@ -58,13 +58,12 @@ export function createInfographic(team,account=null,{builds=null,options={}}={})
  let preview;
  if(manual&&team.balanceEnabled){const timing=balanceCurrentTiming(team);preview=timing?{...timing.preview,referenceEnemy:timing.referenceSpeed}:quickPreview(team);}else if(manual)preview=quickPreview(team);
  else if(actors.length===configs.length){
-  const configured=scenarioForTeam(team,actors),enemy=Number(team.enemyCombatSpd)||0;
-  const scenario=simulateCombat([...configured.actors,...(!configured.actors.some(a=>a.enemy)&&enemy>0?[{key:'infographic-enemy',name:'Inimigo',spd:enemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true});
+  const {scenario}=simulateTeamCombat(team,actors);
   preview={complete:true,actors,scenario,turns:scenario.firstTurns,cut:scenario.cut};
  }else preview={complete:false,actors,turns:[],cut:null};
  const locked=manual&&quickOrderLocked(team),audit=team.syncAudit||team.perfectTuneAudit;
  const ladderRequired=team.automaticSync?.kind!=='boost';
- const safe=locked&&audit?.safe===true&&!preview.cut&&firstRotationSafe(preview.scenario,configs.map(c=>c.key))&&(!ladderRequired||preview.actors.every((a,i)=>i===0||preview.actors[i-1].spd-a.spd===1));
+ const safe=locked&&audit?.safe===true&&!preview.cut&&!preview.scenario?.risks?.length&&firstRotationSafe(preview.scenario,configs.map(c=>c.key))&&(!ladderRequired||preview.actors.every((a,i)=>i===0||preview.actors[i-1].spd-a.spd===1));
  // Manual preview is authoritative, including its forced Arena tower and
  // reference enemy. Account builds retain their own area/leader/equipment rules.
  for(const m of monsters){const actor=preview.actors.find(a=>a.master===m.master&&a.key===configs[m.position-1].key);if(actor)m.combatSpd=actor.spd;}
@@ -73,6 +72,6 @@ export function createInfographic(team,account=null,{builds=null,options={}}={})
  const context=manual&&!pve&&!team.exportContext?.title?'':teamCardHeading(team).title;
  const background=['arena','rta'].includes(area)?'/art/arena-coliseum.png':['rift','raid'].includes(area)?'/art/pve-rift.png':pve?pveArt(area==='pve'?'cairos':area,stage)||'/art/cairos-abyss.png':'/art/siege-castle.png';
  return {title:titles[area]||'TEAM',subtitle:pve?'DUNGEON GUIDE':!manual&&team.mode==='defense'?'DEFENSE GUIDE':'OFFENSE GUIDE',name:team.name||monsters.map(m=>m.name).join(' · '),context:context!==team.name?context:'',description:String(team.description||'').slice(0,1000),area,background,monsters,
-  orderLabel:!preview.complete?'Simulação indisponível · status não informados':locked?(safe?'Fila validada no cenário':'Ordem não validada'):preview.cut?'Risco de corte no cenário':'Cenário informado',safe,
+  orderLabel:!preview.complete?'Simulação indisponível · status não informados':preview.scenario?.risks?.length&&!preview.cut?'Cenário condicional':locked?(safe?'Fila validada no cenário':'Ordem não validada'):preview.cut?'Risco de corte no cenário':'Cenário informado',safe,
   turns:preview.turns.map(t=>({name:names.get(t.key)||(t.enemy?'Inimigo':'Monstro'),tick:Math.max(1,Math.trunc(t.tick)),enemy:!!t.enemy,disabled:!!t.disabled})),referenceEnemy:preview.referenceEnemy||0};
 }

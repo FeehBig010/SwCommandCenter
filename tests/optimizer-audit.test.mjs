@@ -81,10 +81,10 @@ test('maxed towers and automatic actual leader ignore stale manual bonuses for p
  const {team}=fixture('arena');team.configs[0].masterId=24511;team.arenaScenario={enemyBase:100,enemyRuneSpd:150,swift:true,enemyMaster:24511,enemyTower:0,enemyLeader:99};
  const p=prepareOptimizerTeam({...team,towerSpd:99,guildSpd:99,leaderSpd:99});assert.equal(p.towerSpd,15);assert.equal(p.guildSpd,0);assert.equal(p.leaderSpd,0);assert.deepEqual(p.leader,monsterLeader(24511));assert.equal(p.arenaScenario.enemyTower,15);assert.equal(p.arenaScenario.enemyLeader,24);assert.equal(p.enemyCombatSpd,314);
 });
-test('63 verified Collab IDs share canonical base, leader, opener and skills without merging instances/elements',()=>{
- assert.equal(Object.keys(collabMapping).length,63);assert.equal(canonicalMonsterId(26311),26811);assert.notEqual(canonicalMonsterId(26313),26811);
+test('64 verified Collab IDs share canonical base, leader, opener and skills without merging instances/elements',()=>{
+ assert.equal(Object.keys(collabMapping).length,64);assert.equal(canonicalMonsterId(26311),26811);assert.notEqual(canonicalMonsterId(26313),26811);
  for(const [id,target] of Object.entries(collabMapping)){assert.equal(Number(id)%10,target%10);assert.deepEqual(monsterBase(id),monsterBase(target));assert.deepEqual(monsterLeader(id),monsterLeader(target));assert.deepEqual(monsterOpener(id),monsterOpener(target));assert.deepEqual(equivalentSkillIds(skills,id),equivalentSkillIds(skills,target));}
- assert.equal(canonicalMonsterId(99991),99991);assert.equal(canonicalMonsterId(29311),29311); // no guessed Ciri counterpart
+ assert.equal(canonicalMonsterId(99991),99991);assert.equal(canonicalMonsterId(29311),29711);assert.equal(canonicalMonsterId(29312),29312);
 });
 test('incomplete and overlapping presets fail safely with empty results instead of inventing equipment',()=>{
  const {account,team}=fixture();account.units[0].runeIds.pop();const missing=auditPresets(account,[team],options);assert.equal(missing.builds.length,0);assert.ok(missing.failures.length);

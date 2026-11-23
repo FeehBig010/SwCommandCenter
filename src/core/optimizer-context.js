@@ -21,9 +21,10 @@ export function optimizerAreaTeams(teams,account,area,context='regular'){
 }
 export function prepareOptimizerTeam(team){
  const sync=optimizerSyncEnabled(team),leaderIndex=Math.max(0,Math.min(team.configs.length-1,Number(team.leaderIndex)||0));
- const leader=catalogLeader(team.configs[leaderIndex]?.masterId);
+ const fromCalculator=team.origin==='calculator'&&Object.hasOwn(team,'leader');
+ const leader=fromCalculator?team.leader:catalogLeader(team.configs[leaderIndex]?.masterId);
  const enemy=team.arenaScenario,enemyLeader=catalogLeader(enemy?.enemyMaster),enemySpeedLeader=enemyLeader?.stat==='spd'&&leaderApplies(enemyLeader,{element:Number(enemy?.enemyMaster)%10},team.gameMode)?enemyLeader.value:0,enemySpeed=Number(enemy?.enemyBase)>0?Math.ceil(Number(enemy.enemyBase)*(1+(enemy.swift?.25:0)+.15+enemySpeedLeader/100)+Number(enemy.enemyRuneSpd||0)):team.enemyCombatSpd;
- return {...team,enemyCombatSpd:enemySpeed,maxedTowers:true,towerSpd:15,guildSpd:0,leaderSpd:0,leader,leaderIndex,leaderKey:leader?team.configs[leaderIndex]?.key:null,optimizerSpeedSync:sync,autoOpener:true,cloneTiming:sync,order:'off',
+ return {...team,enemyCombatSpd:enemySpeed,maxedTowers:true,towerSpd:fromCalculator?team.towerSpd??15:15,guildSpd:fromCalculator?team.guildSpd??0:0,leaderSpd:fromCalculator?team.leaderSpd??0:0,leader,leaderIndex,leaderKey:leader?team.configs[leaderIndex]?.key:null,optimizerSpeedSync:sync,autoOpener:team.autoOpener!==false,cloneTiming:sync,order:'off',
   configs:team.configs.map(c=>({...c,lockSpeedSync:sync,...(!sync?{maxTick:0}:{}),rawPower:!sync})),
   arenaScenario:{...team.arenaScenario,enemyTower:15,enemyLeader:enemySpeedLeader}};
 }

@@ -1,5 +1,5 @@
 {
-  "source": "SWARFARM bestiary_data.json: same element, awakening, skill_group_id and all base stats",
+  "source": "SWARFARM bestiary_data.json: same element, awakening, skill_group_id and all base stats; Ciri/Rigna verified against the published SWARFARM bestiary",
   "ids": {
     "24011": 24511,
     "24012": 24512,
@@ -63,6 +63,7 @@
     "27712": 28212,
     "27713": 28213,
     "27714": 28214,
-    "27715": 28215
+    "27715": 28215,
+    "29311": 29711
   }
 }

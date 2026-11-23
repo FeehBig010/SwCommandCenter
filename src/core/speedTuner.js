@@ -1,7 +1,9 @@
 import passiveNotices from './passive-notices.json' with {type:'json'};
 import {leaderApplies,speedLeaderBonus,raidLeaderBonuses} from './leaders.js';
 import {MAX_TOWERS} from './combat-towers.js';
-import {resolvedQuickSkill} from './quick-skill-effects.js';
+import {automaticReferenceSpeed,combatSkillRisks,resolvedQuickSkill} from './quick-skill-effects.js';
+import {canonicalMonsterId} from './CollabMapping.js';
+import {monsterRecord} from './monsterDatabase.js';
 export const PASSIVES={20615:'amduat',25311:'miles',23512:'masha',23612:'masha_dismounted',26113:'sonia',21214:'tian_lang',16615:'ragdoll',22211:'abellio',22311:'abellio_beast',16312:'antares',16613:'leo',21314:'tablo'};
 const number=(v,fallback,min,max,label)=>{const n=Number(v??fallback);if(!Number.isFinite(n)||n<min||n>max)throw new Error(`${label} inválido.`);return n;};
 // Conservative requested 30-ATB floor, separate from the discrete scenario proof.
@@ -22,7 +24,7 @@ export function automaticSyncStrategy(team){
 }
 export function normalizeCombat(raw={}){const result={speedBuff:raw.speedBuff===true,slow:raw.slow===true,disabled:raw.disabled===true,oblivion:raw.oblivion===true,hpPercent:number(raw.hpPercent,100,0,100,'HP'),buffCount:number(raw.buffCount,0,0,100,'Buffs'),mashaStacks:number(raw.mashaStacks,0,0,5,'Stacks Masha'),targetTick:number(raw.targetTick,0,0,10000,'Tick alvo'),artifactSpd:number(raw.artifactSpd,0,0,500,'SPD adicional de artefatos'),artifactSpdBuff:number(raw.artifactSpdBuff,0,0,100,'Buff SPD de artefatos'),artifactSpdLostHp:number(raw.artifactSpdLostHp,0,0,100,'SPD por HP perdido'),artifactSpdDisabled:number(raw.artifactSpdDisabled,0,0,100,'SPD sob incapacidade')};if(![result.targetTick,result.buffCount,result.mashaStacks].every(Number.isInteger))throw new Error('Buffs, stacks e ticks devem ser inteiros.');return result;}
 function runtimeSpeedValue(raw,master,combat={},effects={}){
- const c=normalizeCombat(combat),p=c.oblivion?null:PASSIVES[master],a=effects.totals||effects;
+ const c=normalizeCombat(combat),p=c.oblivion?null:PASSIVES[canonicalMonsterId(master)],a=effects.totals||effects;
  const passive=p==='miles'?Math.min(1,c.buffCount*.05):p==='masha'?c.mashaStacks*.1:p==='masha_dismounted'?-.15:0;
  // Buff/slow and dynamic passive percentages add; artifact lost-HP/incapacity scales separately.
  const status=1+(c.speedBuff?.3*(1+(Number(a.spdBuff||0)+c.artifactSpdBuff)/100):0)-(c.slow?.3:0)+passive;
@@ -73,7 +75,7 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
  let lastTick=0;
  if(!Array.isArray(actors)||actors.length>20||!actors.length)throw new Error('Use de 1 a 20 unidades.');
  if(events.length>100||!Number.isInteger(maxTurns)||maxTurns<1||maxTurns>100)throw new Error('Cenário excede o limite.');
- const keys=new Set(),state=actors.map((a,index)=>{if(keys.has(a.key))throw new Error('Unidade repetida no cenário.');keys.add(a.key);const c=normalizeCombat(a.combat);return {...a,index,baseSpd:number(a.rawSpd??a.spd,0,.01,100000,'SPD'),spd:number(a.spd,0,.01,100000,'SPD'),atb:number(a.initialAtb,0,0,100,'Barra inicial'),hp:c.hpPercent,combat:c,passive:c.oblivion?null:PASSIVES[a.master],turns:0,dead:c.hpPercent<=0,nemesisRemainder:0};});
+ const keys=new Set(),state=actors.map((a,index)=>{if(keys.has(a.key))throw new Error('Unidade repetida no cenário.');keys.add(a.key);const c=normalizeCombat(a.combat);return {...a,index,baseSpd:number(a.rawSpd??a.spd,0,.01,100000,'SPD'),spd:number(a.spd,0,.01,100000,'SPD'),atb:number(a.initialAtb,0,0,100,'Barra inicial'),hp:c.hpPercent,combat:c,passive:c.oblivion?null:PASSIVES[canonicalMonsterId(a.master)],turns:0,dead:c.hpPercent<=0,nemesisRemainder:0};});
  const order=(a,b)=>(Math.abs(b.atb-a.atb)>1e-9?b.atb-a.atb:0)||b.spd-a.spd||Number(b.enemy||false)-Number(a.enemy||false)||(Number.isInteger(a.placementIndex)?a.placementIndex:a.index)-(Number.isInteger(b.placementIndex)?b.placementIndex:b.index);
  const alive=()=>state.filter(a=>!a.dead),same=(a,b)=>!!a.enemy===!!b.enemy;
  const turns=[],firstTurns=[],seen=new Set(),log=[],risks=[],forced=[],checkpoints=[],tickSnapshots=[];
@@ -87,7 +89,10 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
    readySeen.add(a.key);firstReady.push({key:a.key,name:a.name,master:a.master,tick,spd:a.rawSpd!==undefined?runtimeSpeed(a.baseSpd,a.master,a.combat,a.effects||{}):a.spd,atb:a.atb,enemy:!!a.enemy,disabled:a.combat.disabled,forced:a===forcedActor&&a.atb<100-1e-9,phase});
   }
  }
- for(const a of state)if(!a.combat.oblivion&&!a.passive&&passiveNotices[a.master])risks.push(`${a.name||a.key}: ${passiveNotices[a.master].join(', ')} exige eventos/regras adicionais; resultado condicional.`);
+ for(const a of state){
+  const notices=passiveNotices[canonicalMonsterId(a.master)];
+  if(!a.combat.oblivion&&!a.passive&&notices)risks.push(`${a.name||a.key}: ${notices.join(', ')} exige eventos/regras adicionais; resultado condicional.`);
+ }
  for(const a of state)if(a.passive==='antares')risks.push(`${a.name||a.key}: Antares pode interromper por RNG; cenário sem proc não garante segurança.`);
  const tls=()=>alive().filter(a=>a.passive==='tian_lang');
  function addBar(target,amount,source){
@@ -102,8 +107,8 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
   if(event.type==='leo_attack'){if(source.passive!=='leo')throw new Error('Ataque Leo exige Leo.');const vulnerable=targets.filter(t=>!t.will||t.turns>0);if(vulnerable.length)apply({...event,type:'reduce',targets:vulnerable.map(t=>t.key),amount:15},source,tick);if(vulnerable.length!==targets.length)log.push({tick,source:source.key,type:'will_immunity',targets:targets.filter(t=>t.will&&t.turns===0).map(t=>t.key),amount:0});}
   else if(event.type==='cleanse'){for(const t of targets){t.combat.disabled=false;t.combat.slow=false;}}
   else if(event.type==='tiana'){
-   if(source.master!==18913)throw new Error('Wind of Changes exige Tiana.');
-   for(const target of alive()){target.combat.disabled=false;target.combat.slow=false;target.combat.speedBuff=false;target.combat.buffCount=0;target.will=false;}
+   if(canonicalMonsterId(source.master)!==18913)throw new Error('Wind of Changes exige Tiana.');
+   for(const target of alive()){target.combat.disabled=false;target.combat.slow=false;target.combat.speedBuff=false;target.speedBuffTurns=0;target.combat.buffCount=0;target.will=false;}
    skillBoost(alive().filter(t=>same(t,source)),30,source);
   }
   else if(event.type==='boost'){skillBoost(targets,amount,source);}
@@ -121,9 +126,12 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
     }
    }
   }else if(event.type==='tablo'){
-   if(source.master!==21314)throw new Error('Reset Tablo exige Tablo como origem.');for(const a of alive()){a.atb=0;if(same(a,source)&&a.key!==source.key)a.combat.speedBuff=true;}source.combat.disabled=true;source.disabledFor=1;
+   if(canonicalMonsterId(source.master)!==21314)throw new Error('Reset Tablo exige Tablo como origem.');for(const a of alive()){a.atb=0;if(same(a,source)&&a.key!==source.key){a.combat.speedBuff=true;a.speedBuffTurns=0;}}source.combat.disabled=true;source.disabledFor=1;
   }else if(event.type==='buffs'){for(const a of alive())a.combat.buffCount=number(event.amount,0,0,100,'Buffs globais');}
-  else if(event.type==='speed_buff'){for(const t of targets)t.combat.speedBuff=event.enabled!==false;}
+  else if(event.type==='speed_buff'){for(const t of targets){
+   t.combat.speedBuff=event.enabled!==false;
+   t.speedBuffTurns=event.duration||0;
+  }}
   else if(event.type==='slow'){for(const t of targets)t.combat.slow=event.enabled!==false;}
   else if(event.type==='antares'){
    for(const t of targets){if(t.passive!=='antares'||same(t,source))throw new Error('Proc Antares exige Antares adversário da origem.');forced.push(t.key);}risks.push('Proc Antares forçado explicitamente; é um ramo condicional, não uma previsão de sorte.');
@@ -148,6 +156,7 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
   const row={key:actor.key,tick,spd:actor.spd,atb:actor.atb,enemy:!!actor.enemy,forced:!!forcedKey,disabled:actor.combat.disabled};if(row.disabled)risks.push(`${actor.name||actor.key}: turno consumido por incapacidade, sem executar ação.`);turns.push(row);if(!seen.has(actor.key)){seen.add(actor.key);firstTurns.push(row);}actor.turns++;actor.atb=0;
   // Disabled turns consume ATB but cannot execute the configured actions; duration changes require explicit scenario state.
   const skipped=actor.combat.disabled;
+  if(actor.speedBuffTurns>0&&--actor.speedBuffTurns===0)actor.combat.speedBuff=false;
   if(!skipped)for(const e of events.filter(e=>e.enabled!==false&&e.afterKey===actor.key&&Number(e.occurrence??1)===actor.turns)){apply(e,actor,tick);recordReady(tick,'event');}
   if(skipped&&actor.disabledFor){actor.disabledFor--;if(!actor.disabledFor)actor.combat.disabled=false;}
   for(const am of alive().filter(a=>a.passive==='amduat'&&!same(a,actor)))skillBoost([am],25,am);
@@ -168,21 +177,85 @@ export function normalizeScenario(raw={}){
  return {enemies:(raw.enemies||[]).map(e=>{const spd=number(e.spd,0,0,10000,'SPD inimiga'),master=number(e.master??e.masterId,0,0,1000000,'Monstro'),nemesisSets=number(e.nemesisSets,0,0,3,'Nemesis');if(!Number.isInteger(master)||!Number.isInteger(nemesisSets))throw new Error('Monstro/Nemesis inválido.');return {will:e.will===true,master,label:String(e.label||'Inimigo').slice(0,80),spd,nemesisSets,combat:normalizeCombat(e.combat)};}),events:(raw.events||[]).map(e=>{if(!COMBAT_EVENTS[e.type])throw new Error('Evento inválido.');const occurrence=number(e.occurrence,1,1,100,'Turno');if(!Number.isInteger(occurrence)||!Array.isArray(e.targets||[])||(e.targets||[]).length>10)throw new Error('Alvos/turno inválidos.');return {afterKey:ref(e.afterKey),occurrence,type:e.type,targets:(e.targets||[]).map(ref),amount:number(e.amount,0,0,1000,'Valor'),critical:e.critical===true,glancing:e.glancing===true,enabled:e.enabled!==false};})};
 }
 export function scenarioForTeam(team,actors){
- const raw=normalizeScenario(team.combatScenario);if(team.autoEnemyPassives)raw.enemies.forEach((e,i)=>{if(e.master===16613&&!raw.events.some(v=>v.afterKey===`enemy:${i}`&&v.type==='leo_attack'))raw.events.push({afterKey:`enemy:${i}`,type:'leo_attack',occurrence:1,targets:[`ally:${team.leoTarget||0}`],amount:15,critical:false,glancing:false});});if(team.autoOpener){
-  team.configs.forEach((config,index)=>{const skill=resolvedQuickSkill(config),source=`ally:${index}`;
-   if(!skill.isOpener||!actors.some(a=>a.key===config.key)||raw.events.some(e=>e.enabled!==false&&e.afterKey===source&&Number(e.occurrence??1)===1&&['boost','tiana'].includes(e.type)))return;
-   const targets=actors.filter(a=>!a.enemy).map(a=>`ally:${team.configs.findIndex(c=>c.key===a.key)}`).filter(ref=>!ref.endsWith(':-1'));
-   raw.events.push({afterKey:source,type:skill.type,occurrence:1,targets,amount:skill.boost});
-   if(skill.speedBuff&&!raw.events.some(e=>e.enabled!==false&&e.afterKey===source&&Number(e.occurrence??1)===1&&e.type==='speed_buff'))raw.events.push({afterKey:source,type:'speed_buff',occurrence:1,targets,amount:0});
-  });
- }const ref=k=>k.startsWith('ally:')?team.configs[Number(k.split(':')[1])]?.key:k;
- const combined=[...actors,...raw.enemies.filter(e=>e.spd>0).map(e=>{const i=raw.enemies.indexOf(e);return {...e,key:`enemy:${i}`,rawSpd:e.spd,enemy:true,name:e.label};})],available=new Set(combined.map(a=>a.key));
+ const raw=normalizeScenario(team.combatScenario),active=new Set(actors.map(actor=>actor.key)),risks=[];
+ if(team.autoEnemyPassives)raw.enemies.forEach((e,i)=>{
+  if(canonicalMonsterId(e.master)===16613&&!raw.events.some(v=>v.afterKey===`enemy:${i}`&&v.type==='leo_attack'))raw.events.push({afterKey:`enemy:${i}`,type:'leo_attack',occurrence:1,targets:[`ally:${team.leoTarget||0}`],amount:15});
+ });
+ const targets=team.configs.flatMap((config,index)=>active.has(config.key)?[`ally:${index}`]:[]);
+ team.configs.forEach((config,index)=>{
+  if(!active.has(config.key)||!config.masterId)return;
+  const source=`ally:${index}`,skill=resolvedQuickSkill(config);
+  const firstEvents=raw.events.filter(e=>e.enabled!==false&&e.afterKey===source&&e.occurrence===1);
+  risks.push(...combatSkillRisks(config,skill,firstEvents));
+  const autoBoost=team.autoOpener&&skill.isOpener&&!firstEvents.some(e=>e.type==='boost'||e.type==='tiana');
+  if(autoBoost)raw.events.push({afterKey:source,type:skill.type,occurrence:1,targets,amount:skill.boost});
+  if((autoBoost&&skill.speedBuff||team.autoOpener!==false&&skill.speedBuffOnly)&&!firstEvents.some(e=>e.type==='speed_buff')){
+   raw.events.push({afterKey:source,type:'speed_buff',occurrence:1,targets,amount:0,...(skill.speedBuffDuration?{duration:skill.speedBuffDuration}:{})});
+  }
+ });
+ const ref=k=>k.startsWith('ally:')?team.configs[Number(k.split(':')[1])]?.key:k;
+ const combined=[...actors.map(actor=>{
+  const placement=team.gamePlacement?.indexOf(actor.key);
+  return placement>=0?{...actor,placementIndex:placement}:actor;
+ }),...raw.enemies.flatMap((e,i)=>e.spd>0?[{...e,key:`enemy:${i}`,rawSpd:e.spd,enemy:true,name:e.label}]:[])];
+ const available=new Set(combined.map(a=>a.key));
  const resolved=raw.events.map(e=>({...e,afterKey:ref(e.afterKey),targets:e.targets.map(ref)}));
- return {actors:combined,events:team.includePartial?resolved.filter(e=>available.has(e.afterKey)).map(e=>({...e,targets:e.targets.filter(k=>available.has(k))})):resolved};
+ return {actors:combined,events:team.includePartial?resolved.filter(e=>available.has(e.afterKey)).map(e=>({...e,targets:e.targets.filter(k=>available.has(k))})):resolved,risks};
 }
-export function missingDefenseConditions(team){
- const configured=new Set((team.combatScenario?.enemies||[]).filter(e=>Number(e.spd)>0).map(e=>Number(e.master??e.masterId)));
- return (team.enemyDefense||[]).filter(m=>!configured.has(Number(m.masterId))&&(PASSIVES[m.masterId]||passiveNotices[m.masterId])).map(m=>`${m.label}: informe SPD e eventos da defesa no cenário anti-corte; há mecânica de SPD/barra a considerar.`);
+
+// Known Siege defense gear supplies real combat actors. A tick-only target
+// remains a timeline marker and does not participate in the ATB queue.
+function appendSiegeDefense(team,configured){
+ const references=[],unknownDefense=[],matched=new Set();
+ for(const [i,member] of (team.enemyDefense||[]).entries()){
+  const master=canonicalMonsterId(member.masterId);
+  const explicit=configured.actors.find(a=>a.enemy&&!matched.has(a.key)&&canonicalMonsterId(a.master)===master);
+  if(explicit){matched.add(explicit.key);continue;}
+  const actor={key:`defense:${i}`,master:member.masterId,name:member.label,enemy:true};
+  const known=Number(member.combatSpd),bonus=Number(member.bonusSpd??(member.basis==='bonus'?member.goals?.spd:0));
+  const sheet=member.basis==='total'?Number(member.goals?.spd):0,unit=monsterRecord(member.masterId);
+  if(known>0){configured.actors.push({...actor,spd:known,combat:member.combat});matched.add(actor.key);continue;}
+  if(unit&&(bonus>0||sheet>0)){
+   const defense={gameMode:'siege',towerSpd:15,guildSpd:0,leader:team.siege?.defenseLeader||null};
+   const rawSpd=combatSpeedFromSheet(sheet||unit.base.spd+bonus,unit,defense);
+   configured.actors.push({...actor,spd:runtimeSpeed(rawSpd,actor.master,member.combat),rawSpd,combat:member.combat});matched.add(actor.key);continue;
+  }
+  const tick=Number(member.maxTick);
+  if(Number.isInteger(tick)&&tick>0)references.push({...actor,tick,spd:null,referenceOnly:true});
+  else unknownDefense.push(member.label);
+ }
+ return {references,unknownDefense};
+}
+
+// Auto-tuned quick plans already chose an opening action; their legacy floor
+// switch can hide the advisory without removing the chosen action.
+export const usesAutomaticOpening=team=>team.autoOpener!==false||team.automaticSync?.kind==='boost';
+
+export function simulateTeamCombat(input,actors,{includeReference=true,...options}={}){
+ const team={...input,autoOpener:usesAutomaticOpening(input),autoEnemyPassives:input.autoEnemyPassives??true};
+ const configured=scenarioForTeam(team,actors);
+ const {references,unknownDefense}=appendSiegeDefense(team,configured);
+ const explicitEnemy=configured.actors.find(a=>a.enemy),enemy=Number(team.enemyCombatSpd)||0;
+ const strategy=automaticSyncStrategy({...team,configs:team.configs.filter(c=>actors.some(a=>a.key===c.key))});
+ const referenceEnemy=includeReference&&!team.target_goals&&!team.enemyDefense?.length&&!explicitEnemy&&!enemy&&(team.balanceEnabled||team.autoOpener&&strategy.kind==='boost'||cascadingBoostPlan(team,configured.events))
+  ?automaticReferenceSpeed(actors[0].spd,team):0;
+ const reference=enemy||referenceEnemy;
+ if(!explicitEnemy&&reference>0)configured.actors.push({
+  key:'quick-enemy',name:enemy?(team.enemyReference?.label||(team.enemyDefense?.length?'Referência inimiga':'Inimigo')):'Inimigo de referência',
+  master:enemy?team.enemyReference?.masterId:0,spd:reference,enemy:true,
+ });
+ const scenario=simulateCombat(configured.actors,{
+  stopAfterFirst:true,...options,events:configured.events,gaugeStep:gaugeStepForMode(team.gameMode,team.useRtaTickRate),
+ });
+ const defenseRisks=[...unknownDefense,...references.map(r=>r.name)].map(name=>`${name}: SPD da defesa ausente; o risco de corte permanece condicional.`);
+ const enemyRisks=configured.actors.filter(a=>a.enemy&&canonicalMonsterId(a.master)===29711&&!a.combat?.oblivion)
+  .map(a=>`${a.name||'Rigna/Ciri'}: a passiva de crítico depende da SPD do atacante; o dano não é resolvido automaticamente.`);
+ scenario.risks=[...new Set([...scenario.risks,...configured.risks,...defenseRisks,...enemyRisks,...missingDefenseConditions(team,configured.actors)])];
+ return {scenario,actors:configured.actors,references,unknownDefense,referenceEnemy,referenceSpeed:explicitEnemy?.spd||reference};
+}
+export function missingDefenseConditions(team,actors=[]){
+ const configured=new Set([...actors.filter(a=>a.enemy),...(team.combatScenario?.enemies||[])].filter(e=>Number(e.spd)>0).map(e=>canonicalMonsterId(e.master??e.masterId)));
+ return (team.enemyDefense||[]).filter(m=>!configured.has(canonicalMonsterId(m.masterId))&&(PASSIVES[canonicalMonsterId(m.masterId)]||passiveNotices[canonicalMonsterId(m.masterId)]||canonicalMonsterId(m.masterId)===29711)).map(m=>`${m.label}: informe SPD e eventos da defesa no cenário anti-corte; há mecânica de SPD/barra a considerar.`);
 }
 
 // Exact displayed delta after rounding, buffs/passives and capped combat attributes.

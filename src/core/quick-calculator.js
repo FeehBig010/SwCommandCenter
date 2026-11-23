@@ -3,10 +3,10 @@ import {goalReport} from './optimizer.js';
 import {pveSlots} from './pve-stages.js';
 import {blankConfig,makeTeam,STATS,FOUR,GAME_MODES} from './data.js';
 import {monsterBase} from './monster-search.js';
-import {requiredSheetSpeed,leaderImpact,combatAttributes,scenarioForTeam,simulateCombat,cascadingBoostPlan,cascadeReady,firstRotationSafe,automaticSyncStrategy,NATURAL_GAUGE_STEP,RTA_GAUGE_STEP,gaugeStepForMode} from './speedTuner.js';
+import {requiredSheetSpeed,leaderImpact,combatAttributes,simulateTeamCombat,cascadingBoostPlan,cascadeReady,firstRotationSafe,automaticSyncStrategy,NATURAL_GAUGE_STEP,RTA_GAUGE_STEP} from './speedTuner.js';
 import {catalogLeader} from './leader-catalog.js';
 import {canonicalMonsterId} from './CollabMapping.js';
-import {resolvedQuickSkill,quickSkillOptions,automaticReferenceSpeed} from './quick-skill-effects.js';
+import {resolvedQuickSkill,quickSkillOptions} from './quick-skill-effects.js';
 const fallback={hp:10000,atk:800,def:650,spd:100,cr:15,cd:50,res:15,acc:0};
 export function quickConfig(master=null,name='Escolher monstro'){
  const base={...(monsterBase(master)||fallback)};
@@ -18,7 +18,7 @@ const resolvedTowerSpd=team=>team?.speedMode==='snapshot'||team?.customTowerSpd?
 export const quickCombatTeam=team=>({...team,towerSpd:resolvedTowerSpd(team),guildSpd:team.speedMode==='snapshot'?Number(team.guildSpd)||0:0,sheetSpeedFormula:true});
 
 export function quickPreview(input,{captureCheckpoints=false,actorCache=null,includeReference=true,captureReadiness=false,captureTickSnapshots=false,captureTickLimit=60,includePartial=input.includePartial===true}={}){
- const team={...quickCombatTeam(input),autoOpener:true};
+ const team=quickCombatTeam(input);
  const enabled=team.configs.filter(c=>c.enabled!==false),missing=enabled.filter(c=>!c.masterId).map(c=>c.label),partial=missing.length>0;
  if(includePartial)team.includePartial=true;
  const active=includePartial?enabled.filter(c=>c.masterId):enabled,actors=[];
@@ -31,10 +31,7 @@ export function quickPreview(input,{captureCheckpoints=false,actorCache=null,inc
   actors.push({key:c.key,...(placement>=0?{placementIndex:placement}:{}),will:(counts[15]||0)>=2,master:c.masterId,name:c.label,spd:combat.spd,rawSpd:combat.rawSpd,combat:c.combat,...(c.snapshotArtifactEffects?{effects:c.snapshotArtifactEffects}:{}),attributes:combat,leaderBonus:leaderImpact(unit,stats,counts,team,c.combat,c.snapshotArtifactEffects).bonus,goals:goalReport({...stats,combat},c),nemesisSets:Math.floor((counts[14]||0)/2)});if(actorCache)actorCache.set(c,actors.at(-1));
  }
  if(!actors.length)return {complete:false,partial,missing,actors:[],turns:[],cut:null};
- const configured=scenarioForTeam(team,actors),enemy=Number(team.enemyCombatSpd)||0,foes=configured.actors.some(a=>a.enemy);const cascade=cascadingBoostPlan(team,configured.events),referenceEnemy=includeReference&&!foes&&!enemy&&(cascade||automaticSyncStrategy(team).kind==='boost')?automaticReferenceSpeed(actors[0].spd,team):0;const gaugeStep=gaugeStepForMode(team.gameMode,team.useRtaTickRate);
- const enemyActorLabel=team.enemyReference?.label&&enemy>0?team.enemyReference.label:referenceEnemy?'Inimigo de referência':'Inimigo';
- const enemyActorMaster=team.enemyReference?.masterId&&enemy>0?team.enemyReference.masterId:0;
- const scenario=simulateCombat([...configured.actors,...(!foes&&(enemy||referenceEnemy)>0?[{key:'quick-enemy',name:enemyActorLabel,master:enemyActorMaster,spd:enemy||referenceEnemy,enemy:true}]:[])],{events:configured.events,stopAfterFirst:true,captureCheckpoints,captureReadiness,captureTickSnapshots,captureTickLimit,gaugeStep});
+ const {scenario,referenceEnemy}=simulateTeamCombat(team,actors,{includeReference,captureCheckpoints,captureReadiness,captureTickSnapshots,captureTickLimit});
  return {complete:true,partial,missing,actors,turns:scenario.firstTurns,scenario,cut:scenario.cut,referenceEnemy,source:'manual'};
 }
 export function quickLeader(master){return catalogLeader(master);}

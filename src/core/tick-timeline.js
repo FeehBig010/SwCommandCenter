@@ -32,10 +32,12 @@ export function tickCardsFromPreview(preview,{maxTicks=120}={}){
  const firstAllyTurns=turns.filter(t=>!t.enemy).map(t=>t.key);
  const inOrder=allyKeys.every((k,idx)=>firstAllyTurns[idx]===k);
  const cut=preview.cut===true;
- const synced=!preview.partial&&preview.cut===false&&inOrder&&!turns.some(t=>t.disabled||t.skipped);
+ const conditional=!!preview.scenario.risks?.length;
+ const synced=!conditional&&!preview.partial&&preview.cut===false&&inOrder&&!turns.some(t=>t.disabled||t.skipped);
  const statusMessage=preview.partial?'Cenário parcial: somente os monstros selecionados foram simulados.'
   :synced?'Ordem preservada contra a referência simulada; não garante segurança contra outras defesas.'
   :cut?'Interrupção observada no cenário. Consulte os turnos e eventos.'
+  :conditional?'Cenário condicional. Consulte as limitações dos efeitos e eventos.'
   :inOrder?'Ordem observada, sem referência suficiente para avaliar cortes.'
   :'Aliados fora da ordem de turno esperada.';
  const lastFirstTurnTick=Math.max(1,...turns.map(t=>Number(t.tick)||1));
