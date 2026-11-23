@@ -1,0 +1,13 @@
+.build-lab-conversation{display:grid;gap:12px;margin:16px 0 24px;padding:18px;border:1px solid var(--border-color,rgba(127,127,127,.3));border-radius:16px;background:var(--surface,transparent)}
+.build-lab-conversation h2,.build-lab-conversation h3{margin:0}
+.build-lab-conversation form{display:grid;gap:12px}
+.build-lab-conversation textarea{width:100%;min-height:88px;resize:vertical;font:inherit;line-height:1.5}
+.build-lab-chat-history{display:grid;gap:8px;max-height:220px;overflow-y:auto;overscroll-behavior:contain}
+.build-lab-chat-history p{margin:0;padding:10px 12px;border:1px solid var(--border-color,rgba(127,127,127,.2));border-radius:12px}
+.build-lab-chat-history p:nth-child(odd){background:var(--surface-2,rgba(127,127,127,.06))}
+.build-lab-chat-results{display:grid;gap:12px}
+.build-lab-chat-results article{margin:0}
+.build-lab-chat-results ul{margin:6px 0;padding-left:20px}
+.build-lab-chat-results li{margin:4px 0;overflow-wrap:anywhere}
+.build-lab-chat-results details{margin-top:8px}
+@media(max-width:600px){.build-lab-conversation{padding:12px}.build-lab-chat-history{max-height:160px}}
