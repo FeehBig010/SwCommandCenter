@@ -15,6 +15,23 @@ const rignaSkills=[
  {name:'Speed Difference (Passive)',maxLevel:1},
 ];
 const speedBuffOnlySkills={26811:{slot:3,duration:2,maxLevel:2}};
+// Damage upgrades are indexed by skill level, including non-damage upgrades.
+// Source: published SWARFARM bestiary for awakened Mihyang and Water Ciri.
+const damageSkills={
+ 18311:{2:{hits:3,spdAtkOffset:66,spdAtkDivisor:99,damageUps:[0,5,15,25,25],intrinsicCritical:true}},
+ 29711:{
+  1:{hits:2,spdAtkOffset:155,spdAtkDivisor:135,damageUps:[0,5,10,10,15,25,25]},
+  2:{hits:1,multiplier:4.7,damageUps:[0,5,15,25,25],speedIgnore:true},
+ },
+};
+export function resolvedDamageSkill(config){
+ const master=canonicalMonsterId(config.masterId),skill=resolvedQuickSkill(config);
+ if(skill.speedBuffOnly)return {slot:skill.slot,level:skill.level,hits:0};
+ const spec=damageSkills[master]?.[skill.slot];
+ if(!spec)return null;
+ const {damageUps,...damage}=spec;
+ return {...damage,slot:skill.slot,level:skill.level,skillUps:damageUps[skill.level-1],speedCritical:master===29711};
+}
 export const grantsTeamSpeedBuff=master=>!!speedBuffOnlySkills[canonicalMonsterId(master)];
 
 export function quickSkillOptions(masterId){
@@ -26,7 +43,7 @@ export function quickSkillOptions(masterId){
   const isOpener=!!opener&&slot===Number(opener.slot||3);
   const buff=speedBuffOnlySkills[master],speedBuffOnly=slot===buff?.slot;
   return {id:meta.id??null,slot,label:`S${slot}`,name:meta.name||`Skill ${slot}`,icon:meta.icon?`/game-icons/skills/${meta.icon}`:null,
-   isPassive,isOpener,speedBuffOnly,speedBuffDuration:speedBuffOnly?buff.duration:0,maxLevel:speedBuffOnly?buff.maxLevel:meta.maxLevel,coverage:isPassive?(supportedPassives.has(master)?'conditional':'unsupported'):isOpener?'supported':speedBuffOnly?'conditional':'unsupported',
+   isPassive,isOpener,speedBuffOnly,speedBuffDuration:speedBuffOnly?buff.duration:0,attackBuffDuration:speedBuffOnly?buff.duration:0,maxLevel:speedBuffOnly?buff.maxLevel:damageSkills[master]?.[slot]?.damageUps.length??meta.maxLevel,coverage:isPassive?(supportedPassives.has(master)?'conditional':'unsupported'):isOpener?'supported':speedBuffOnly?'conditional':'unsupported',
    openerBoost:isOpener?Number(opener.boost||0):0,openerSpeedBuff:isOpener?!!opener.speedBuff:false,openerType:isOpener?opener.type:null};
  });
 }
@@ -46,12 +63,12 @@ export function resolvedQuickSkill(config={}){
  const boost=isOpener?Math.min(100,Number(opener.boost||0)*(upgraded?[1,1.05,1.15][level-1]:1)+legacyBonus):0;
  return {...selected,slot,level,skillLevel:level,maxLevel,isOpener,boost,speedBuff:!!selected?.speedBuffOnly||isOpener&&!!opener.speedBuff,type:isOpener?opener.type:null,
   profile:reference?'bernard-2a-reference':master===11533?'bernard-2a':'catalog',hypothetical:reference,legacyBonus,
-  limitation:reference?'Comparação 00Peanuts: curva 2A aplicada explicitamente ao Bernard normal; não é a habilidade real desta forma.':legacyBonus?'Bônus manual legado, sem curva de skill-up validada.':selected?.speedBuffOnly?'Simula o buff de SPD. ATK, imunidade e recarga não são simulados.':!isOpener?'Esta habilidade não possui efeitos ativos automáticos modelados.':null};
+  limitation:reference?'Comparação 00Peanuts: curva 2A aplicada explicitamente ao Bernard normal; não é a habilidade real desta forma.':legacyBonus?'Bônus manual legado, sem curva de skill-up validada.':selected?.speedBuffOnly?'Simula o buff de SPD. ATK é considerado na avaliação de dano. Imunidade e recarga ficam fora da simulação.':!isOpener?'Esta habilidade não possui efeitos ativos automáticos modelados.':null};
 }
 
 export function combatSkillRisks(config,skill,events){
  const master=canonicalMonsterId(config.masterId),risks=[];
- if(skill.speedBuffOnly)risks.push('a S3 tem cobertura de SPD; ATK, imunidade e recarga não são simulados.');
+ if(skill.speedBuffOnly)risks.push('a S3 tem cobertura de SPD; ATK é considerado na avaliação de dano. Imunidade e recarga ficam fora da simulação.');
  if(master===18311&&skill.slot===2)risks.push(events.some(e=>e.enabled!==false&&e.occurrence===1&&e.type==='boost')
   ?'a barra da S2 foi informada como evento; remoções e resistência não são simuladas.'
   :'a barra da S2 depende dos buffs removidos; informe um evento de boost já resolvido.');

@@ -10,7 +10,7 @@ function rune(id,slot,subs=[[8,3,0,0],[2,8,0,0],[4,8,0,0],[12,8,0,0]]){return {i
 test('damage modifiers use effective DEF, Brand, glancing and per-hit artifact additions',()=>{
  const stats={total:base},settings={enabled:true,multiplier:4,hits:3,enemyDef:1000,variance:1,critMode:'critical'},effects={totals:{additionalSpd:100,additionalHp:1},unknown:[]};
  const normal=estimateRealDamage(unit,stats,settings,effects),armor=estimateRealDamage(unit,stats,{...settings,armorBreak:true},effects),marked=estimateRealDamage(unit,stats,{...settings,brand:true},effects),glance=estimateRealDamage(unit,stats,{...settings,glancing:true},effects);
- assert.equal(armor.effectiveEnemyDef,300);assert.ok(armor.total>normal.total);assert.equal(normal.additionalDamage,600);assert.equal(marked.additionalDamage,750);assert.equal(marked.skillDamage,Math.floor(4000*2*1000/4640*1.25)*3);assert.equal(glance.critChance,0);assert.ok(glance.total<normal.total);
+ assert.equal(armor.effectiveEnemyDef,300);assert.ok(armor.total>normal.total);assert.equal(normal.additionalDamage,600);assert.equal(marked.additionalDamage,750);assert.equal(marked.skillDamage,Math.floor(4000*2*1000/4714*1.25)*3);assert.equal(glance.critChance,0);assert.ok(glance.total<normal.total);
  const resisted=estimateRealDamage(unit,stats,{...settings,enemyRes:100},effects),minimum=estimateRealDamage(unit,stats,{...settings,enemyRes:0},effects);assert.equal(resisted.total,minimum.total);assert.equal(resisted.debuffChance,50);assert.equal(minimum.debuffChance,85);
 });
 test('validated skill profiles do not invent coefficients for unsupported monsters',()=>{

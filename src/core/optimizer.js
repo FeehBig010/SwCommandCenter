@@ -232,7 +232,7 @@ export function equippedBuild(account,team,config,options={}){
 export function equippedTeamBuilds(account,team,options={}){return team.configs.filter(c=>c.enabled!==false).map(c=>equippedBuild(account,team,c,options)).filter(Boolean);}
 
 // First-rotation preview: prefer current optimized builds; otherwise use complete equipped sets.
-export function teamTurnPreview(account,team,options={},builds=null){
+export function teamTurnPreview(account,team,options={},builds=null,{captureDamageState=false}={}){
  const active=team.configs.filter(c=>c.enabled),actors=[],missing=[];
  for(const config of active){
   const unit=account?.units.find(u=>u.id===config.unitId);
@@ -245,7 +245,10 @@ export function teamTurnPreview(account,team,options={},builds=null){
   actors.push({key:config.key,unitId:unit.id,master:unit.master,name:unit.name,spd:combat.spd,rawSpd:combat.rawSpd,attributes:combat,combat:config.combat,effects,will:(counts?.[15]||0)>=2,nemesisSets:Math.floor((counts?.[14]||0)/2)});
  }
  if(missing.length||!actors.length)return {complete:false,actors,missing,turns:[],cut:null,source:builds?'builds':'equipped'};
- const {scenario,referenceEnemy}=simulateTeamCombat(team,actors,{captureReadiness:true});
+ const combatActors=captureDamageState?actors.map(actor=>({
+  ...actor,attackBuff:active.find(config=>config.key===actor.key)?.damage?.attackBuff===true,
+ })):actors;
+ const {scenario,referenceEnemy}=simulateTeamCombat(team,combatActors,{captureReadiness:true,captureDamageState});
  const turns=scenario.firstTurns;
  return {complete:true,actors,missing:[],turns,scenario,cut:scenario.cut,referenceEnemy,source:builds?'builds':'equipped'};
 }
@@ -273,7 +276,7 @@ export function validateWaveClear(unit,stats,skill,enemies,settings={}){
 export function equippedDamagePreview(account,config,team={},options={},build=null){
  if(!config.damage?.enabled)return null;
  const unit=account?.units.find(u=>u.id===config.unitId);if(!unit)throw new Error('Selecione uma unidade da conta para estimar dano.');
- let stats=build?.stats;
- if(!stats){const runes=(unit.runeIds||[]).map(id=>account.runes.find(r=>r.id===id)).filter(Boolean);if(runes.length!==6||new Set(runes.map(r=>r.slot)).size!==6)throw new Error('Importe seis runas equipadas ou otimize para calcular a prévia.');stats=calculateStats(unit,runes,options.artifacts!==false&&config.artifacts!==false?artifactBonus(account,unit):{});stats.combat={spd:combatSpeed(unit,stats,setCounts(runes),team)};}
+ const stats=build?.stats??equippedBuild(account,team,config,options)?.stats;
+ if(!stats)throw new Error('Importe seis runas equipadas ou otimize para calcular a prévia.');
  return estimateRealDamage(unit,stats,config.damage,artifactEffects(account,unit,options.artifacts!==false&&config.artifacts!==false));
 }
