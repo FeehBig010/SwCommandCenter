@@ -58,5 +58,22 @@ try{
  await page.getByRole('button',{name:'Detalhes do time 1',exact:true}).click();
  assert.equal(await panel.getByLabel('Ignore DEF assumido (%)').inputValue(),'');
  assert.equal(await panel.getByRole('heading',{name:/Maior dano encontrado/}).count(),0);
- console.log('PASS Build Lab Siege rotation: real worker, both branches, IDs, tick stats, stale inputs, mobile and read-only result.');
+ await page.getByText('Validação de Siege 3v3',{exact:true}).click();
+ const validation=page.getByRole('form',{name:'Validação de Siege 3v3',exact:true});
+ for(let i=0;i<3;i++){
+  const slot=validation.getByRole('group',{name:`Defensor ${i+1}`,exact:true});
+  await slot.getByLabel(`Monstro ${i+1} (ID no catálogo)`,{exact:true}).fill('18311');
+  await slot.getByLabel('HP',{exact:true}).fill('1000');
+  await slot.getByLabel('DEF',{exact:true}).fill('1000');
+  await slot.getByLabel('SPD',{exact:true}).fill(String(160-i*10));
+  await slot.getByLabel('Efeito da primeira ação',{exact:true}).selectOption('none');
+ }
+ await validation.getByLabel('Ignore DEF em 3v3 (%)').fill('50');
+ await validation.getByRole('button',{name:'Validar defesa 3v3',exact:true}).click();
+ await page.getByRole('heading',{name:'Configuração atual · READY',exact:true}).waitFor();
+ assert.ok((await page.evaluate(()=>window.rotationWorkers)).includes('siege-3v3'));
+ assert.ok(await page.getByRole('list',{name:'Linha do tempo'}).first().getByRole('listitem').count()>=6);
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ assert.deepEqual(errors,[]);
+ console.log('PASS Build Lab Siege rotation and 3v3: real worker, both branches, IDs, tick stats, stale inputs, mobile and read-only result.');
 }finally{await browser.close();}

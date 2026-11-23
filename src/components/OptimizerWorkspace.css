@@ -67,3 +67,16 @@
 @media(min-width:1151px){.optimizer-list-columns,.optimizer-team-row{grid-template-columns:minmax(125px,1fr) 112px minmax(220px,2.2fr) 130px 285px}}
 @media(min-width:901px) and (max-width:1150px){.optimizer-list-columns,.optimizer-team-row{grid-template-columns:minmax(100px,1fr) 96px minmax(150px,1.5fr) 105px 170px}.optimizer-row-actions{flex-wrap:wrap;justify-content:flex-end}.optimizer-row-actions .button{font-size:10px;padding-inline:5px}}
 @media(min-width:701px) and (max-width:900px){.optimizer-list-columns,.optimizer-team-row{grid-template-columns:minmax(90px,1fr) 94px minmax(140px,1.6fr) 100px 76px}.optimizer-row-actions{gap:5px}}
+
+.siege-3v3-turns {
+ display:grid;
+ grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));
+ gap:.5rem;
+ padding-inline-start:1.25rem;
+}
+.siege-3v3-turns li {
+ border-inline-start:3px solid #5395c3;
+ padding:.4rem .6rem;
+ overflow-wrap:anywhere;
+}
+.siege-3v3-turns li[data-enemy="true"] { border-inline-start-color:#ca7868; }

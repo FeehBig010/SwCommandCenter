@@ -5,7 +5,7 @@ import {resolvedDamageSkill} from './quick-skill-effects.js';
 
 // Conditional damage projection of the existing action queue. All equipment
 // comes from the caller's builds or the current equipped/planned snapshot.
-export function siegeRotationDamage(account,team,target,{builds,options={},variance=1,rignaIgnorePercent,mihyangStrips,defenseBuffRemovedAfterHit,validatePreview}={}){
+export function siegeRotationDamage(account,team,target,{builds,options={},variance=1,rignaIgnorePercent,mihyangStrips,defenseBuffRemovedAfterHit,validatePreview,attackKeys}={}){
  if(team.gameMode!=='siege')throw new Error('Selecione um cenário de Siege.');
  if(!target?.key||team.configs.some(config=>config.key===target.key)||target.def==null||target.element==null)throw new Error('Informe a referência, DEF e elemento do alvo.');
  const {enemyDef,enemyElement,enemyDamageReduction,enemyCritReduction,ignoreDefensePercent:providedIgnore,variance:damageVariance}=normalizeDamageSettings({
@@ -41,7 +41,7 @@ export function siegeRotationDamage(account,team,target,{builds,options={},varia
  if(mihyang&&mihyangStrips!==undefined)risks.add(`Mihyang: ${mihyangStrips} remoções informadas para este ramo, sem sorteio de resistência.`);
  let defenseBuff=target.defenseBuff===true;
  const actions=[];
- for(const turn of preview.turns.filter(turn=>!turn.enemy)){
+ for(const turn of preview.turns.filter(turn=>!turn.enemy&&(!attackKeys||attackKeys.includes(turn.key)))){
   const member=members.find(member=>member.config.key===turn.key);
   const {config,unit,skill,build}=member;
   const atAction=preview.scenario.damageStates.find(row=>row.tick===turn.tick)?.actors;

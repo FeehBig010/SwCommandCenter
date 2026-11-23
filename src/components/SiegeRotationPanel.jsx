@@ -1,3 +1,4 @@
+import Siege3v3Panel from './Siege3v3Panel';
 import {useEffect,useRef,useState} from 'react';
 
 const labels={damage:'Maior dano encontrado',robust:'Alternativa mais robusta',current:'Configuração atual'};
@@ -47,6 +48,7 @@ export default function SiegeRotationPanel({account,team,options,reservedIds,all
   {current.message&&<p role="status">{current.message}</p>}
   {current.error&&<p role="alert">{current.error}</p>}
   {current.result&&<RotationResults result={current.result}/>}
+  <Siege3v3Panel account={account} team={team} options={options} reservedIds={reservedIds} allTeams={allTeams} enabled={enabled} alternative={current.result?.alternatives.find(a=>a.kind==='damage')}/>
  </section>;
 }
 

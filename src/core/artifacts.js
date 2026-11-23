@@ -14,7 +14,7 @@ const BY_KEY=new Map(Object.entries(ARTIFACT_EFFECTS).map(([id,[key]])=>[key,Num
 // Named imports may explicitly describe own-HP CD; no native numeric effect ID is invented for it.
 BY_KEY.set('critLostHp',null);
 export function normalizeArtifactSubstats(artifact){
- const raw=Array.isArray(artifact.sec_eff)&&artifact.sec_eff.length?artifact.sec_eff:artifact.artifact_substats??artifact.subs??[];
+ const raw=Array.isArray(artifact.sec_eff)&&artifact.sec_eff.length?artifact.sec_eff:artifact.sec_effects??artifact.artifact_substats??artifact.subs??[];
  const rows=Array.isArray(raw)?raw:Object.entries(raw||{}).map(([type,value])=>({type,value}));
  return rows.slice(0,16).flatMap(row=>{
   const type=Array.isArray(row)?row[0]:row?.effect_id??row?.id??row?.type??row?.key;
