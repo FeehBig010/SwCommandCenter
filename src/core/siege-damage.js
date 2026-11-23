@@ -5,7 +5,7 @@ import {resolvedDamageSkill} from './quick-skill-effects.js';
 
 // Conditional damage projection of the existing action queue. All equipment
 // comes from the caller's builds or the current equipped/planned snapshot.
-export function siegeRotationDamage(account,team,target,{builds,options={},variance=1,rignaIgnorePercent,mihyangStrips,defenseBuffRemovedAfterHit}={}){
+export function siegeRotationDamage(account,team,target,{builds,options={},variance=1,rignaIgnorePercent,mihyangStrips,defenseBuffRemovedAfterHit,validatePreview}={}){
  if(team.gameMode!=='siege')throw new Error('Selecione um cenário de Siege.');
  if(!target?.key||team.configs.some(config=>config.key===target.key)||target.def==null||target.element==null)throw new Error('Informe a referência, DEF e elemento do alvo.');
  const {enemyDef,enemyElement,enemyDamageReduction,enemyCritReduction,ignoreDefensePercent:providedIgnore,variance:damageVariance}=normalizeDamageSettings({
@@ -33,6 +33,7 @@ export function siegeRotationDamage(account,team,target,{builds,options={},varia
  }
  const preview=teamTurnPreview(account,scenarioTeam,options,selected,{captureDamageState:true});
  if(!preview.complete)return {complete:false,preview,actions:[],total:null,range:null,risks:['Equipamento incompleto.']};
+ if(validatePreview&&!validatePreview(preview))return {complete:false,preview,actions:[],total:null,range:null,risks:preview.scenario.risks};
 
  const risks=new Set(preview.scenario.risks);
  risks.add('Projeção condicional: dano estimado não determina mortes, procs ou a fila de ações.');
@@ -76,7 +77,7 @@ export function siegeRotationDamage(account,team,target,{builds,options={},varia
    },actor.effects))));
    hits.push({range:[Math.min(...results.map(result=>result.total)),Math.max(...results.map(result=>result.total))],
     critChance:[Math.min(...results.map(result=>result.critChance)),Math.max(...results.map(result=>result.critChance))],
-    enemyDef:enemyDef*(defenseBuff?1.7:1)});
+    enemyDef:enemyDef*(defenseBuff?1.7:1),combat:results[0].combat});
    if(mihyang===member&&hit===defenseBuffRemovedAfterHit)defenseBuff=false;
   }
   actions.push({...row,speedGap,attackBuff:attacker.attackBuff,hits,range:sumRanges(hits)});

@@ -33,7 +33,7 @@ function requirements(config,build){
  for(const [id,n]of Object.entries(build.counts))required[id]=Math.max(required[id]||0,Math.floor(n/(FOUR.has(Number(id))?4:2)));
  return Object.entries(required).flatMap(([id,n])=>Array(n).fill(Number(id)));
 }
-function priorityReservations(account,teams,exceptId){
+export function priorityReservations(account,teams,exceptId){
  const protectedIds=new Set(),owners=new Set();
  for(const team of teams.filter(t=>t.id!==exceptId&&t.active!==false&&isPriority(t)))for(const c of team.configs||[]){
   if(c.enabled===false)continue;owners.add(c.unitId);const original=account.units.find(u=>u.id===c.unitId);if(!original)continue;

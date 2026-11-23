@@ -160,7 +160,7 @@ function orderCost(assignments,teams){
  }
  return cost;
 }
-export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[],candidateCache=null){
+export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[],candidateCache=null,rankComplete=null){
  assertMainPool(teams,options);
  teams=teams.filter(t=>t.active!==false);
  const started=Date.now(),reserved=new Set([...reservedIds,...(options.blockedRuneIds||[])]),jobs=[];const seen=new Set();
@@ -189,6 +189,18 @@ export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[],
  const ordered=jobs.slice().sort((a,b)=>Number(isPriority(b.team))-Number(isPriority(a.team))||a.candidates.length-b.candidates.length);
  const bestUtility=Object.fromEntries(jobs.map(job=>[job.config.key,Math.max(...job.candidates.map(c=>c.utility))]));
  const breadth=options.depth==='deep'?220:options.depth==='fast'?60:120;
+ // Keep eligible equipped builds reachable even when local utility prunes
+ // their timing bracket. The fallback uses candidates already checked by
+ // the same pools, reservations, locks, sets and hard goals.
+ const current=rankComplete?Object.fromEntries(jobs.flatMap(({config,unit,candidates})=>{
+  const equipped=candidates.find(c=>!c.upgrades?.length&&c.runeIds.length===6&&c.runeIds.every(id=>unit.runeIds.includes(id)));
+  return equipped?[[config.key,equipped]]:[];
+ })):{};
+ let seed=null;
+ if(rankComplete&&Object.keys(current).length===jobs.length&&new Set(Object.values(current).flatMap(c=>c.runeIds)).size===jobs.length*6&&speedSyncValid(current,teams)){
+  const rank=rankComplete(current);
+  if(Number.isFinite(rank))seed={assignments:current,rank};
+ }
  let beam=[{used:new Set(),assignments:{},deficit:0,utility:0}];
  for(let i=0;i<ordered.length;i++){
   const job=ordered[i],next=[];const weight=Number(job.team.priority)||1;
@@ -210,10 +222,24 @@ export function optimize(account,teams,options,onProgress=()=>{},reservedIds=[],
     for(const c of expanded.filter(c=>speedSyncValid({...state.assignments,[job.config.key]:c},teams)).slice(0,35))next.push({used:new Set([...state.used,...c.runeIds]),assignments:{...state.assignments,[job.config.key]:c},deficit:state.deficit+c.deficit*weight,utility:state.utility+c.utility*weight});
    }
   }
+  if(!next.length&&seed){beam=[seed];break;}
   if(!next.length)return {status:'conflict',failures:[{name:job.unit.name,reason:'Nenhuma distribuição encontrada sem repetir runas e respeitando os vínculos de SPD. Amplie a busca, libere reservas ou ajuste as metas e a ordem dos cards.'}],builds:[],elapsed:Date.now()-started,checked:jobs.reduce((s,j)=>s+j.candidates.length,0)};
   for(const state of next)state.score=allocationScore(state.assignments,teams,bestUtility);
   next.sort((a,b)=>compareAllocation(a.score,b.score)||orderCost(a.assignments,teams)-orderCost(b.assignments,teams));
-  beam=next.slice(0,breadth);onProgress({percent:80+Math.round((i+1)/ordered.length*19),message:'Comparando distribuições sem repetir runas…'});
+  // The canonical team objective runs on complete allocations only, after the
+  // usual inventory filtering and bounded candidate generation.
+  let ranked=next;
+  if(rankComplete&&i===ordered.length-1){
+   const distance=state=>Object.entries(current).reduce((sum,[key,c])=>sum+Math.abs(state.assignments[key].stats.combat.spd-c.stats.combat.spd),0);
+   const near=next.map(state=>({state,distance:distance(state)})).sort((a,b)=>a.distance-b.distance);
+   const mixed=new Set(next.flatMap((state,index)=>[state,near[index].state]));
+   ranked=[...(seed?[seed]:[]),...[...mixed].flatMap(state=>{
+    const rank=rankComplete(state.assignments);
+    return Number.isFinite(rank)?[{...state,rank}]:[];
+   })].sort((a,b)=>b.rank-a.rank);
+  }
+  if(!ranked.length)return {status:'conflict',failures:[],builds:[],elapsed:Date.now()-started,checked:jobs.reduce((s,j)=>s+j.candidates.length,0)};
+  beam=ranked.slice(0,breadth);onProgress({percent:80+Math.round((i+1)/ordered.length*19),message:'Comparando distribuições sem repetir runas…'});
  }
  const best=beam[0];const builds=jobs.map(job=>{const c=best.assignments[job.config.key];return {key:job.config.key,unitId:job.unit.id,name:job.unit.name,teamId:job.team.id,teamName:job.team.name,...c,goals:goalReport(c.stats,job.config),artifactIds:options.artifacts&&job.config.artifacts!==false?job.unit.artifactIds:[],damage:job.config.damage?.enabled?estimateRealDamage(job.unit,c.stats,job.config.damage,artifactEffects(account,job.unit,options.artifacts&&job.config.artifacts!==false)):null,role:job.team.mode==='attack'?'offense':'defense',enemyDefense:job.team.enemyDefense||[]};});
  return {status:builds.every(b=>b.goals.every(g=>g.met))?'met':'approximate',builds,failures:[],elapsed:Date.now()-started,checked:jobs.reduce((s,j)=>s+j.candidates.length,0),completedAt:new Date().toISOString(),scope:options.maxGrindsGems?'simulated-max-regular-stones':'current-runes-combat-spd',allocation:'priority-then-minimax-team-deficit-and-relative-quality',options};

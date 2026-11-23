@@ -286,9 +286,9 @@ export function cascadeReady(scenario,plan,keys){
  return !!checkpoint&&!checkpoint.disabled&&keys.every(key=>{const actor=checkpoint.bars.find(a=>a.key===key);return actor&&!actor.dead&&actor.atb>=100-1e-9;});
 }
 
-export function firstRotationSafe(scenario,keys){
+export function firstRotationSafe(scenario,keys,{consecutiveTicks=true}={}){
  const prefix=scenario.turns.slice(0,keys.length);
- return prefix.length===keys.length&&prefix.every((t,i)=>t.key===keys[i]&&!t.disabled&&(i===0||t.tick===prefix[0].tick+i));
+ return prefix.length===keys.length&&prefix.every((t,i)=>t.key===keys[i]&&!t.disabled&&(!consecutiveTicks||i===0||t.tick===prefix[0].tick+i));
 }
 
 export function requiredSheetSpeed(target,unit,team={},combat={},effects={},counts={},{conservative=false}={}){
