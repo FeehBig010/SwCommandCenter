@@ -67,7 +67,7 @@ export function simulateFirstTurns(actors){
  if(!actors.length)return [];
  return simulateCombat(actors,{stopAfterFirst:true}).firstTurns.map(({key,tick,spd,atb})=>({key,tick,spd,atb}));
 }
-export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=30,captureCheckpoints=false,captureReadiness=false,captureTickSnapshots=false,captureTickLimit=60,gaugeStep=NATURAL_GAUGE_STEP}={}){
+export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=30,captureCheckpoints=false,captureReadiness=false,captureTickSnapshots=false,captureTickLimit=60,gaugeStep=NATURAL_GAUGE_STEP,resolveActions}={}){
  const activeGaugeStep=Number(gaugeStep)===RTA_GAUGE_STEP?RTA_GAUGE_STEP:NATURAL_GAUGE_STEP;
  const snapshotLimit=Math.max(1,Math.min(300,Math.floor(Number(captureTickLimit)||60)));
  let lastTick=0;
@@ -98,12 +98,12 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
  function apply(event,source,tick){
   const targets=event.targets?.map(k=>{const t=state.find(a=>a.key===k);if(!t)throw new Error('Alvo de evento não encontrado.');return t;}).filter(t=>!t.dead)||[];
   const amount=number(event.amount,0,0,1000,'Valor do evento');if(event.critical&&event.glancing)throw new Error('Um hit não pode ser crítico e glancing ao mesmo tempo.');
-  log.push({tick,source:source.key,type:event.type,targets:targets.map(t=>t.key),amount});
+  log.push({tick,source:source.key,type:event.type,targets:targets.map(t=>t.key),amount,...(event.label?{label:event.label}:{})});
   if(event.type==='leo_attack'){if(source.passive!=='leo')throw new Error('Ataque Leo exige Leo.');const vulnerable=targets.filter(t=>!t.will||t.turns>0);if(vulnerable.length)apply({...event,type:'reduce',targets:vulnerable.map(t=>t.key),amount:15},source,tick);if(vulnerable.length!==targets.length)log.push({tick,source:source.key,type:'will_immunity',targets:targets.filter(t=>t.will&&t.turns===0).map(t=>t.key),amount:0});}
-  else if(event.type==='cleanse'){for(const t of targets){t.combat.disabled=false;t.combat.slow=false;}}
+  else if(event.type==='cleanse'){for(const t of targets){t.combat.disabled=false;t.combat.slow=false;if(t.statusTurns){delete t.statusTurns.disabled;delete t.statusTurns.slow;}}}
   else if(event.type==='tiana'){
    if(source.master!==18913)throw new Error('Wind of Changes exige Tiana.');
-   for(const target of alive()){target.combat.disabled=false;target.combat.slow=false;target.combat.speedBuff=false;target.combat.buffCount=0;target.will=false;}
+   for(const target of alive()){target.combat.disabled=false;target.combat.slow=false;target.combat.speedBuff=false;target.combat.buffCount=0;target.will=false;target.immunity=0;target.statusTurns=undefined;}
    skillBoost(alive().filter(t=>same(t,source)),30,source);
   }
   else if(event.type==='boost'){skillBoost(targets,amount,source);}
@@ -123,6 +123,17 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
   }else if(event.type==='tablo'){
    if(source.master!==21314)throw new Error('Reset Tablo exige Tablo como origem.');for(const a of alive()){a.atb=0;if(same(a,source)&&a.key!==source.key)a.combat.speedBuff=true;}source.combat.disabled=true;source.disabledFor=1;
   }else if(event.type==='buffs'){for(const a of alive())a.combat.buffCount=number(event.amount,0,0,100,'Buffs globais');}
+  else if(event.type==='reset_bar'){for(const t of targets)t.atb=0;}
+  else if(event.type==='immunity'){for(const t of targets)t.immunity=event.duration;}
+  else if(event.type==='stun'||event.duration&&['speed_buff','slow'].includes(event.type)){
+   const field={speed_buff:'speedBuff',slow:'slow',stun:'disabled'}[event.type];
+   for(const t of targets){
+    if(field!=='speedBuff'&&t.immunity){log.push({tick,source:source.key,type:'immune',targets:[t.key],amount:0});continue;}
+    t.statusTurns??={};
+    t.statusTurns[field]=event.duration;
+    t.combat[field]=true;
+   }
+  }
   else if(event.type==='speed_buff'){for(const t of targets)t.combat.speedBuff=event.enabled!==false;}
   else if(event.type==='slow'){for(const t of targets)t.combat.slow=event.enabled!==false;}
   else if(event.type==='antares'){
@@ -131,6 +142,14 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
  }
  for(const e of events)if(!keys.has(e.afterKey)||!Number.isInteger(Number(e.occurrence??1))||Number(e.occurrence??1)<1)throw new Error('Origem ou turno de evento inválido.');
  const leo=alive().filter(a=>a.passive==='leo'&&!a.boss);if(leo.length)forced.push(...leo.slice().sort((a,b)=>b.spd-a.spd||a.index-b.index).map(a=>a.key));
+ function configuredActions(source,tick,initial=false){
+  if(!resolveActions)return;
+  const view={key:source.key,enemy:!!source.enemy,turns:source.turns};
+  for(const event of resolveActions({source:view,initial})){
+   apply({...event,targets:event.selectTargets(alive())},source,tick);
+  }
+ }
+ if(resolveActions)for(const source of alive())configuredActions(source,0,true);
  recordReady(0,'initial');
  for(let tick=1;tick<=10000&&turns.length<(stopAfterFirst?10000:maxTurns);tick++){
   lastTick=tick;
@@ -149,8 +168,21 @@ export function simulateCombat(actors,{events=[],stopAfterFirst=false,maxTurns=3
   // Disabled turns consume ATB but cannot execute the configured actions; duration changes require explicit scenario state.
   const skipped=actor.combat.disabled;
   if(!skipped)for(const e of events.filter(e=>e.enabled!==false&&e.afterKey===actor.key&&Number(e.occurrence??1)===actor.turns)){apply(e,actor,tick);recordReady(tick,'event');}
+  if(resolveActions){
+   for(const field of Object.keys(actor.statusTurns||{})){
+    if(--actor.statusTurns[field]<=0){
+     delete actor.statusTurns[field];actor.combat[field]=false;
+     log.push({tick,source:actor.key,type:'expired',field,targets:[actor.key],amount:0});
+    }
+   }
+   if(actor.immunity&&!--actor.immunity)log.push({tick,source:actor.key,type:'expired',field:'immunity',targets:[actor.key],amount:0});
+   if(!skipped)configuredActions(actor,tick);
+  }
   if(skipped&&actor.disabledFor){actor.disabledFor--;if(!actor.disabledFor)actor.combat.disabled=false;}
-  for(const am of alive().filter(a=>a.passive==='amduat'&&!same(a,actor)))skillBoost([am],25,am);
+  for(const am of alive().filter(a=>a.passive==='amduat'&&!same(a,actor))){
+   const before=am.atb;skillBoost([am],25,am);
+   if(resolveActions)log.push({tick,source:am.key,type:'boost',label:'Passiva',targets:[am.key],amount:am.atb-before});
+  }
   recordReady(tick,'passive');
   if(captureCheckpoints)checkpoints.push({key:actor.key,occurrence:actor.turns,tick,disabled:skipped,bars:state.map(a=>({key:a.key,atb:a.atb,dead:a.dead}))});
   if(captureTickSnapshots&&tick<=snapshotLimit)tickSnapshots.push({tick,actingKey:actor.key,actingName:actor.name||actor.key,actingEnemy:!!actor.enemy,bars:state.map(a=>({key:a.key,name:a.name||a.key,master:a.master,spd:a.spd,spdPost:a.rawSpd!==undefined?runtimeSpeed(a.baseSpd,a.master,a.combat,a.effects||{}):a.spd,enemy:!!a.enemy,atb:preTurnBars.get(a.key)??0,atbPost:Math.round(a.atb*10)/10,dead:a.dead,acted:a.key===actor.key}))});

@@ -9,6 +9,7 @@ const MODULES=[
  ['siege','Siege Center','Ataques, defesas e preparação',Swords],
  ['optimizer','Rune Optimizer','Distribua runas para seus times',Compass],
  ['rune-intelligence','Rune Intelligence','Revise oportunidades nas runas',Sparkles],
+ ['battle-simulator','Simulador de Batalha','Teste habilidades e a ordem dos turnos',Gauge],
  ['quick','Calculadora de Velocidade','Confira a ordem de ação do time',Gauge],
 ];
 export default function EntryPortal({account,session,onQuick,onContinue,onUpload,onFile,onLoginIntent,onLoginCancel,busy,onNavigate,lastWorkspace=null}){

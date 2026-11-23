@@ -1,6 +1,6 @@
 export const PRIMARY_LABELS=Object.fromEntries([['portal','Início'],['siege','Siege Center'],['optimizer','Rune Optimizer'],['rune-intelligence','Rune Intelligence'],['quick','Calculadora de Velocidade']]);
 export const PRIMARY_PAGES=Object.keys(PRIMARY_LABELS);
-export const SECONDARY_GROUPS=[{id:'tools',label:'Outras ferramentas',pages:['dashboard','saved','workshop','guild-intelligence','updates','about']},{id:'modes',label:'Outros modos de jogo',pages:['arena','rta','cairos','dimensional','rift','toa']},{id:'account',label:'Conta e dados',pages:['swex','inventory']}];
+export const SECONDARY_GROUPS=[{id:'tools',label:'Outras ferramentas',pages:['battle-simulator','dashboard','saved','workshop','guild-intelligence','updates','about']},{id:'modes',label:'Outros modos de jogo',pages:['arena','rta','cairos','dimensional','rift','toa']},{id:'account',label:'Conta e dados',pages:['swex','inventory']}];
 export const SIDEBAR_PREFERENCE_KEY='swcc:sidebar:v1';
 export const LAST_WORKSPACE_KEY='swcc:last-workspace:v1';
 export const NAV_KEYS=new Set([...PRIMARY_PAGES,...SECONDARY_GROUPS.flatMap(g=>g.pages),'admin']);
