@@ -1,7 +1,8 @@
 import {useEffect,useRef,useState} from 'react';
+import './BuildLabConversation.css';
 import {parseBuildLabRequest,prepareBuildLabTeam,resolveBuildLabProtection,resultProtectionConflicts} from '../core/build-lab-request.js';
 
-const example='Monte Adriana, Mihyang líder e Rigna para Siege. Quero maior dano sem corte, preservando o Deck 17. Alvo 230 SPD e 1200 DEF.';
+const example='Monte Adriana, Mihyang líder e Rigna para Siege. Quero maior dano sem corte. Alvo 230 SPD e 1200 DEF.';
 const format=n=>Math.round(Number(n)||0).toLocaleString('pt-BR');
 const range=r=>Array.isArray(r)&&r.every(Number.isFinite)?r.map(format).join('–'):'Não calculado';
 const titles={damage:'Maior dano encontrado',robust:'Alternativa robusta',current:'Equipamento atual'};
