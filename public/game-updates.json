@@ -1,9 +1,25 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-25T19:55:02.441Z",
+  "fetchedAt": "2026-11-26T02:48:49.212Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/event/313/96864",
+      "url": "https://www.withhive.com/event/313/96864",
+      "title": "Daily Free [Magic Shop Refresh & Ancient/High Rune Crafting] Event",
+      "category": "event",
+      "publishedAt": "2026-11-26T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/8067/20251126/3e10aa81ff64665818cffdc7602ae073.jpg"
+    },
+    {
+      "id": "https://www.withhive.com/event/313/96863",
+      "url": "https://www.withhive.com/event/313/96863",
+      "title": "[Trial of Ascension] Free Entrance Event!",
+      "category": "event",
+      "publishedAt": "2026-11-26T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/4677/20250124/d0157f83ff9514eb1b5e1c6387050efb.jpg"
+    },
     {
       "id": "https://www.withhive.com/notice/313/96721",
       "url": "https://www.withhive.com/notice/313/96721",
