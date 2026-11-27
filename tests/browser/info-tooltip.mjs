@@ -30,10 +30,11 @@ try{
    assert.ok(page.url().endsWith('/#/quick'));assert.ok(await page.title());
    assert.equal(await page.locator('vite-error-overlay').count(),0);
    const id=await trigger.getAttribute('aria-describedby');assert.ok(id);
-   const tooltip=page.locator('[role=tooltip]').filter({hasText:'A seleção de um monstro começa com atributos base'});
-   assert.equal(await tooltip.getAttribute('id'),id);
+   const tooltip=page.locator(`[role="tooltip"][id="${id}"]`);
+   assert.equal(await tooltip.count(),1,'A ajuda deve usar o ID associado ao botão');
    assert.equal(await trigger.locator('..').getAttribute('data-export-ignore'),'true');
    const text=await tooltip.textContent();
+   assert.match(text,/Selecione seu time e informe SPD de runas ou Pronto por tick\./,'A ajuda explica as regras atuais da calculadora');
    async function visible(want,message){
     assert.equal(await tooltip.isVisible(),want,message);
     const expanded=await trigger.getAttribute('aria-expanded');

@@ -113,3 +113,14 @@ test('cloud counter edits require an author with leadership; local counters stay
  assert.ok(canEditSiegeRecord({...counter,cloud:false},{isLeader:false},null));
  assert.equal(canEditSiegeRecord(record,{isLeader:false},{user:{id:'author'}}),false);
 });
+
+
+test('defense gallery identifies the source of locally saved templates',()=>{
+ const {record}=fixture();
+ const local={id:'qa-model',name:'Modelo disponível',team:{...record.team,mode:'defense',leader:null}};
+ const records=siegeGuildRecords([local],[],[],null);
+ const rows=siegeComparisonRows(records);
+ assert.equal(rows.length,1);
+ assert.deepEqual(rows[0].sources,['Modelo local']);
+ assert.equal(rows[0].record.key,'template:qa-model');
+});

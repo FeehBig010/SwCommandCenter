@@ -12,6 +12,7 @@ import ImportSummoning from './components/ImportSummoning';
 import {rebindTargetGoals} from './core/target-goals';
 import {upgradePveAccount,migratePvePlans} from './core/pve-migration';
 import {arenaContextOf,isArenaContext} from './core/arena-context';
+import {buildAccountDeckLists} from './core/account-deck-lists';
 import {defenseResourcePolicy,filteredDefenseInventory} from './core/defense-resources';
 import {accountStamp} from './core/loadouts';
 import {importAccountFile} from './core/import-account';
@@ -100,7 +101,7 @@ export default function App(){
  const [collapsed,setCollapsed]=useState(()=>sidebarCollapsed()),[page,setPage]=useAppNavigation(),[account,setAccount]=useState(null),[teams,setTeams]=useState(()=>initialTeams(null)),[storedOptions,setOptions]=useState(DEFAULT_OPTIONS),[saved,setSaved]=useState([]),[guildTemplates,setGuildTemplates]=useState([]),[result,setResult]=useState(null),[resultSignature,setResultSignature]=useState(''),[ready,setReady]=useState(false),[toast,setToast]=useState(null),[running,setRunning]=useState(false),[progress,setProgress]=useState(null),[advanced,setAdvanced]=useState(false),[menu,setMenu]=useState(false),[confirmClear,setConfirmClear]=useState(false),[isLoading,setIsLoading]=useState(false),[importProgress,setImportProgress]=useState(1),[importPhase,setImportPhase]=useState('Preparando importação');
  const raidTeams=useMemo(()=>RAID_KEYS.every(k=>cairosPlans[k])?raidTeamsWithLeaders(RAID_KEYS.map(k=>cairosPlans[k])):[],[cairosPlans]);
  const hydratedPresets=useMemo(()=>hydrateAccountPresets(account),[account]);
- const deckLists=useMemo(()=>({arenaPresetsByContext:Object.fromEntries(['regular','interserver'].map(context=>[context,hydratedPresets.filter(p=>isArenaContext(p,context))])),presetsByArea:Object.fromEntries(['siege','arena','rta','cairos','dimensional','rift','toa'].map(area=>[area,hydratedPresets.filter(p=>p.gameMode===area)])),arenaPresets:hydratedPresets.filter(p=>['arena','rta'].includes(p.gameMode)),deck_list:hydratedPresets.filter(p=>!['siege','arena','rta'].includes(p.gameMode)),defense_deck_list:hydratedPresets.filter(p=>['siege','arena'].includes(p.gameMode)),world_arena_deck_list:hydratedPresets.filter(p=>p.gameMode==='rta'),pveDecksByDungeon:hydratedPresets.filter(p=>isPve(p.gameMode)).reduce((groups,p)=>{(groups[p.dungeon||'pve-other']??=[]).push(p);return groups;},{}),deck_recent_list:hydratedPresets.filter(p=>p.sourceKey==='deck_recent_list'),party_deck:hydratedPresets.filter(p=>p.sourceKey==='party_deck'),dungeon_deck:hydratedPresets.filter(p=>p.sourceKey==='dungeon_deck')}),[hydratedPresets]);
+ const deckLists=useMemo(()=>buildAccountDeckLists(hydratedPresets),[hydratedPresets]);
  const filteredInventory=useMemo(()=>filteredDefenseInventory(account,defensePolicy),[account,defensePolicy]);
  useEffect(()=>{saveSidebarPreference(collapsed);},[collapsed]);
  useEffect(()=>{if(!['portal','admin'].includes(page)){saveLastWorkspace(page);setLastWorkspace(page);}},[page]);
