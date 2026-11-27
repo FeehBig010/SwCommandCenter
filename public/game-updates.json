@@ -1,9 +1,17 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-26T22:17:48.660Z",
+  "fetchedAt": "2026-11-27T04:59:56.550Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/notice/313/96892",
+      "url": "https://www.withhive.com/notice/313/96892",
+      "title": "[Summoners War] v9.4.1 Auto Update Notice",
+      "category": "update",
+      "publishedAt": "2026-11-27T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
     {
       "id": "https://www.withhive.com/event/313/96864",
       "url": "https://www.withhive.com/event/313/96864",
