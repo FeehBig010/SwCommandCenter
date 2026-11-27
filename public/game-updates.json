@@ -1,9 +1,41 @@
 {
   "version": 1,
   "source": "WithHive / Com2uS",
-  "fetchedAt": "2026-11-27T04:59:56.550Z",
+  "fetchedAt": "2026-11-27T15:00:00.189Z",
   "partial": false,
   "items": [
+    {
+      "id": "https://www.withhive.com/event/313/96912",
+      "url": "https://www.withhive.com/event/313/96912",
+      "title": "Goodbye 2026! Daily Nat 5 Summon & Year-End Gift Event",
+      "category": "event",
+      "publishedAt": "2026-11-27T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261126/43487dcc85ddb9cd29fa06bd812cc402.jpg"
+    },
+    {
+      "id": "https://www.withhive.com/event/313/96911",
+      "url": "https://www.withhive.com/event/313/96911",
+      "title": "Goodbye 2026! Goodbye 2026 Scroll Giveaway Arena & Guild Mission Event",
+      "category": "event",
+      "publishedAt": "2026-11-27T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/hive_img/A/B/14123/20261126/8ee1e1afbd5c4f4ab690b23109fa4efc.jpg"
+    },
+    {
+      "id": "https://www.withhive.com/notice/313/96899",
+      "url": "https://www.withhive.com/notice/313/96899",
+      "title": "[Summoners War] World Arena Season 39 Closing & Special League Opening Notice",
+      "category": "notice",
+      "publishedAt": "2026-11-27T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
+    {
+      "id": "https://www.withhive.com/notice/313/96898",
+      "url": "https://www.withhive.com/notice/313/96898",
+      "title": "[Summoners War] Siege Battle Season 23 and Changes Notice",
+      "category": "notice",
+      "publishedAt": "2026-11-27T00:00:00.000Z",
+      "thumbnail": "https://hive-fn.qpyou.cn/hubweb/gmnotice/appcenter/production/1781229885441.png"
+    },
     {
       "id": "https://www.withhive.com/notice/313/96892",
       "url": "https://www.withhive.com/notice/313/96892",
